@@ -12,6 +12,9 @@ BASE = "http://localhost:8080"
 TOKEN = ""
 API_TOKEN = "integration-token-123"
 
+# 本机可能有注册表代理，禁用代理避免 urllib 走代理导致 404
+_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
 def call(method, path, body=None, token=None, raw=False, files=None):
     data = None
     headers = {}
@@ -24,7 +27,7 @@ def call(method, path, body=None, token=None, raw=False, files=None):
         headers["X-Api-Token"] = api_token()
     req = urllib.request.Request(BASE + path, data=data, headers=headers, method=method)
     try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        with _OPENER.open(req, timeout=30) as resp:
             return resp.status, resp.read().decode("utf-8")
     except urllib.error.HTTPError as e:
         return e.code, e.read().decode("utf-8")
@@ -156,7 +159,7 @@ list.forEach(x -> System.out.println(x));
     try:
         req = urllib.request.Request(BASE + "/api/export/all", headers={
             "X-Api-Token": API_TOKEN})
-        with urllib.request.urlopen(req, timeout=60) as resp:
+        with _OPENER.open(req, timeout=60) as resp:
             zip_bytes = resp.read()
         run("导出zip", lambda: check("zip下载", zip_bytes[:2] == b"PK"))
     except Exception as e:

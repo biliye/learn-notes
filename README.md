@@ -2,8 +2,9 @@
 
 网站形态的个人笔记本：把学习内容按 **大类 → 小方向 → 文档** 归置，以 Markdown 文档形式展现（代码与正文差异化渲染），文档主要由 AI agent 编写后通过接口上传并**自动归类**，我可以在文档的任意正文块上写**可折叠的个人见解**，支持本地图片上传。单用户登录，Docker 部署到云服务器，**并有经过实测演练的备份与恢复能力**。
 
-> **当前状态：仅完成需求拆解与契约设计，尚无任何应用代码。**
-> 下一步是把 `docs/aegis/plans/2026-08-20-learn-notes-implementation.md` 里的 20 张任务卡分发给执行 agent。
+> **当前状态：已实现并通过端到端验收（16 条中除需云服务器复核的容器项外全部通过）。**
+> 后端（Spring Boot）+ 前端（Vue 3）+ 备份恢复脚本 + 部署文档均已交付；恢复演练已实测（只用 `notes-export/` 在空环境重建成功）。
+> 部署步骤见 `docs/DEPLOY.md`，备份与恢复见 `docs/BACKUP.md`，逐条验收记录见 `docs/ACCEPTANCE.md`。
 
 ---
 
@@ -15,9 +16,9 @@
 | `docs/aegis/plans/2026-08-20-learn-notes-implementation.md` | 写代码的 agent | 20 张任务卡（依赖图、产出文件、验收命令、边界、可直接粘贴的提示词） |
 | `docs/AGENT-DOC-SPEC.md` | **写笔记内容的 agent** | 文档怎么写、front-matter 怎么填、文件名怎么起、图片怎么放、怎么上传 |
 | `docs/aegis/BASELINE-GOVERNANCE.md` / `INDEX.md` | 维护者 | Aegis 工作区治理与文档索引 |
-| `docs/DEPLOY.md` | 部署者 | 云服务器部署与端口探测（由任务 T16 产出） |
-| `docs/BACKUP.md` | 我自己 | 备份与恢复的唯一 owner 文档（由任务 T20 产出） |
-| `docs/ACCEPTANCE.md` | 验收者 | 16 条端到端验收记录，含恢复演练（由任务 T17/T20 产出） |
+| `docs/DEPLOY.md` | 部署者 | 云服务器部署与端口探测（任务 T16 产出） |
+| `docs/BACKUP.md` | 我自己 | 备份与恢复的唯一 owner 文档（任务 T20 产出） |
+| `docs/ACCEPTANCE.md` | 验收者 | 16 条端到端验收记录，含恢复演练（任务 T17/T20 产出） |
 
 ---
 
