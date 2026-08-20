@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.learnnotes.annotation.mapper.DocAnnotationMapper">
+
+    <sql id="cols">
+        id, doc_id, anchor_hash, anchor_index, block_snippet, content_md, status,
+        doc_version_at_create, created_at, updated_at
+    </sql>
+
+    <select id="selectByDoc" resultType="com.learnnotes.annotation.entity.DocAnnotation">
+        SELECT
+        <include refid="cols"/>
+        FROM doc_annotation WHERE doc_id = #{docId}
+        ORDER BY anchor_index ASC, created_at ASC
+    </select>
+
+    <select id="selectById" resultType="com.learnnotes.annotation.entity.DocAnnotation">
+        SELECT
+        <include refid="cols"/>
+        FROM doc_annotation WHERE id = #{id}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO doc_annotation (doc_id, anchor_hash, anchor_index, block_snippet, content_md, status, doc_version_at_create)
+        VALUES (#{docId}, #{anchorHash}, #{anchorIndex}, #{blockSnippet}, #{contentMd}, #{status}, #{docVersionAtCreate})
+    </insert>
+
+    <update id="updateContent">
+        UPDATE doc_annotation SET content_md = #{contentMd} WHERE id = #{id}
+    </update>
+
+    <update id="updateAnchor">
+        UPDATE doc_annotation
+        SET anchor_hash = #{anchorHash}, anchor_index = #{anchorIndex}, status = #{status}, block_snippet = #{blockSnippet}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateStatus">
+        UPDATE doc_annotation SET status = #{status} WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM doc_annotation WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteByDoc">
+        DELETE FROM doc_annotation WHERE doc_id = #{docId}
+    </delete>
+
+    <select id="countByDoc" resultType="int">
+        SELECT COUNT(*) FROM doc_annotation WHERE doc_id = #{docId}
+    </select>
+
+    <delete id="deleteAll">
+        DELETE FROM doc_annotation
+    </delete>
+</mapper>
