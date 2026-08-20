@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.learnnotes.doc.mapper.DocMapper">
+
+    <!-- 列表查询：显式列字段，禁止 SELECT *，禁止带出 content_md（规格 §8 风险项） -->
+    <sql id="listCols">
+        d.id, d.topic_id, d.slug, d.title, d.summary, d.tags, d.source_filename,
+        d.current_version, d.block_count, d.word_count, d.sort_order, d.created_at, d.updated_at
+    </sql>
+
+    <sql id="detailCols">
+        id, topic_id, slug, title, summary, tags, source_filename, current_version,
+        content_md, content_hash, block_count, word_count, sort_order, created_at, updated_at
+    </sql>
+
+    <sql id="filterWhere">
+        <where>
+            <if test="topicId != null">AND d.topic_id = #{topicId}</if>
+            <if test="categoryId != null">AND d.topic_id IN (SELECT id FROM catalog_node WHERE parent_id = #{categoryId})</if>
+            <if test="keyword != null and keyword != ''">AND (d.title LIKE #{keyword} ESCAPE '\\' OR d.content_md LIKE #{keyword} ESCAPE '\\')</if>
+        </where>
+    </sql>
+
+    <select id="selectList" resultType="com.learnnotes.doc.dto.DocListRow">
+        SELECT
+        <include refid="listCols"/>
+        FROM doc d
+        <include refid="filterWhere"/>
+        ORDER BY d.sort_order ASC, d.id DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="countList" resultType="long">
+        SELECT COUNT(*)
+        FROM doc d
+        <include refid="filterWhere"/>
+    </select>
+
+    <select id="selectById" resultType="com.learnnotes.doc.entity.Doc">
+        SELECT
+        <include refid="detailCols"/>
+        FROM doc WHERE id = #{id}
+    </select>
+
+    <select id="selectByTopicAndSlug" resultType="com.learnnotes.doc.entity.Doc">
+        SELECT
+        <include refid="detailCols"/>
+        FROM doc WHERE topic_id = #{topicId} AND slug = #{slug} LIMIT 1
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO doc (topic_id, slug, title, summary, tags, source_filename, current_version,
+                         content_md, content_hash, block_count, word_count, sort_order)
+        VALUES (#{topicId}, #{slug}, #{title}, #{summary}, #{tags}, #{sourceFilename}, #{currentVersion},
+                #{contentMd}, #{contentHash}, #{blockCount}, #{wordCount}, #{sortOrder})
+    </insert>
+
+    <update id="update">
+        UPDATE doc
+        <set>
+            <if test="topicId != null">topic_id = #{topicId},</if>
+            <if test="slug != null">slug = #{slug},</if>
+            <if test="title != null">title = #{title},</if>
+            <if test="summary != null">summary = #{summary},</if>
+            <if test="tags != null">tags = #{tags},</if>
+            <if test="sourceFilename != null">source_filename = #{sourceFilename},</if>
+            <if test="currentVersion != null">current_version = #{currentVersion},</if>
+            <if test="contentMd != null">content_md = #{contentMd},</if>
+            <if test="contentHash != null">content_hash = #{contentHash},</if>
+            <if test="blockCount != null">block_count = #{blockCount},</if>
+            <if test="wordCount != null">word_count = #{wordCount},</if>
+            <if test="sortOrder != null">sort_order = #{sortOrder},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM doc WHERE id = #{id}
+    </delete>
+
+    <select id="countByTopic" resultType="int">
+        SELECT COUNT(*) FROM doc WHERE topic_id = #{topicId}
+    </select>
+
+    <select id="selectAll" resultType="com.learnnotes.doc.entity.Doc">
+        SELECT
+        <include refid="detailCols"/>
+        FROM doc
+    </select>
+
+    <select id="search" resultType="com.learnnotes.doc.dto.DocSearchRow">
+        SELECT d.id, d.title, d.topic_id, d.content_md
+        FROM doc d
+        WHERE d.title LIKE #{pattern} ESCAPE '\\' OR d.content_md LIKE #{pattern} ESCAPE '\\'
+        ORDER BY d.updated_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <delete id="deleteAllVersions">
+        DELETE FROM doc_version
+    </delete>
+
+    <delete id="deleteAllDocs">
+        DELETE FROM doc
+    </delete>
+</mapper>

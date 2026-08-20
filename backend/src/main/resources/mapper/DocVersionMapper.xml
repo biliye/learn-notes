@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.learnnotes.doc.mapper.DocVersionMapper">
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO doc_version (doc_id, version, content_md, content_hash, change_note)
+        VALUES (#{docId}, #{version}, #{contentMd}, #{contentHash}, #{changeNote})
+    </insert>
+
+    <select id="selectByDoc" resultType="com.learnnotes.doc.entity.DocVersion">
+        SELECT id, doc_id, version, content_hash, change_note, created_at
+        FROM doc_version WHERE doc_id = #{docId} ORDER BY version DESC
+    </select>
+
+    <select id="selectByDocAndVersion" resultType="com.learnnotes.doc.entity.DocVersion">
+        SELECT id, doc_id, version, content_md, content_hash, change_note, created_at
+        FROM doc_version WHERE doc_id = #{docId} AND version = #{version}
+    </select>
+
+    <delete id="deleteByDoc">
+        DELETE FROM doc_version WHERE doc_id = #{docId}
+    </delete>
+</mapper>
