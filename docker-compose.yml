@@ -1,0 +1,79 @@
+# ============================================================
+# learn-notes 全栈编排（D9、D13）
+# 关键约束：目标云服务器已在运行 astrbot + napcat ——
+#  1. WEB_PORT 默认 8088，不抢 80
+#  2. mysql 不写 ports（只走内部网络，防端口冲突也防公网拖库）
+#  3. 容器名统一 ln- 前缀、独立网络 ln-net、命名卷 ln-mysql-data
+# ============================================================
+name: learn-notes
+
+services:
+  ln-mysql:
+    image: mysql:8.0
+    container_name: ln-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-learn_notes}
+      TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+    volumes:
+      - ln-mysql-data:/var/lib/mysql
+    networks:
+      - ln-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
+    # 注意：刻意不写 ports —— 数据库绝不对外暴露（D13 硬约束）
+
+  ln-backend:
+    build: ./backend
+    container_name: ln-backend
+    restart: unless-stopped
+    depends_on:
+      ln-mysql:
+        condition: service_healthy
+    environment:
+      APP_DB_URL: jdbc:mysql://ln-mysql:3306/${MYSQL_DATABASE:-learn_notes}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+      APP_DB_USERNAME: root
+      APP_DB_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      APP_JWT_SECRET: ${APP_JWT_SECRET}
+      APP_JWT_EXPIRE_MINUTES: ${APP_JWT_EXPIRE_MINUTES:-720}
+      APP_ADMIN_USERNAME: ${APP_ADMIN_USERNAME}
+      APP_ADMIN_PASSWORD: ${APP_ADMIN_PASSWORD}
+      APP_API_TOKEN: ${APP_API_TOKEN}
+      APP_STORAGE_DIR: /app/storage/docs
+      APP_UPLOAD_DIR: /app/storage/uploads
+      APP_MAX_IMAGE_MB: ${APP_MAX_IMAGE_MB:-5}
+    volumes:
+      - ./storage:/app/storage
+    networks:
+      - ln-net
+
+  ln-web:
+    build: ./frontend
+    container_name: ln-web
+    restart: unless-stopped
+    depends_on:
+      - ln-backend
+    ports:
+      - "${WEB_PORT:-8088}:80"
+    # 以只读方式挂 storage，供 Nginx 直接托管 /uploads/**（D11）
+    volumes:
+      - ./storage:/app/storage:ro
+    networks:
+      - ln-net
+
+volumes:
+  ln-mysql-data:
+    name: ln-mysql-data
+
+networks:
+  ln-net:
+    name: ln-net
+    driver: bridge
