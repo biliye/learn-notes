@@ -14,6 +14,7 @@
           :annotations="annotationsFor(block.anchor)"
           :expanded="expandedSet.has(block.anchor)"
           :saving="saving"
+          :auto-add="addingAnchor === block.anchor"
           @toggle="toggle(block.anchor)"
           @expand-all="expandedSet.add(block.anchor)"
           @collapse-all="expandedSet.delete(block.anchor)"
@@ -76,6 +77,8 @@ function toggle(anchor) {
 }
 
 function addAnnotation(anchor, content) {
+  // 保存后关闭该块的编辑态
+  if (addingAnchor.value === anchor) addingAnchor.value = null
   emit('add', anchor, content)
 }
 

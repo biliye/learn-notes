@@ -34,11 +34,13 @@ import AnnotationList from './AnnotationList.vue'
 const props = defineProps({
   annotations: { type: Array, default: () => [] },
   expanded: { type: Boolean, default: false },
-  saving: { type: Boolean, default: false }
+  saving: { type: Boolean, default: false },
+  /** 悬浮按钮触发：进入时直接打开内联编辑器 */
+  autoAdd: { type: Boolean, default: false }
 })
 const emit = defineEmits(['toggle', 'expand-all', 'collapse-all', 'add', 'edit', 'delete', 'confirm'])
 
-const adding = ref(false)
+const adding = ref(props.autoAdd)
 const hasStale = computed(() => props.annotations.some((a) => a.status === 'STALE'))
 
 function onAdd(content) {
