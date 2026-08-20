@@ -76,12 +76,12 @@ public class ExportService {
         }
         List<Doc> docs = docMapper.selectAll();
 
-        // 图片引用集合
+        // 图片引用集合（去掉 /uploads/ 前缀，得到相对 uploadDir 的路径）
         Set<String> referencedImages = new HashSet<>();
         for (Doc doc : docs) {
             Matcher m = IMAGE_REF.matcher(doc.getContentMd());
             while (m.find()) {
-                referencedImages.add(m.group().substring(1)); // 去掉前导 /
+                referencedImages.add(m.group().substring("/uploads/".length()));
             }
         }
 

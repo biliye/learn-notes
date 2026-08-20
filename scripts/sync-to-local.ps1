@@ -1,4 +1,4 @@
-# ============================================================
+﻿# ============================================================
 # learn-notes 同步回本机脚本（R35，Windows PowerShell 执行）
 # 把服务器最新导出物拉回本机：
 #   - md + insights.json → 本机 <仓库>/notes-export/（进 git，主恢复路径）
@@ -40,7 +40,7 @@ if ($dbLatest) { & $Scp "${ServerUser}@${ServerHost}:$RemoteDir/db/$dbLatest" (J
 if ($stLatest) { & $Scp "${ServerUser}@${ServerHost}:$RemoteDir/storage/$stLatest" (Join-Path $LocalBackupDir $stLatest) }
 
 Write-Host "[4/5] git 提交 notes-export/（内容无变化则跳过）..."
-$manifest = Get-Content (Join-Path $exportDir "manifest.json") -Raw | ConvertFrom-Json
+$manifest = Get-Content (Join-Path $exportDir "manifest.json") -Raw -Encoding UTF8 | ConvertFrom-Json
 Set-Location $repoRoot
 & git add notes-export
 $changed = (& git status --porcelain notes-export)

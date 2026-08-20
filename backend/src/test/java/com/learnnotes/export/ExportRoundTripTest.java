@@ -94,6 +94,10 @@ class ExportRoundTripTest {
         String md1 = "# Lambda 基础\n\n第一段讲 Lambda 表达式。\n\n```java\nlist.forEach(x -> System.out.println(x));\n```\n\n![示意](/uploads/2026/08/abcdef1234567890.png)\n";
         var d1 = docService.create(func.getId(), "Lambda 基础", "lambda-basics", "Lambda 摘要",
                 List.of("基础", "lambda"), md1, "lambda-basics.md");
+        // 造一张被引用的图片文件，验证导出时被打包
+        Path imgDir = Paths.get(props.getUploadDir()).resolve("2026/08");
+        Files.createDirectories(imgDir);
+        Files.write(imgDir.resolve("abcdef1234567890.png"), new byte[]{1, 2, 3, 4});
         String md2 = "# 内部类\n\n内部类分四种。\n";
         var d2 = docService.create(cls.getId(), "内部类", "inner-class", null, null, md2, "inner-class.md");
         String md3 = "# props 基础\n\n组件属性传参。\n";
@@ -134,6 +138,8 @@ class ExportRoundTripTest {
         assertTrue(entries.containsKey("java/function/lambda-basics.insights.json"));
         assertTrue(entries.containsKey("java/class/inner-class.insights.json"));
         assertTrue(entries.containsKey("vue/component/props-basics.md"));
+        assertTrue(entries.containsKey("uploads/2026/08/abcdef1234567890.png"),
+                "被引用的图片必须打进导出包");
 
         ObjectMapper om = new ObjectMapper();
         Map<?, ?> manifest = om.readValue(entries.get("manifest.json"), Map.class);
