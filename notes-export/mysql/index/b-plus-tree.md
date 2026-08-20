@@ -57,3 +57,6 @@ SELECT * FROM users WHERE name LIKE '%张%';
 1. **最左前缀原则**：联合索引 `(a, b)` 上查 `b` 不会走索引。
 2. **函数包住索引列**（`WHERE YEAR(created_at)=2026`）会让索引失效。
 3. 区分度低的列（性别）做索引收益很小。
+
+
+![B+树结构](/uploads/2026/08/5503ff8fef5a4d87.png)

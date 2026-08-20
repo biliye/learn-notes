@@ -1,13 +1,13 @@
 {
-  "exportedAt" : "2026-08-20T23:12:56.724302200",
+  "exportedAt" : "2026-08-20T23:39:47.890509300",
   "specVersion" : "v1",
-  "zipName" : "learn-notes-export-20260820-2312.zip",
+  "zipName" : "learn-notes-export-20260820-2339.zip",
   "counts" : {
     "categories" : 3,
     "topics" : 4,
     "docs" : 5,
     "annotations" : 2,
-    "images" : 0
+    "images" : 1
   },
   "categories" : [ {
     "name" : "Java",
