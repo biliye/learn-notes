@@ -1,0 +1,51 @@
+{
+  "exportedAt" : "2026-08-20T23:12:56.724302200",
+  "specVersion" : "v1",
+  "zipName" : "learn-notes-export-20260820-2312.zip",
+  "counts" : {
+    "categories" : 3,
+    "topics" : 4,
+    "docs" : 5,
+    "annotations" : 2,
+    "images" : 0
+  },
+  "categories" : [ {
+    "name" : "Java",
+    "slug" : "java",
+    "remark" : null,
+    "sortOrder" : 100,
+    "topics" : [ {
+      "name" : "类",
+      "slug" : "class",
+      "remark" : null,
+      "sortOrder" : 100
+    }, {
+      "name" : "函数",
+      "slug" : "function",
+      "remark" : null,
+      "sortOrder" : 100
+    } ]
+  }, {
+    "name" : "MySQL",
+    "slug" : "mysql",
+    "remark" : null,
+    "sortOrder" : 100,
+    "topics" : [ {
+      "name" : "索引",
+      "slug" : "index",
+      "remark" : null,
+      "sortOrder" : 100
+    } ]
+  }, {
+    "name" : "vue",
+    "slug" : "vue",
+    "remark" : null,
+    "sortOrder" : 100,
+    "topics" : [ {
+      "name" : "组件",
+      "slug" : "node-7359f06c",
+      "remark" : null,
+      "sortOrder" : 100
+    } ]
+  } ]
+}
