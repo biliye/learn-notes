@@ -10,7 +10,7 @@
 
 ## 0. 计划头
 
-**Goal**：把设计规格落成一个可在云服务器用 `docker compose up -d` 跑起来的个人学习笔记站：两级分类 + Markdown 文档（代码/正文差异化渲染）+ agent 导入自动归类 + 块级可折叠个人见解 + 单用户登录。
+**Goal**：把设计规格落成一个可在云服务器用 `docker compose up -d` 跑起来的个人学习笔记站：两级分类 + Markdown 文档（代码/正文差异化渲染）+ agent 导入自动归类 + 块级可折叠个人见解 + 本地图片上传 + 单用户登录 + **经过实测演练的备份与恢复能力**。
 
 **Architecture**：
 
@@ -19,8 +19,17 @@ Vue3 SPA (Nginx)  ──/api──►  Spring Boot 3 (JWT 拦截器)  ──MyBa
       │                              │
       │                              ├── markdown 模块：块切分 + 锚点（唯一权威，D3/D5）
       │                              ├── imports 模块：front-matter/文件名 → 自动归类（D8）
-      │                              └── annotation 模块：见解 + 重挂（D6）
-      └── 按 blocks[].type 分组件渲染：CodeBlock / ProseBlock / TableBlock …
+      │                              ├── annotation 模块：见解 + 重挂（D6）
+      │                              ├── uploads 模块：图片哈希落盘（D11）
+      │                              └── export 模块：全量导出 zip + 见解回灌（D12）
+      │
+      ├── 按 blocks[].type 分组件渲染：CodeBlock / ProseBlock / TableBlock …
+      └── /uploads/** 由 Nginx 直接读共享卷托管，不过后端
+
+备份三层（D12）：
+  L1 notes-export/ (md + insights.json) ──► 进本地 git，主恢复路径
+  L2 mysqldump + uploads 归档          ──► 服务器 backup/ → 本机仓库外目录
+  L3 storage/docs/ 导入原文落盘        ──► 服务器侧兜底
 ```
 
 **Tech Stack**：Java 17、Spring Boot 3.2.x、MyBatis 3.0.x starter、MySQL 8.0、Flyway、commonmark-java 0.22.x、jjwt 0.12.x、Vue 3 + Vite + JS、Element Plus、markdown-it、highlight.js、dompurify、Docker Compose。
@@ -34,6 +43,8 @@ Vue3 SPA (Nginx)  ──/api──►  Spring Boot 3 (JWT 拦截器)  ──MyBa
 3. front-matter 字段名与解析优先级（规格 D8、AGENT-DOC-SPEC §2）
 4. 统一响应体 `{code,msg,data}` 与 HTTP 状态码语义（规格 §5）
 5. 表结构与 Flyway 版本号（只能追加 `V3__`、`V4__`，不可改已发布的 `V1`/`V2`）
+6. 导出 zip 的目录结构与 `<slug>.insights.json` 字段（规格 §5.7）—— 这是恢复路径的输入格式，改了等于让历史备份不可用
+7. 图片 URL 形态 `/uploads/YYYY/MM/<hash>.<ext>`（规格 D11）—— 已写进历史文档正文，改了会让老文档裂图
 
 **TDD Route**：
 
@@ -47,7 +58,7 @@ TDD Route:
 - Verification: T05 / T08 / T09 必须交付 JUnit 5 单元测试并通过 `mvn test`；其余任务用接口 curl + 前端手工验收（本文件每张卡都给了命令）
 ```
 
-**Verification（总）**：设计规格 §9 的 12 条端到端验收，由 T17 统一执行并留证。
+**Verification（总）**：设计规格 §9 的 **16 条**端到端验收，由 T17 统一执行并留证。其中第 15 条（只用 `notes-export/` 在干净环境完成恢复）是本项目**不可跳过**的兜底验证——用户的首要诉求就是"云端挂了能恢复"。
 
 ---
 
@@ -126,8 +137,8 @@ Execution Readiness View:
 - Task Batches: 见 §3 依赖图（A 后端 / B 算法 / C 前端 三条并行车道 + 交付批次）
 - Test Obligations: T05/T08/T09 必须有 JUnit 单测；其余按卡内验收命令
 - Review Gates: 每车道完成后一次评审；T17 端到端为最终门
-- Drift / Rewind Rules: 任何需要改动 D1–D9 或表结构的诉求 → 停下回报用户，不得自行改契约后继续
-- Evidence Required Before Completion: mvn test 通过截图/输出、12 条端到端逐条结果、docker compose 部署日志
+- Drift / Rewind Rules: 任何需要改动 D1–D13 或表结构的诉求 → 停下回报用户，不得自行改契约后继续
+- Evidence Required Before Completion: mvn test 通过输出（含 T05/T08/T09/T18/T19 单测）、16 条端到端逐条结果、docker compose 部署日志、**恢复演练的期望 vs 实际计数对比**
 - Advisory Boundary: 方法包执行指导，不构成完成授权
 ```
 
@@ -136,21 +147,23 @@ Execution Readiness View:
 ## 3. 任务依赖图与并行车道
 
 ```text
-T01 仓库骨架 ──┬─► T02 数据库迁移 ─────────────────┐
-               │                                   │
-               ├─► T03 后端骨架 ──┬─► T04 鉴权 ─────┤
-               │                  ├─► T06 目录树 ───┤
-               │                  ├─► T07 文档CRUD ─┼─► T08 导入归类 ─┐
-               │                  └─► T10 搜索 ─────┤                 ├─► T16 Docker 部署 ─► T17 端到端验收
-               ├─► T05 块解析+锚点（独立算法，可最先并行）──────────┴─► T09 见解+重挂 ─┤
-               │                                                                       │
-               └─► T11 前端骨架+登录 ──┬─► T12 目录/列表/搜索 ──┐                       │
-                                       ├─► T13 文档块渲染 ──────┼─► T14 见解交互 ───────┤
-                                       └─► T15 编辑器+分类管理 ─┘                       │
+T01 仓库骨架 ──┬─► T02 数据库迁移 ────────────────┐
+               │                                  │
+               ├─► T03 后端骨架 ──┬─► T04 鉴权 ────┤
+               │                  ├─► T06 目录树 ──┤
+               │                  ├─► T07 文档CRUD ┼─► T08 导入归类 ─┐
+               │                  ├─► T10 搜索 ────┤                 │
+               │                  └─► T18 图片上传 ┤                 │
+               ├─► T05 块解析+锚点（可最先并行）─────► T09 见解+重挂 ─┤
+               │                                                     ├─► T16 Docker 部署 ─► T19 导出+回灌 ─► T20 备份与恢复演练 ─► T17 端到端验收
+               └─► T11 前端骨架+登录 ─┬─► T12 目录/列表/搜索 ─┐       │
+                                      ├─► T13 文档块渲染 ─────┼─► T14 见解交互 ─┤
+                                      └─► T15 编辑器+分类管理（含图片粘贴）──────┘
 ```
 
 **可并行分发**：`T02`、`T05`、`T11` 在 `T01` 完成后即可同时开工，互不冲突（分别落在 `backend/src/main/resources/db`、`backend/.../markdown`、`frontend/`）。
-**串行硬约束**：`T03` 之后才能做 T04/T06/T07/T10；`T09` 需要 T05+T07；`T13` 依赖契约（不依赖后端实现，可用契约里的 mock JSON 先做）。
+**串行硬约束**：`T03` 之后才能做 T04/T06/T07/T10/T18；`T09` 需要 T05+T07；`T13` 依赖契约（不依赖后端实现，可用契约里的 mock JSON 先做）；`T19` 需要 T07+T09+T18 全部就位；`T20` 需要 T16+T19；`T17` 最后收口。
+**优先级说明**：`T18`（图片）与 `T19`/`T20`（导出与备份恢复）都是用户确认的 **P1**，不是可选项。其中 `T20` 的恢复演练是整个项目的兜底价值，不得以"时间不够"为由跳过。
 
 **Git 约定（R29）**：每张卡完成并自验通过后，在本地做**一次**提交，信息格式 `feat(T05): markdown 块切分与锚点服务`（类型用 `feat/fix/chore/docs`）。不要一张卡里提交多次，也不要多张卡合并成一次提交。
 
@@ -175,8 +188,8 @@ T01 仓库骨架 ──┬─► T02 数据库迁移 ─────────
   - `<根>/backend/src/main/resources/application.yml`（全部敏感值用 `${ENV:default}` 占位）
   - `<根>/frontend/package.json`、`vite.config.js`（`server.proxy` 把 `/api` 代理到 `http://localhost:8080`）
   - `<根>/storage/.gitkeep`
-- **`.env.example` 必含键**：`MYSQL_ROOT_PASSWORD`、`MYSQL_DATABASE=learn_notes`、`APP_DB_URL`、`APP_DB_USERNAME`、`APP_DB_PASSWORD`、`APP_JWT_SECRET`、`APP_JWT_EXPIRE_MINUTES=720`、`APP_ADMIN_USERNAME`、`APP_ADMIN_PASSWORD`、`APP_API_TOKEN`、`APP_STORAGE_DIR=/app/storage/docs`、`WEB_PORT=80`
-- **包结构约定（必须遵守）**：`com.learnnotes.{config,common,auth,catalog,doc,markdown,imports,annotation,search}`，每个业务包内分 `controller/service/mapper/entity/dto`。
+- **`.env.example` 必含键**：`MYSQL_ROOT_PASSWORD`、`MYSQL_DATABASE=learn_notes`、`APP_DB_URL`、`APP_DB_USERNAME`、`APP_DB_PASSWORD`、`APP_JWT_SECRET`、`APP_JWT_EXPIRE_MINUTES=720`、`APP_ADMIN_USERNAME`、`APP_ADMIN_PASSWORD`、`APP_API_TOKEN`、`APP_STORAGE_DIR=/app/storage/docs`、`APP_UPLOAD_DIR=/app/storage/uploads`、`APP_MAX_IMAGE_MB=5`、`WEB_PORT=8088`（**默认 8088，不抢 80，见规格 D13**）
+- **包结构约定（必须遵守）**：`com.learnnotes.{config,common,auth,catalog,doc,markdown,imports,annotation,search,uploads,export}`，每个业务包内分 `controller/service/mapper/entity/dto`。
 - **验收**：`cd backend && mvn -q -DskipTests package` 成功；`cd frontend && npm i && npm run build` 成功；`git status` 干净（无被忽略文件误入）。
 - **边界**：不写任何业务代码、不建表、不写 Controller。
 - **提示词**：
@@ -459,52 +472,154 @@ T01 仓库骨架 ──┬─► T02 数据库迁移 ─────────
 
 ---
 
-### T15 · Markdown 编辑器 + 分类管理页
+### T15 · Markdown 编辑器（含图片粘贴上传） + 分类管理页
 
-- **依赖**：T12、T13 | **实现需求**：R2、R3、R5、R10
-- **产出文件**：`views/DocEditView.vue`、`views/CatalogManageView.vue`、`components/MarkdownEditor.vue`、`components/VersionDialog.vue`
+- **依赖**：T12、T13、T18 | **实现需求**：R2、R3、R5、R10、R30
+- **产出文件**：`views/DocEditView.vue`、`views/CatalogManageView.vue`、`components/MarkdownEditor.vue`、`components/VersionDialog.vue`、`api/upload.js`
 - **实现要点**：
   - 编辑器：左侧纯文本域（等宽字体、Tab 缩进、`Ctrl+S` 保存）、右侧调用 T13 的渲染组件做预览（保存前预览用前端本地切块**仅供预览**，必须在代码注释里注明"预览用切块不产生锚点、不作为权威"）；保存时填 `changeNote`；保存成功跳阅读页。
+  - **图片粘贴/拖拽上传（R30）**：监听文本域的 `paste` 与 `drop` 事件，取到图片文件即调 `POST /api/uploads/image`；上传中在光标处插入占位符 `![上传中...]()`，成功后替换为 `![](/uploads/…)`，失败则移除占位并提示；同时提供工具栏"插入图片"按钮走文件选择。
   - 新建文档：选小方向 + 标题 + 正文；`slug` 可选，留空由后端生成。
   - 分类管理页：两级表格/树，支持新增、改名、编辑 `remark`、改 `sortOrder`、移动小方向、删除（409 时把后端 `msg` 原样弹出）；`INBOX/未归类` 行禁用删改按钮。
   - 历史版本弹窗：列表 + 查看某版本正文（只读渲染，用后端 `/versions/{v}` 返回的 contentMd 本地渲染即可，注明同上）。
-- **验收**：新建/编辑文档保存后版本号与内容正确；保存相同内容不涨版本；分类改名与 remark 编辑生效并在树上可见；删除非空小方向弹出后端提示；历史版本可查看。
-- **边界**：不做富文本 WYSIWYG、不做草稿自动保存（P2）、不做图片上传。
+  - 阅读页顶部加一个「导出备份包」按钮，直接下载 `GET /api/export/all`（T19 提供）。
+- **验收**：新建/编辑文档保存后版本号与内容正确；保存相同内容不涨版本；**截图直接 Ctrl+V 粘贴进编辑器 → 自动上传并插入 `/uploads/...` 路径，预览与阅读页均显示正常**；分类改名与 remark 编辑生效并在树上可见；删除非空小方向弹出后端提示；历史版本可查看；导出按钮能下载到 zip。
+- **边界**：不做富文本 WYSIWYG、不做草稿自动保存（P2）、不做图片裁剪/压缩。
 - **提示词**：
-  > 在 `<项目根>/frontend` 实现 Markdown 编辑器与分类管理页。按 `docs/aegis/specs/2026-08-20-learn-notes-design.md` §5.2/§5.3：编辑器为左文本域右预览（等宽字体、Ctrl+S 保存、可填 changeNote），预览时的本地切块仅用于预览、必须加注释声明它不产生锚点也不是权威；分类管理页支持两级新增/改名/编辑 remark/改排序/移动/删除，删除失败时原样展示后端 msg，`INBOX/未归类` 禁止删改；历史版本弹窗可查看旧版正文。不做 WYSIWYG、草稿自动保存与图片上传。完成后 git 提交一次 `feat(T15): Markdown 编辑器与分类管理`。
+  > 在 `<项目根>/frontend` 实现 Markdown 编辑器与分类管理页。按 `docs/aegis/specs/2026-08-20-learn-notes-design.md` §5.2/§5.3/§5.6：编辑器为左文本域右预览（等宽字体、Ctrl+S 保存、可填 changeNote），预览时的本地切块仅用于预览、必须加注释声明它不产生锚点也不是权威；**支持图片粘贴与拖拽上传**——监听 paste/drop 拿到图片就调 `POST /api/uploads/image`，先插入 `![上传中...]()` 占位、成功后替换为 `![](/uploads/…)`、失败则移除占位并提示，另提供工具栏插入图片按钮；分类管理页支持两级新增/改名/编辑 remark/改排序/移动/删除，删除失败时原样展示后端 msg，`INBOX/未归类` 禁止删改；历史版本弹窗可查看旧版正文；阅读页加「导出备份包」按钮下载 `GET /api/export/all`。不做 WYSIWYG、草稿自动保存与图片压缩裁剪。完成后 git 提交一次 `feat(T15): Markdown 编辑器、图片粘贴上传与分类管理`。
 
 ---
 
-### T16 · Docker 化与云端部署
+### T16 · Docker 化与云端部署（与既有 astrbot/napcat 共存）
 
-- **依赖**：T03、T11（骨架存在即可，建议在后端主要接口完成后做） | **实现需求**：R26–R28、决策 D9
+- **依赖**：T03、T11（骨架存在即可，建议在后端主要接口完成后做） | **实现需求**：R26–R28、决策 D9、**D13**
 - **产出文件**：`backend/Dockerfile`、`frontend/Dockerfile`、`frontend/nginx.conf`、`docker-compose.yml`、`.env.example`（补齐）、`docs/DEPLOY.md`、`.dockerignore` ×2
+- **⚠ 前置约束（D13，目标机器已在跑 astrbot + napcat）**：
+  1. `WEB_PORT` **默认 `8088`**，不得默认占用 80。
+  2. `mysql` 服务**不写 `ports`**，只走内部网络（既防端口冲突，也防公网拖库）。
+  3. 容器名统一 `ln-` 前缀：`ln-mysql` / `ln-backend` / `ln-web`；自有 bridge 网络 `ln-net`；命名卷 `ln-mysql-data`。
+  4. compose 顶部写 `name: learn-notes` 固定项目名，避免与既有 compose 项目混淆。
 - **实现要点**：
-  - `backend/Dockerfile`：多阶段 `maven:3.9-eclipse-temurin-17` 构建 → `eclipse-temurin:17-jre-alpine` 运行；`ENTRYPOINT` 带 `-Duser.timezone=Asia/Shanghai`；暴露 8080。
+  - `backend/Dockerfile`：多阶段 `maven:3.9-eclipse-temurin-17` 构建 → `eclipse-temurin:17-jre-alpine` 运行；`ENTRYPOINT` 带 `-Duser.timezone=Asia/Shanghai`；暴露 8080（仅内部）。
   - `frontend/Dockerfile`：多阶段 `node:20-alpine` `npm ci && npm run build` → `nginx:alpine`，拷 `dist` 与 `nginx.conf`。
-  - `nginx.conf`：`location /` 用 `try_files $uri $uri/ /index.html`（history 路由）；`location /api/ { proxy_pass http://backend:8080; }` 并透传 `Authorization`、`X-Api-Token`、`Host`、`X-Real-IP`；`client_max_body_size 20m`；对 `.js/.css` 加长缓存、对 `index.html` 禁缓存；预留注释好的 443/HTTPS 段。
-  - `docker-compose.yml`：三服务 `mysql`（`mysql:8.0`，命名卷 `mysql-data`，`--character-set-server=utf8mb4`，`healthcheck: mysqladmin ping`）、`backend`（`depends_on: mysql: condition: service_healthy`，挂 `./storage:/app/storage`，env 从 `.env` 读）、`web`（`depends_on: backend`，端口 `${WEB_PORT:-80}:80`）。统一 `restart: unless-stopped`。
-  - `docs/DEPLOY.md`：云服务器全流程（装 docker、拉代码、`cp .env.example .env` 并改密码、`docker compose up -d --build`、看日志、验证 `/api/health`）；**同时给两种端口方案**：compose 内 Nginx 直接占 80，或改 `WEB_PORT=8088` 由宿主已有 Nginx 反代（给出宿主 server 段示例）；数据备份与恢复命令（`docker exec mysqldump` + `storage/` 目录打包）；升级流程（`git pull && docker compose up -d --build`，Flyway 自动迁移）；常见故障排查（后端起不来看 DB 健康、401 看 JWT secret 是否变更导致旧 token 失效）。
-- **验收**：在干净环境 `cp .env.example .env`（改密码）→ `docker compose up -d --build` → `curl http://<host>/api/health` 返回 UP；浏览器访问 `http://<host>/` 出登录页并能登录；`docker compose down`（不带 `-v`）再 `up -d` 后数据仍在；`storage/docs` 内文件在宿主可见。
-- **边界**：不做 K8s、不做 CI、不做证书自动签发、不把 `.env` 提交进仓库。
+  - `nginx.conf`：`location /` 用 `try_files $uri $uri/ /index.html`（history 路由）；`location /api/ { proxy_pass http://ln-backend:8080; }` 并透传 `Authorization`、`X-Api-Token`、`Host`、`X-Real-IP`；**`location /uploads/ { alias /app/storage/uploads/; expires 30d; }`**（图片由 Nginx 直读共享卷，D11）；`client_max_body_size 20m`；对 `.js/.css` 长缓存、`index.html` 禁缓存；预留注释好的 443/HTTPS 段。
+  - `docker-compose.yml`：`ln-mysql`（`mysql:8.0`，命名卷 `ln-mysql-data`，`--character-set-server=utf8mb4`，`healthcheck: mysqladmin ping`，**无 ports**）、`ln-backend`（`depends_on: condition: service_healthy`，挂 `./storage:/app/storage`，env 从 `.env` 读）、`ln-web`（`depends_on: ln-backend`，端口 `${WEB_PORT:-8088}:80`，**同时以只读挂 `./storage:/app/storage:ro`** 以便直读 uploads）。统一 `restart: unless-stopped`。
+  - `docs/DEPLOY.md` 必须包含：
+    1. **部署前端口探测**：把规格 §10 的 4 组探测命令原样抄进来，并给出判定规则表。
+    2. 首次部署流程（装 docker、拉代码、`cp .env.example .env` 改密码与 `APP_API_TOKEN`、`docker compose up -d --build`、看日志、`curl http://127.0.0.1:8088/api/health`）。
+    3. **三种访问方案**：① 直接用 8088 + 云厂商安全组放行；② 确认 80 空闲后改 `WEB_PORT=80`；③ 已有宿主 Nginx 时给出反代到 `127.0.0.1:8088` 的现成 `server` 段（含 `client_max_body_size 20m` 与 `proxy_set_header` 透传）。
+    4. 与 astrbot/napcat 共存注意事项：不要动既有容器、不要用 `network_mode: host`、发现容器名或卷名冲突就回报。
+    5. 升级流程（`git pull && docker compose up -d --build`，Flyway 自动迁移）。
+    6. 常见故障排查（后端起不来先看 `ln-mysql` 健康状态；全站 401 检查 `APP_JWT_SECRET` 是否变更导致旧 token 失效；图片 404 检查 web 容器是否挂上 storage 卷）。
+    7. 备份与恢复只写一句指引"见 `docs/BACKUP.md`"（详细内容由 T20 owner 编写，避免两份文档抢同一主题）。
+- **验收**：干净环境 `cp .env.example .env`（改密码）→ `docker compose up -d --build` → `curl http://127.0.0.1:8088/api/health` 返回 UP；浏览器访问出登录页并能登录；`docker ps` 显示三个 `ln-` 容器且 **mysql 没有对外端口映射**；`docker compose down`（不带 `-v`）再 `up -d` 后数据仍在；`storage/docs` 与 `storage/uploads` 在宿主可见；上传的图片能通过 `http://<host>:8088/uploads/...` 直接打开。
+- **边界**：不做 K8s、不做 CI、不做证书自动签发、不把 `.env` 提交进仓库、**不写备份脚本**（属 T20）。
 - **提示词**：
-  > 为 `<项目根>` 做 Docker 化与部署文档，按 `docs/aegis/specs/2026-08-20-learn-notes-design.md` D9 与 R26–R28。要点：后端多阶段 Dockerfile（maven→jre-alpine，时区 Asia/Shanghai）；前端多阶段（node→nginx）；`nginx.conf` 支持 history 路由 `try_files`、反代 `/api` 到 `backend:8080` 并透传 `Authorization` 与 `X-Api-Token`、`client_max_body_size 20m`、预留 HTTPS 注释段；`docker-compose.yml` 三服务，mysql 带 healthcheck 且 backend `depends_on: service_healthy`，命名卷持久化 MySQL，`./storage` 绑定挂载，端口用 `${WEB_PORT:-80}`；补齐 `.env.example`；写 `docs/DEPLOY.md` 覆盖首次部署、两种端口方案（自带 Nginx 占 80 / 由宿主 Nginx 反代 8088）、备份恢复、升级、常见故障。禁止把 `.env` 提交进仓库。按卡内验收项验证后 git 提交一次 `chore(T16): Docker 编排与部署文档`。
+  > 为 `<项目根>` 做 Docker 化与部署文档，按 `docs/aegis/specs/2026-08-20-learn-notes-design.md` 的 D9、**D13** 与 R26–R28。**关键前提：目标云服务器已在运行 astrbot + napcat，绝不能抢占端口或撞容器名。**因此：`WEB_PORT` 默认 `8088`；mysql 服务不写 `ports`（只走内部网络）；容器名统一 `ln-` 前缀、网络 `ln-net`、卷 `ln-mysql-data`、compose 项目名 `learn-notes`。后端多阶段 Dockerfile（maven→jre-alpine，时区 Asia/Shanghai）；前端多阶段（node→nginx），`nginx.conf` 要有 history 路由 `try_files`、反代 `/api` 到 `ln-backend:8080` 并透传 `Authorization`/`X-Api-Token`、`location /uploads/` 直接 alias 到共享卷、`client_max_body_size 20m`、预留 HTTPS 注释段；web 容器需以只读方式挂 `./storage` 才能直读图片。`docs/DEPLOY.md` 必须包含部署前端口探测命令（抄规格 §10）与判定规则、首次部署流程、三种访问方案（8088 / 改 80 / 宿主 Nginx 反代）、与 astrbot/napcat 共存注意事项、升级流程、故障排查；备份主题只留一句指向 `docs/BACKUP.md`，不要自己写备份脚本。禁止把 `.env` 提交进仓库。按卡内验收项验证后 git 提交一次 `chore(T16): Docker 编排与部署文档`。
+
+---
+
+### T18 · 本地图片上传（P1）
+
+- **依赖**：T03、T04 | **实现需求**：R30、决策 D11
+- **Why**：用户确认需要在笔记里贴本地截图。
+- **产出文件**：`uploads/controller/UploadController.java`、`uploads/service/ImageStorageService.java`、测试 `uploads/ImageStorageServiceTest.java`
+- **实现要点**：
+  - `POST /api/uploads/image`（multipart `file`）；响应按规格 §5.6 返回 `{url,width,height,bytes,dedup}`。
+  - 保存到 `${app.storageDir}/../uploads/YYYY/MM/<sha256前16位>.<ext>`；文件已存在则直接返回并置 `dedup:true`（幂等去重）。
+  - **安全硬要求**：① 扩展名白名单 `png/jpg/jpeg/gif/webp`；② 校验真实文件头 magic number（PNG `89 50 4E 47`、JPEG `FF D8 FF`、GIF `47 49 46 38`、WebP `RIFF....WEBP`），头与扩展名不符则 400；③ 文件名一律服务端按哈希生成，**绝不使用客户端文件名**；④ 单文件 ≤ 5 MB；⑤ 用 `ImageIO` 读出宽高，读不出说明不是有效图片 → 400。
+  - `/uploads/**` 的静态访问由 Nginx 负责（T16），后端**不提供**图片读取接口；本地开发时用 Spring 静态资源映射兜底并加注释说明生产走 Nginx。
+- **测试用例**：正常 png/jpg/webp 各一；同图二次上传返回 `dedup:true` 且磁盘只有一份；把 `.txt` 改名成 `.png` 上传 → 400；超 5 MB → 400；客户端文件名含 `../` → 服务端重命名后落点仍在 uploads 目录内。
+- **验收**：
+  ```bash
+  curl -X POST localhost:8080/api/uploads/image -H "Authorization: Bearer $T" -F "file=@shot.png"   # 返回 url
+  curl -X POST localhost:8080/api/uploads/image -H "Authorization: Bearer $T" -F "file=@shot.png"   # dedup:true
+  ls storage/uploads/2026/08/          # 只有一个文件
+  cp a.txt fake.png && curl -X POST localhost:8080/api/uploads/image -H "Authorization: Bearer $T" -F "file=@fake.png"   # 400
+  ```
+- **边界**：不做压缩转码、不做缩略图、不做孤儿图清理、不接对象存储。
+- **提示词**：
+  > 在 `<项目根>/backend` 实现本地图片上传，按 `docs/aegis/specs/2026-08-20-learn-notes-design.md` 的 D11 与 §5.6。要点：`POST /api/uploads/image` multipart；存到 `${app.storageDir}/../uploads/YYYY/MM/<sha256前16位>.<ext>`，同内容重复上传返回既有路径并置 `dedup:true`；返回 `{url,width,height,bytes,dedup}`。安全硬要求：扩展名白名单 + **校验真实文件头 magic number** + 服务端按哈希重命名（绝不使用客户端文件名）+ 单文件 ≤5MB + 用 ImageIO 读宽高失败则 400。图片静态访问由 Nginx 托管，后端不要写图片读取接口（本地开发可加静态映射并注释说明）。必须交付单测覆盖卡内 5 个用例。完成后 git 提交一次 `feat(T18): 本地图片上传`。
+
+---
+
+### T19 · 全量导出与见解回灌（备份的技术底座）
+
+- **依赖**：T07、T09、T18 | **实现需求**：R31–R33、决策 D12
+- **Why**：这是"云端挂了能恢复"的**唯一技术前提**。见解只存在数据库，没有这一步，纯 md 备份必然丢见解。
+- **产出文件**：`export/controller/ExportController.java`、`export/service/ExportService.java`、`export/service/InsightImportService.java`、`export/dto/*`、测试 `export/ExportRoundTripTest.java`
+- **实现要点**：
+  - `GET /api/export/all` → `application/zip`，**流式写出**（`StreamingResponseBody` + `ZipOutputStream`，禁止先在内存拼整个 zip）。目录结构、`manifest.json`、`<slug>.insights.json` 字段严格按规格 §5.7。
+  - `manifest.json` 至少含：`exportedAt`、`specVersion`、`counts{categories,topics,docs,annotations,images}`、每个分类的 `name/slug/remark/sortOrder`（**分类的 remark 也必须能恢复**，否则用户自己写的注释会丢）。
+  - `md` 写出的是**含 front-matter 的完整原文**（用 `doc.content_md`；若原文没有 front-matter 则按当前分类信息**补全生成**一份，保证导出物能被导入接口无歧义还原）。
+  - `uploads/` 只打包**被任一文档正文引用到的**图片（正则扫 `content_md` 里的 `/uploads/...`），并在 `manifest.json` 记录孤儿图数量（不打包、只报数）。
+  - `POST /api/import/insights` 按规格 §5.7 实现：定位文档 → anchor 命中原位创建 ACTIVE → 未命中走 D6 重挂（STALE/ORPHAN）→ `(anchor, contentMd)` 已存在则跳过（**幂等，可重复回灌**）；返回 `{created, skipped, stale, orphan}`。
+  - 导出接口需要鉴权（JWT 或 `X-Api-Token`，因为备份脚本要用）。
+- **必须交付的测试 `ExportRoundTripTest`（往返测试，本卡的核心价值）**：造 2 大类 / 3 小方向 / 4 篇文档（其中一篇含图片引用）/ 6 条见解（含 1 条 ORPHAN）→ 导出 → **清空全部业务表** → 用导入接口 + 见解回灌还原 → 断言分类数、小方向数、文档数、见解数、每条见解的 `anchor` 与 `contentMd`、分类 `remark` 全部一致。
+- **验收**：
+  ```bash
+  curl -OJ localhost:8080/api/export/all -H "X-Api-Token: $TOKEN"
+  unzip -l learn-notes-export-*.zip     # 目录结构 + manifest.json + *.insights.json + uploads/
+  mvn test -Dtest=ExportRoundTripTest   # 全绿
+  ```
+- **边界**：不做增量导出、不做导出加密、不做定时任务（属 T20）、除"下载导出包"按钮外不做额外 UI。
+- **提示词**：
+  > 在 `<项目根>/backend` 实现全量导出与见解回灌，按 `docs/aegis/specs/2026-08-20-learn-notes-design.md` 的 D12 与 §5.7。这是"云端挂了能恢复"的技术底座，务必严谨。要点：`GET /api/export/all` 流式产出 zip（`StreamingResponseBody`+`ZipOutputStream`，不要在内存拼整包），目录为 `<大类slug>/<小方向slug>/<slug>.md` + 同名 `.insights.json` + `uploads/` + `manifest.json`；`manifest.json` 必须能恢复分类的 name/slug/remark/sortOrder 与各项计数；md 写出含 front-matter 的完整原文（缺 front-matter 时按当前分类补全生成）；uploads 只打包被正文引用的图片、孤儿图只报数。`POST /api/import/insights` 按 anchor 重建见解，未命中走 D6 重挂，`(anchor,contentMd)` 重复则跳过（幂等）。**必须交付 `ExportRoundTripTest` 往返测试：造数据 → 导出 → 清空全部业务表 → 导入还原 → 断言分类/小方向/文档/见解计数与每条见解的 anchor、contentMd、分类 remark 完全一致**。完成后 git 提交一次 `feat(T19): 全量导出与见解回灌`。
+
+---
+
+### T20 · 备份、同步回本机与恢复演练（项目兜底价值）
+
+- **依赖**：T16、T19 | **实现需求**：R34–R37、决策 D12
+- **Why**：用户原话是"主要是做备份，防止云端挂了没法恢复"。**判定标准不是备份文件存在，而是能真的还原。**
+- **产出文件**：
+  - `scripts/backup.sh`（服务器端，供 cron 调用）
+  - `scripts/sync-to-local.ps1`（本机执行，把导出物与归档拉回来）
+  - `scripts/restore-from-export.ps1` 与 `scripts/restore-from-export.sh`（从 `notes-export/` 重建）
+  - `docs/BACKUP.md`（备份与恢复的唯一 owner 文档）
+  - `.gitignore` 追加 `learn-notes-backup/`；**`notes-export/` 必须被 git 跟踪，绝不能进 .gitignore**
+- **实现要点**：
+  - `scripts/backup.sh`（服务器）：
+    1. `docker exec ln-mysql mysqldump --single-transaction --default-character-set=utf8mb4 learn_notes | gzip > backup/db/learn_notes-$(date +%Y%m%d-%H%M).sql.gz`
+    2. `tar czf backup/storage/storage-$(date +%Y%m%d-%H%M).tgz storage/`
+    3. `curl -fsS -H "X-Api-Token: $APP_API_TOKEN" -o backup/export/learn-notes-export-$(date +%Y%m%d-%H%M).zip http://127.0.0.1:${WEB_PORT}/api/export/all`
+    4. 三类归档各自**只保留最近 14 份**，多余的按文件名排序删除
+    5. 任何一步失败以非 0 退出并打印明确原因（cron 才能暴露问题）
+    6. 结尾输出一行汇总：各归档大小与当前份数
+  - crontab 示例（写进 `docs/BACKUP.md`）：`30 3 * * * cd /opt/learn-notes && ./scripts/backup.sh >> backup/backup.log 2>&1`
+  - `scripts/sync-to-local.ps1`（本机）：
+    1. 用 `scp`/`rsync` 拉取**最新一份** export zip，**先清空** `<仓库>/notes-export/` 再解压进去（保证是当前全量快照而非累积残留）
+    2. 拉取最新 db dump 与 storage 归档到 `F:\deespeekharness\learn-notes-backup\`（**仓库外**）
+    3. 在仓库内 `git add notes-export && git commit -m "backup: notes snapshot YYYY-MM-DD"`（内容无变化则跳过提交）
+    4. 打印本次快照计数（读 `manifest.json`）
+  - `scripts/restore-from-export.*`：遍历 `notes-export/`，先按 `manifest.json` 重建分类与 remark，再逐篇 `POST /api/import/doc`，再逐篇 `POST /api/import/insights`，最后把 `uploads/` 复制回 `storage/uploads/`；结束打印"期望 vs 实际"计数对比，不一致则非 0 退出。
+  - `docs/BACKUP.md` 必须写清：三层备份职责表（照搬 D12）、每层的恢复步骤、**恢复优先级**（有 dump 用 dump；最坏情况只用 `notes-export/`）、cron 配置、以及"每季度做一次恢复演练"的提醒。
+- **验收（R36 恢复演练，必须真做，不许纸上过）**：
+  1. 记录当前计数：分类数 / 小方向数 / 文档数 / 见解数 / 图片数。
+  2. 跑 `sync-to-local.ps1`，确认 `notes-export/` 已被 git 提交、`learn-notes-backup/` 有 dump 与归档。
+  3. **另起一套干净环境**（改 `WEB_PORT` 与项目名，或 `docker compose down -v` 后重建），此时数据库与 storage 全空。
+  4. **只用 `notes-export/`** 跑 `restore-from-export`，不许用 dump。
+  5. 断言五项计数与步骤 1 一致；随机抽 3 篇文档核对正文、见解位置与状态；打开含图片的文档确认不裂图。
+  6. 全过程写进 `docs/ACCEPTANCE.md` 的第 15 条。
+- **边界**：不做异地/对象存储同步、不做备份加密、不做自动恢复（恢复必须人工触发）、不做备份监控告警（cron 非 0 退出 + 日志即可）。
+- **提示词**：
+  > 为 `<项目根>` 实现备份、同步回本机与恢复演练，按 `docs/aegis/specs/2026-08-20-learn-notes-design.md` 的 D12 与 R34–R37。**用户首要诉求是"云端挂了能恢复"，所以本卡验收标准不是"备份文件存在"，而是真的还原成功。** 产出：① `scripts/backup.sh`（服务器 cron 用：mysqldump.gz + storage.tgz + 调 `/api/export/all` 存 zip，三类各留最近 14 份，任何失败非 0 退出）；② `scripts/sync-to-local.ps1`（拉最新 export zip，先清空再解压到仓库内 `notes-export/` 并 git 提交；dump 与 storage 归档放仓库外 `F:\deespeekharness\learn-notes-backup\`；打印 manifest 计数）；③ `scripts/restore-from-export.*`（按 manifest 重建分类与 remark → 导入文档 → 回灌见解 → 复制 uploads → 打印期望 vs 实际计数，不一致非 0 退出）；④ `docs/BACKUP.md`（三层职责、各层恢复步骤、恢复优先级、cron 示例、季度演练提醒）；⑤ `.gitignore` 追加 `learn-notes-backup/`，但 **`notes-export/` 必须进 git，绝不能忽略**。最后必须真做一次恢复演练：另起干净环境、只用 `notes-export/`（不许用 dump）还原，断言分类/小方向/文档/见解/图片五项计数一致并抽查 3 篇文档，过程写进 `docs/ACCEPTANCE.md` 第 15 条。完成后 git 提交一次 `feat(T20): 备份、本机同步与恢复演练`。
 
 ---
 
 ### T17 · 端到端验收 + 示例数据 + agent 投稿脚本
 
-- **依赖**：全部 | **实现需求**：规格 §9 全部 12 条
+- **依赖**：全部（含 T18/T19/T20） | **实现需求**：规格 §9 全部 16 条
 - **产出文件**：`docs/ACCEPTANCE.md`（逐条结果与证据）、`scripts/import-docs.ps1` 与 `scripts/import-docs.sh`（批量投稿脚本）、`samples/*.md`（5 篇示例笔记）
 - **实现要点**：
   - `samples/`：至少覆盖 `java__函数__lambda-basics.md`（完整 front-matter）、`java__类__inner-class.md`、`vue__组件__props-basics.md`（仅文件名通道）、`mysql__索引__b-plus-tree.md`（含表格与多语言代码块）、`随手记.md`（走 INBOX）。**全部必须符合 `docs/AGENT-DOC-SPEC.md` 的自查清单。**
   - 投稿脚本：读目录下所有 `.md`，逐个 POST `/api/import/doc`（带 `X-Api-Token`），打印 `resolvedBy/version/warnings/reanchor`，任一出现 `INBOX` 或非空 `warnings` 时以非 0 退出码结束，便于 agent 自检。
-  - `docs/ACCEPTANCE.md`：规格 §9 的 12 条逐条写"执行命令 / 期望 / 实际 / 结论"，含第 8 条（改一段后重导入，见解不错位）的完整过程记录。
+  - `docs/ACCEPTANCE.md`：规格 §9 的 **16 条**逐条写"执行命令 / 期望 / 实际 / 结论"。其中第 8 条（改一段后重导入，未改动块的见解仍在原位）与第 15 条（**只用 `notes-export/` 的恢复演练**）必须有完整过程记录；第 15 条若 T20 已执行，本卡负责核对与收录，不重复演练。
   - 发现的不符合项**不要自己改契约**：登记在 `docs/ACCEPTANCE.md` 的"缺陷清单"并回报。
-- **验收**：`docs/ACCEPTANCE.md` 中 12 条全为通过，或不通过项有明确缺陷条目与责任任务号。
+- **验收**：`docs/ACCEPTANCE.md` 中 16 条全为通过，或不通过项有明确缺陷条目与责任任务号。
 - **边界**：本卡只做验收与脚本，不改业务代码（除非是验收中发现的、明确属于某张卡边界内的小修，且需在提交信息里注明 `fix(Txx)`）。
 - **提示词**：
-  > 为 `<项目根>` 做端到端验收与投稿工具。1) 在 `samples/` 写 5 篇示例笔记，覆盖 front-matter 通道、文件名通道、INBOX 兜底、含表格与多语言代码块的文档，全部必须通过 `docs/AGENT-DOC-SPEC.md` 的自查清单；2) 写 `scripts/import-docs.ps1` 与 `.sh`，批量 POST `/api/import/doc`（`X-Api-Token`），打印 `resolvedBy/version/warnings/reanchor`，出现 INBOX 或 warnings 时非 0 退出；3) 按 `docs/aegis/specs/2026-08-20-learn-notes-design.md` §9 的 12 条逐条执行并把"命令/期望/实际/结论"写进 `docs/ACCEPTANCE.md`，第 8 条（改动一段后重新导入，未改动块的见解必须仍在原位）要有完整过程记录。发现不符合项不要自行修改设计契约，登记到缺陷清单并回报。完成后 git 提交一次 `test(T17): 端到端验收、示例笔记与投稿脚本`。
+  > 为 `<项目根>` 做端到端验收与投稿工具。1) 在 `samples/` 写 5 篇示例笔记，覆盖 front-matter 通道、文件名通道、INBOX 兜底、含表格与多语言代码块的文档，全部必须通过 `docs/AGENT-DOC-SPEC.md` 的自查清单；2) 写 `scripts/import-docs.ps1` 与 `.sh`，批量 POST `/api/import/doc`（`X-Api-Token`），打印 `resolvedBy/version/warnings/reanchor`，出现 INBOX 或 warnings 时非 0 退出；3) 按 `docs/aegis/specs/2026-08-20-learn-notes-design.md` §9 的 **16 条**逐条执行并把"命令/期望/实际/结论"写进 `docs/ACCEPTANCE.md`，第 8 条（改动一段后重新导入，未改动块的见解必须仍在原位）与第 15 条（只用 `notes-export/` 的恢复演练）要有完整过程记录。发现不符合项不要自行修改设计契约，登记到缺陷清单并回报。完成后 git 提交一次 `test(T17): 端到端验收、示例笔记与投稿脚本`。
 
 ---
 
@@ -517,9 +632,15 @@ T01 仓库骨架 ──┬─► T02 数据库迁移 ─────────
 | 导入把 INBOX 当正常路径，大量文档堆在未归类 | `resolvedBy=INBOX` 比例高 | 说明写文档的 agent 未遵守 AGENT-DOC-SPEC；投稿脚本已用非 0 退出码提前暴露 |
 | Flyway 已发布迁移被修改 | `V1__init.sql` 有改动 | 只能新增 `V3__`；已发布脚本改动会导致校验和失败、生产库无法启动 |
 | 见解在重写后被静默丢弃 | `ReanchorServiceTest` 缺删除段落用例 | T09 硬要求：任何情况不得自动删除见解 |
-| 云端 80 端口被宿主 Nginx 占用 | `docker compose up` 端口冲突 | `docs/DEPLOY.md` 已给 `WEB_PORT=8088` + 宿主反代方案 |
+| 云端 80 端口被宿主 Nginx 占用 | `docker compose up` 端口冲突 | 默认 `WEB_PORT=8088` 已避开；`docs/DEPLOY.md` 另给宿主反代方案 |
+| **打断已在运行的 astrbot / napcat** | 端口冲突、容器名或卷名重复、网络串台 | D13 硬约束：不抢 80、mysql 不映射端口、`ln-` 前缀 + 独立网络与命名卷；部署前先跑规格 §10 的探测命令 |
+| **备份存在但恢复不了**（本项目最该防的一条） | 只有 dump 没演练、或只导出 md 没导出见解 | R36 强制在干净环境**只用 `notes-export/`** 演练一次并核对五项计数；`ExportRoundTripTest` 在 CI 之外也必须本地跑绿 |
+| 执行 agent 把见解写进 md 正文"顺便备份" | 出现 `<!-- insight -->` 之类内嵌标记 | 违反 D3/D5（HTML 注释会成为一个块并改变锚点），打回；见解只能旁挂 `.insights.json` |
+| `notes-export/` 被误加进 .gitignore | git 里看不到笔记快照 | 它是主恢复路径，T20 卡内明确禁止忽略；评审时检查 `git ls-files notes-export` 有输出 |
+| 备份归档无限增长塞满磁盘 | 服务器磁盘告警 | `backup.sh` 三类归档各留最近 14 份并自动清理 |
+| 图片上传成为攻击面 | 上传了非图片文件 | D11：magic number 校验 + 服务端哈希重命名 + 白名单 + 体积上限 |
 
-**回滚面**：数据库改动一律通过新增 Flyway 版本；容器层回滚 = `git checkout <上一个 tag> && docker compose up -d --build`；见解数据只增不删，最坏情况是 ORPHAN 需人工重挂，不会丢内容。
+**回滚面**：数据库改动一律通过新增 Flyway 版本；容器层回滚 = `git checkout <上一个 tag> && docker compose up -d --build`；见解数据只增不删，最坏情况是 ORPHAN 需人工重挂，不会丢内容；**内容层回滚 = 用本机 git 里的 `notes-export/` 重建**（这就是备份三层里的 L1）。
 
 **Retirement**：本项目无历史 owner 需退役。`INBOX/未归类` 是**长期兜底路径**而非临时兼容层，不设退役触发条件。
 
@@ -527,8 +648,11 @@ T01 仓库骨架 ──┬─► T02 数据库迁移 ─────────
 
 ## 6. 分发建议（给用户）
 
-- **第一波（可同时开 3 个 agent）**：先由一个 agent 独立做完 `T01`，然后并行分发 `T02`、`T05`、`T11`。
-- **第二波**：`T03` 完成后并行 `T04`、`T06`、`T07`；前端并行 `T12`、`T13`。
-- **第三波**：`T08`、`T09`、`T10`、`T14`、`T15`。
-- **收尾**：`T16` → `T17`。
-- 每个 agent 的开场都应包含这三句：① 只在 `F:\deespeekharness\learn-notes` 内改动；② 先读 `docs/aegis/specs/2026-08-20-learn-notes-design.md` 与本文件对应任务卡；③ 不得修改设计规格的 D1–D9、表结构与 API 契约，需要改就停下回报。
+- **第一波（一个 agent 串行）**：`T01` 仓库骨架。
+- **第二波（可同时开 3 个 agent）**：`T02` 数据库迁移、`T05` 块解析算法、`T11` 前端骨架。
+- **第三波**：后端 `T03` → 然后并行 `T04`、`T06`、`T07`、`T10`、`T18`；前端并行 `T12`、`T13`。
+- **第四波**：`T08` 导入归类、`T09` 见解重挂、`T14` 见解交互、`T15` 编辑器+图片粘贴。
+- **第五波（收尾，必须串行）**：`T16` Docker → `T19` 导出与回灌 → `T20` 备份与恢复演练 → `T17` 端到端验收。
+- **不要把 T19/T20 留到最后草草了事**：它们承载你"云端挂了能恢复"的核心诉求，T20 的恢复演练是整个项目唯一能证明备份有效的动作。
+- **部署前先做端口探测**：把规格 §10 的四组命令在云服务器上跑一遍，把结果贴回来再定 `WEB_PORT`（机器上已有 astrbot + napcat）。
+- 每个 agent 的开场都应包含这三句：① 只在 `F:\deespeekharness\learn-notes` 内改动；② 先读 `docs/aegis/specs/2026-08-20-learn-notes-design.md` 与本文件对应任务卡；③ 不得修改设计规格的 D1–D13、表结构与 API 契约，需要改就停下回报。

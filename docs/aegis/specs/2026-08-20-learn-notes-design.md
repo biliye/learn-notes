@@ -17,10 +17,14 @@
 ### 1.1 需求来源
 
 - 需求来源：用户口述需求（2026-08-20 会话），本文件为其结构化固化版本。
-- 已确认的三项用户决策：
+- 已确认的用户决策：
   1. 源码与文档落在 `F:\deespeekharness\learn-notes`
   2. 用户模型 = **单用户**（仅管理员一人，登录后可读写；无注册）
   3. 个人见解绑定方式 = **块级稳定锚点（正文块内容哈希 + 序号）**
+  4. **本地留存的首要目的是灾难恢复**："防止云端挂了没法恢复"。因此备份与恢复不是附属功能，而是一等需求（见 §2.6、D12），且恢复路径必须实测演练
+  5. **需要本地图片上传**（不再只支持外链），见 §2.2 R30 与 D11
+  6. **不做**数学公式与 Mermaid 渲染
+  7. 云服务器上已运行 `astrbot` + `napcat`，端口占用情况未知 → 部署默认**不抢 80 端口**，见 D13
 
 ### 1.2 技术栈（定稿）
 
@@ -61,6 +65,7 @@
 | R9 | 文档支持按关键字搜索（标题 + 正文），支持按小方向筛选 | 搜索接口返回命中列表 |
 | R10 | 每次内容更新产生新版本，可查看历史版本列表与正文 | 版本号递增；旧版正文可读 |
 | R11 | 可下载 / 复制文档原始 Markdown | `GET /api/docs/{id}/raw` 返回纯文本 |
+| R30 | **本地图片上传**：编辑器内粘贴 / 拖拽 / 选择图片即上传，返回站内路径并自动插入 `![](…)`；阅读页正常显示 | 粘贴截图后 md 中出现 `/uploads/2026/08/<hash>.png` 且图片可见 |
 
 ### 2.3 上传与自动归类（agent 主要入口）
 
@@ -94,6 +99,21 @@
 | R27 | 数据库结构由 Flyway 自动迁移，不需要手工执行 SQL | 空库首启自动建表 |
 | R28 | 敏感配置（DB 密码、JWT secret、管理员密码、API Token）全部走环境变量，仓库只提交 `.env.example` | 仓库中无明文密码 |
 | R29 | 源码保存在 `F:\deespeekharness\learn-notes`，本地 git 仓库保有完整内容，每个任务完成后一次提交 | `git log` 可见分任务提交 |
+
+### 2.6 备份与恢复（一等需求）
+
+> 用户原话："主要是做备份，防止云端挂了没法恢复"。因此**判定标准不是"备份文件存在"，而是"能在一台干净机器上把内容全部还原"**。
+
+| 编号 | 需求 | 验收要点 |
+|---|---|---|
+| R31 | **人可读全量导出**：一键导出全站内容为 md 文件树 + 见解旁挂文件 + 图片，打包 zip 下载 | `GET /api/export/all` 返回 zip，解开后目录结构为 `<大类>/<小方向>/<slug>.md` 与同名 `<slug>.insights.json`，另有 `uploads/` 与 `manifest.json` |
+| R32 | **导出内容必须包含个人见解**（见解只存在数据库，md 里没有，纯 md 备份会丢） | `.insights.json` 内含 `anchor / anchorIndex / blockSnippet / contentMd / status / createdAt` |
+| R33 | **见解可回灌**：提供导入接口，配合文档导入即可从导出物完整重建 | `POST /api/import/insights` 按 anchor 重建；锚点失配走重挂逻辑并报告 stale/orphan 数 |
+| R34 | **服务器端定时备份**：每天定时 `mysqldump` + 打包 `storage/`，本地保留最近 14 份，超出自动清理 | 服务器上 `backup/` 目录出现按日期命名的归档；第 15 天最旧一份被删 |
+| R35 | **同步回本机**：一条命令把最新导出物拉回本机，其中 **md 与 insights.json 进本地 git 仓库**（文本、可 diff、体积小），数据库 dump 与图片放仓库外目录 | 本机 `notes-export/` 有内容且被 git 跟踪；`learn-notes-backup/` 有 dump 与 uploads 且不在 git 内 |
+| R36 | **恢复演练必须实测**：在空库 + 空 storage 的环境里，只用 `notes-export/`（最坏情况：备份盘也没了、只剩 git 仓库）重建全部分类、文档、见解 | 演练结果逐条记录在 `docs/ACCEPTANCE.md`，分类数/文档数/见解数与导出时一致 |
+| R37 | 图片必须一并备份与恢复 | 演练后阅读页图片正常显示，无裂图 |
+
 
 ---
 
@@ -181,6 +201,48 @@ anchor = "b" + index + "-" + hash8      // index 为 0 起的块序号
 
 - **决策**：`title LIKE %q%` OR `content_md LIKE %q%`，限制返回 50 条并给出摘要片段。文档量级预期 < 5000，够用。
 - **被否**：Elasticsearch（重）；MySQL 全文索引 + 中文分词（ngram 需调参，收益不明显，留待文档量超 5000 再评估）。
+
+### D11：图片按内容哈希落盘，Nginx 直接托管，不建表、不上对象存储
+
+- **决策**：
+  - 上传接口 `POST /api/uploads/image`（multipart，单图 ≤ 5 MB，白名单 `png/jpg/jpeg/gif/webp`）。
+  - 保存路径 `${app.storageDir}/../uploads/YYYY/MM/<sha256前16位>.<ext>`，同图重复上传直接返回已有路径（天然去重）。
+  - 对外 URL 为 `/uploads/YYYY/MM/<hash>.<ext>`，由 **Nginx 直接托管**该目录（`storage` 卷同时以只读方式挂给 web 容器），不经过后端流式转发。
+  - **不建 `doc_image` 表**：md 正文里的 `/uploads/...` 路径即引用关系，需要时用正则从 `content_md` 提取。
+- **理由**：内容哈希天然去重且幂等（重复上传不产生垃圾）；Nginx 托管静态图性能最好、实现最少；不建表避免"正文引用"与"图片表"两个真相不一致。
+- **被否**：存数据库 BLOB（备份膨胀、无法用 CDN）；接对象存储 / OSS（自用规模无必要，且引入密钥管理与外部依赖，违背"云端挂了要能恢复"的自持目标）。
+- **代价**：会产生**孤儿图片**（文档删了图还在）。当前**接受**该代价，只在 P2 提供一个扫描脚本（比对 `uploads/` 与全部 `content_md` 的引用），不做自动删除——自动删图的误删风险高于占用磁盘的代价。
+- **图片校验**：必须校验真实文件头（magic number）而非只信扩展名；文件名一律由服务端按哈希生成，绝不使用客户端文件名（防路径穿越与脚本上传）。
+
+### D12：三层备份，恢复路径以「人可读 + 进 git」为主
+
+- **决策**：三层，各有明确职责，不可互相替代：
+
+  | 层 | 内容 | 位置 | 是否进 git | 职责 |
+  |---|---|---|---|---|
+  | L1 人可读导出 | `<大类>/<小方向>/<slug>.md` + `<slug>.insights.json` | 本机 `<仓库>/notes-export/` | ✅ 进 git | **主恢复路径**。最坏情况（云端与备份盘全丢）只要 git 在就能重建全部文字内容与见解 |
+  | L2 二进制备份 | `mysqldump` 归档 + `uploads/` 图片 | 服务器 `backup/`，同步到本机 `F:\deespeekharness\learn-notes-backup\` | ❌ 不进 git | **快速恢复路径**。一条命令还原到出事前状态，含版本历史 |
+  | L3 上传原文落盘 | 导入时写下的原始 md（含 front-matter） | 服务器 `storage/docs/` | ❌ 不进 git | 导入侧兜底，防"入库成功但内容被后续误改" |
+
+- **理由**：
+  1. 见解只存在数据库，**纯 md 备份必然丢见解** → 必须有 `.insights.json` 旁挂（R32）。
+  2. 见解**不能内嵌进 md 正文**：Markdown 注释 `<!-- … -->` 会被 CommonMark 解析成一个 `HtmlBlock` 块，直接改变块序号与锚点（违反 D3/D5），所以只能旁挂同名文件。
+  3. 文字内容进 git 是成本最低、最抗灾的备份：可 diff、可回溯、体积小，且与用户"每次提交在本地也有相同内容"的诉求天然一致。
+  4. 二进制（dump / 图片）不进 git，否则仓库迅速膨胀且无法有效 diff。
+- **被否**：只做 mysqldump（不可读、跨 MySQL 大版本迁移有坑、丢了就全丢）；把见解写进 md 正文（破坏锚点契约）；把 dump 提交进 git（仓库膨胀）。
+- **硬约束**：`notes-export/` 的恢复能力必须**实测**（R36），未演练过的备份等于没有备份。
+
+### D13：部署默认不抢 80 端口，且绝不对外暴露 MySQL
+
+- **背景**：云服务器已运行 `astrbot` + `napcat`（两者通常自带 WebUI 与 HTTP/WS 端口，且很可能已用 Docker 运行），80/443 与 3306 是否占用未知。
+- **决策**：
+  1. `WEB_PORT` **默认 `8088`**，不默认占用 80。确认 80 空闲或已有宿主 Nginx 后，再由用户显式改配置或加反代。
+  2. **MySQL 服务不做端口映射**（compose 里不写 `ports`），只在内部网络供 backend 访问 —— 既避免与既有 3306 冲突，也避免把数据库暴露到公网（这是自建服务最常见的被拖库原因）。
+  3. compose 使用独立项目名与显式容器名前缀 `ln-`（`ln-mysql` / `ln-backend` / `ln-web`），并使用**自有 bridge 网络**，避免与 astrbot/napcat 的容器名或网络冲突。
+  4. 卷使用命名卷 `ln-mysql-data`，避免与既有卷同名。
+- **理由**：在一台已有服务的机器上部署，冲突风险远大于"少配一个端口"的便利；默认值应当选择最不可能打断既有服务的那个。
+- **被否**：默认占 80（可能直接打断 astrbot/napcat 的对外访问）；`network_mode: host`（端口冲突面最大，且失去容器隔离）。
+
 
 ---
 
@@ -396,6 +458,54 @@ CREATE TABLE `doc_annotation` (
 | DELETE | `/api/annotations/{id}` | — |
 | GET | `/api/annotations?status=&page=&size=` | 「我的全部见解」页面用（P2） |
 
+### 5.6 图片上传（R30、D11）
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| POST | `/api/uploads/image` | `multipart/form-data`：`file`；单图 ≤ 5 MB；白名单 `png/jpg/jpeg/gif/webp`；校验文件头 |
+
+响应 `data`：
+
+```json
+{ "url": "/uploads/2026/08/3f7a91c4d5e6b208.png", "width": 1280, "height": 720, "bytes": 184320, "dedup": false }
+```
+
+`dedup: true` 表示该图内容已存在，直接复用既有路径。静态访问 `GET /uploads/**` 由 Nginx 直接托管，**不经过后端、不需要鉴权**（自用站点，图片路径含哈希，不可枚举）。
+
+### 5.7 导出与恢复导入（R31–R33、D12）
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| GET | `/api/export/all` | 返回 `application/zip`，文件名 `learn-notes-export-YYYYMMDD-HHmm.zip` |
+| POST | `/api/import/insights` | `application/json`：`{docSlug, topicSlug, categorySlug, insights:[…]}`，按 anchor 重建见解 |
+
+导出 zip 结构：
+
+```text
+manifest.json                       # 导出时间、计数、spec 版本、各分类 remark
+java/
+  function/
+    lambda-basics.md                # 含 front-matter 的完整原文
+    lambda-basics.insights.json     # 该文档的全部见解（含 ORPHAN）
+  class/
+    inner-class.md
+uploads/
+  2026/08/3f7a91c4d5e6b208.png
+```
+
+`<slug>.insights.json`：
+
+```json
+[
+  { "anchor": "b2-9f2a1c04", "anchorIndex": 2, "blockSnippet": "public int add…",
+    "contentMd": "这里注意自动装箱…", "status": "ACTIVE",
+    "docVersionAtCreate": 3, "createdAt": "2026-08-20T20:15:00" }
+]
+```
+
+`POST /api/import/insights` 行为：目标文档按 `categorySlug/topicSlug/docSlug` 定位（不存在则 404，要求先导入文档）；每条见解按 `anchor` 在当前块列表中查找 —— 命中则原位创建 `ACTIVE`；未命中则走 D6 的相似度重挂，结果为 `STALE` 或 `ORPHAN`；已存在完全相同的 `(anchor, contentMd)` 则跳过（幂等，可重复回灌）。响应返回 `{created, skipped, stale, orphan}`。
+
+
 ---
 
 ## 6. slug 生成规则（统一实现，前后端一致）
@@ -419,8 +529,8 @@ CREATE TABLE `doc_annotation` (
 - 多用户、注册、角色权限、分享链接
 - 在线协同编辑、评论区、点赞、收藏夹
 - 全文检索引擎（ES）、中文分词
-- 图片上传与图床：**当前只支持外链图片**（`![](https://…)`）。本地图片列为 P2
-- 数学公式（KaTeX）、Mermaid 图：列为 P2
+- 图片：本地上传**已纳入范围**（R30、D11）。不做的是对象存储/OSS/CDN、图片压缩转码、孤儿图自动清理（P2 只给扫描脚本）
+- 数学公式（KaTeX）、Mermaid 图：**用户已确认不做**。块渲染架构预留了扩展位（新增 `math`/`mermaid` 块类型不破坏契约），将来要加不必改锚点
 - SSR / SEO、移动端 App、离线包
 - K8s、CI/CD 流水线、HTTPS 证书自动签发（Nginx 配置留注释位）
 - 富文本 WYSIWYG 编辑器（前端编辑器为纯 Markdown 文本域 + 实时预览）
@@ -437,6 +547,13 @@ CREATE TABLE `doc_annotation` (
 | `content_md` 存 LONGTEXT 且列表页误查正文 | 中 | 列表查询 SQL 明确列出字段，禁止 `SELECT *`（写进任务验收） |
 | MySQL 中文排序/大小写匹配导致分类重复创建（`Java` vs `java`） | 中 | 匹配一律走小写 `slug`，`name` 仅作显示 |
 | Docker 内 MySQL 首启慢导致后端启动失败 | 低 | compose 加 `healthcheck` + 后端 `depends_on: condition: service_healthy`；Flyway 加重试 |
+| **备份看着有、真出事恢复不了**（最危险的一类） | 高 | R36 强制恢复演练：在空环境只用 `notes-export/` 重建并核对分类/文档/见解三项计数；未演练的备份视为不存在 |
+| **纯 md 备份丢掉个人见解** | 高 | 见解只在数据库里，因此导出必须带 `.insights.json` 旁挂文件（R32）并有回灌接口（R33） |
+| 见解**不能**内嵌进 md 正文来"顺便备份" | 高 | `<!-- … -->` 会被解析成 `HtmlBlock` 从而改变块序号与锚点，直接破坏 D3/D5；只能旁挂 |
+| 与既有 astrbot / napcat 争抢端口，打断线上服务 | 中 | D13：`WEB_PORT` 默认 8088、MySQL 不做端口映射、容器名统一 `ln-` 前缀、独立网络与命名卷；部署前先跑端口探测命令 |
+| MySQL 端口暴露到公网被拖库 | 高 | D13 硬约束：compose 中 MySQL **不写 `ports`** |
+| 上传图片被用来传脚本 / 路径穿越 | 中 | D11：校验 magic number、服务端按哈希重命名、扩展名白名单、大小上限 |
+| 孤儿图片长期堆积 | 低 | 已知并接受；P2 提供扫描脚本，不做自动删除（误删风险更高） |
 
 **兼容边界**：`blocks[]` 结构、`anchor` 格式、front-matter 字段名、统一响应体格式一旦实现即为契约，后续变更需回到本规格并给出迁移方案（锚点格式变更必须提供 `doc_annotation` 的重算迁移脚本）。
 
@@ -458,17 +575,49 @@ CREATE TABLE `doc_annotation` (
 10. 删除含文档的小方向 → `409` 且提示先迁移。
 11. `storage/docs/java/function/*.md` 在卷内存在且内容与库内一致。
 12. 重启 compose（`down` 不带 `-v` 再 `up`）→ 数据、分类、见解全部保留。
+13. 在编辑器里粘贴一张截图 → 自动上传并插入 `![](/uploads/…)`；阅读页图片正常显示；同一张图再传一次返回 `dedup:true` 且不新增文件。
+14. `GET /api/export/all` 下载 zip → 解开后目录结构、`manifest.json` 计数、`.insights.json` 内容、`uploads/` 图片齐全。
+15. **恢复演练（最重要一条）**：在**空库 + 空 storage** 的环境里，只用本机 `notes-export/` 目录（不用任何数据库 dump），按顺序跑批量导入脚本 + 见解回灌 → 分类数、文档数、见解数与导出时**完全一致**，随机抽 3 篇文档核对正文与见解位置，图片显示正常。
+16. 服务器定时备份任务跑过一次后，`backup/` 出现当日归档；把系统时间/文件名手工造出 15 份后再跑一次，最旧一份被自动清理。
 
 ---
 
-## 10. 待用户确认（不阻塞任务拆解，但会影响两个任务的实现细节）
+## 10. 问题登记（2026-08-20 已由用户答复）
 
-| 编号 | 问题 | 我的默认处置 |
+| 编号 | 问题 | 结论 |
 |---|---|---|
-| Q1 | "每次提交在本地也有相同内容"——指 (a) 每完成一个任务在本地 git 提交一次，本地仓库与交付内容一致；还是 (b) 上传的文档除入库外还在本地/服务器落盘一份？ | **两条都做**：(a) 每任务一次本地提交（R29）；(b) 原文落盘备份（R17）。成本都很低 |
-| Q2 | 学习笔记是否需要贴本地图片？ | 当前只支持外链图片，本地图床列 P2。若需要，请说，我把"图片上传 + 静态目录挂载"提为 P1 任务 |
-| Q3 | 是否需要数学公式 / Mermaid 流程图渲染？ | 默认不做（P2）。渲染层已按块分组件，后续加 `math`/`mermaid` 块类型不破坏契约 |
-| Q4 | 云服务器是否已有 Nginx / 域名 / HTTPS？端口能否用 80？ | 默认 compose 内自带 Nginx 占用 80；若已有宿主 Nginx，则改为暴露 `8088` 由宿主反代（部署文档会同时给两种配置） |
+| Q1 | 本地留存的目的与形态 | **已确认：目的是灾难恢复**。升级为一等需求 §2.6 与 D12 三层备份；`notes-export/`（md + insights.json）进 git 作为主恢复路径，dump 与图片放仓库外 |
+| Q2 | 是否需要本地图片上传 | **已确认：需要**。纳入范围，见 R30 与 D11（哈希落盘 + Nginx 托管 + 不建表） |
+| Q3 | 是否需要数学公式 / Mermaid | **已确认：不做**。块渲染架构预留扩展位，将来加不破坏锚点契约 |
+| Q4 | 云服务器端口情况 | **部分未知**：用户只知道对外暴露的接口，机器上已跑 `astrbot` + `napcat`。处置见 D13（默认 `WEB_PORT=8088`、MySQL 不映射端口、容器名 `ln-` 前缀、独立网络与命名卷）。**部署前需先执行下面的探测命令确认** |
+
+### Q4 待执行的探测（部署前，在云服务器上跑）
+
+```bash
+# 1) 看 80 / 443 / 8088 / 3306 是否已被占用（哪个有输出就说明被占）
+sudo ss -ltnp | grep -E ':(80|443|3306|8088)\b'
+
+# 2) 看现有容器占了哪些端口、用了哪些网络与卷名（确认不会撞名）
+docker ps --format 'table {{.Names}}\t{{.Ports}}\t{{.Image}}'
+docker network ls
+docker volume ls
+
+# 3) 看有没有宿主 Nginx / Caddy 在做反代
+systemctl is-active nginx 2>/dev/null; systemctl is-active caddy 2>/dev/null
+curl -sI http://127.0.0.1 | head -3
+
+# 4) 看云厂商安全组之外，本机防火墙是否放行准备用的端口
+sudo iptables -S 2>/dev/null | grep -E '8088|dpt:80' ; sudo ufw status 2>/dev/null
+```
+
+判定规则：
+
+- 第 1 条里 **8088 无输出** → 直接用默认 `WEB_PORT=8088`，并在云厂商安全组放行 8088。
+- **80 无输出且没有宿主 Nginx** → 可以把 `WEB_PORT` 改成 `80`，访问更省事。
+- **80 被占且是宿主 Nginx** → 保持 8088，另在宿主 Nginx 加一段 `server`/`location` 反代到 `127.0.0.1:8088`（`docs/DEPLOY.md` 会给现成配置）。
+- **80 被占但是 astrbot/napcat 的容器** → 保持 8088，不要动既有容器。
+- 第 2 条如果发现已有容器名以 `ln-` 开头或已有 `ln-mysql-data` 卷 → 回报，改前缀。
+
 
 ---
 
@@ -496,3 +645,8 @@ CREATE TABLE `doc_annotation` (
 | `doc_version` 历史表 | 只存当前正文 | R10 要求历史版本；且 D6 重挂需要可回溯 | R10 | `add-with-proof` |
 | `doc_block` 持久化表 | 由 `content_md` 实时重算 | 无不足，重算足够快 | — | `reject`（避免第二真相） |
 | MyBatis-Plus / Spring Security 全栈 | 原生 MyBatis + 自写拦截器 | 无不足，需求为单用户简单站 | — | `reject`（YAGNI） |
+| `POST /api/uploads/image` + Nginx 静态托管 | 只用外链图片 | 用户明确需要贴本地截图，外链需要额外图床且外链会失效 | R30 | `add-with-proof` |
+| `doc_image` 引用关系表 | 从 `content_md` 正则提取 `/uploads/...` | 无不足；建表会与正文形成两个真相，删改文档时需同步维护 | — | `reject` |
+| `GET /api/export/all` + `POST /api/import/insights` | 只做 mysqldump | 见解只在数据库，纯 md 备份必丢；dump 不可读且跨版本迁移有坑；用户首要诉求是"云端挂了能恢复" | R31–R33、R36 | `add-with-proof`（并要求恢复演练作为验证信号） |
+| 见解内嵌进 md 正文（HTML 注释） | 旁挂 `.insights.json` | `<!-- -->` 会成为 `HtmlBlock` 块，改变块序号与锚点，破坏 D3/D5 | — | `reject` |
+| 对象存储 / OSS / CDN | 本地卷 + Nginx | 无不足；引入外部依赖与密钥管理，且与"自持可恢复"目标相悖 | — | `reject` |
