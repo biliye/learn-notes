@@ -2,10 +2,10 @@
   "anchor" : "b1-198a48c8",
   "anchorIndex" : 1,
   "blockSnippet" : "方法是 Java 里一段可复用、带名字的逻辑单元。本文从方法定义讲到 Lambda 与函数式接口的关系。",
-  "contentMd" : "这里要注意自动装箱与拆箱的开销",
+  "contentMd" : "注意自动装箱与拆箱开销",
   "status" : "ACTIVE",
   "docVersionAtCreate" : 1,
-  "createdAt" : "2026-08-20T23:38:15"
+  "createdAt" : "2026-08-20T23:41:17"
 }, {
   "anchor" : "b4-c24a5445",
   "anchorIndex" : 4,
@@ -13,5 +13,5 @@
   "contentMd" : "这段代码可以再简化",
   "status" : "ACTIVE",
   "docVersionAtCreate" : 1,
-  "createdAt" : "2026-08-20T23:38:15"
+  "createdAt" : "2026-08-20T23:41:17"
 } ]

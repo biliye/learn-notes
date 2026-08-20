@@ -59,4 +59,4 @@ SELECT * FROM users WHERE name LIKE '%张%';
 3. 区分度低的列（性别）做索引收益很小。
 
 
-![B+树结构](/uploads/2026/08/5503ff8fef5a4d87.png)
+![B+树结构](/uploads/2026/08/63bf1a521f58c962.png)
