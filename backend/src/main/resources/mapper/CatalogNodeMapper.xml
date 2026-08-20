@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.learnnotes.catalog.mapper.CatalogNodeMapper">
+
+    <sql id="cols">
+        id, parent_id, node_level, name, slug, remark, icon, sort_order, auto_created, doc_count, created_at, updated_at
+    </sql>
+
+    <resultMap id="nodeMap" type="com.learnnotes.catalog.entity.CatalogNode">
+        <id column="id" property="id"/>
+        <result column="parent_id" property="parentId"/>
+        <result column="node_level" property="nodeLevel"/>
+        <result column="name" property="name"/>
+        <result column="slug" property="slug"/>
+        <result column="remark" property="remark"/>
+        <result column="icon" property="icon"/>
+        <result column="sort_order" property="sortOrder"/>
+        <result column="auto_created" property="autoCreated"/>
+        <result column="doc_count" property="docCount"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <select id="selectAll" resultMap="nodeMap">
+        SELECT
+        <include refid="cols"/>
+        FROM catalog_node
+    </select>
+
+    <select id="selectById" resultMap="nodeMap">
+        SELECT
+        <include refid="cols"/>
+        FROM catalog_node WHERE id = #{id}
+    </select>
+
+    <select id="selectByParentAndSlug" resultMap="nodeMap">
+        SELECT
+        <include refid="cols"/>
+        FROM catalog_node WHERE parent_id = #{parentId} AND slug = #{slug} LIMIT 1
+    </select>
+
+    <select id="countByParent" resultType="int">
+        SELECT COUNT(*) FROM catalog_node WHERE parent_id = #{parentId}
+    </select>
+
+    <select id="selectByParent" resultMap="nodeMap">
+        SELECT
+        <include refid="cols"/>
+        FROM catalog_node WHERE parent_id = #{parentId}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO catalog_node (parent_id, node_level, name, slug, remark, icon, sort_order, auto_created, doc_count)
+        VALUES (#{parentId}, #{nodeLevel}, #{name}, #{slug}, #{remark}, #{icon}, #{sortOrder}, #{autoCreated}, 0)
+    </insert>
+
+    <update id="update">
+        UPDATE catalog_node
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="slug != null">slug = #{slug},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="icon != null">icon = #{icon},</if>
+            <if test="sortOrder != null">sort_order = #{sortOrder},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateName">
+        UPDATE catalog_node SET name = #{name} WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM catalog_node WHERE id = #{id}
+    </delete>
+
+    <update id="incrDocCount">
+        UPDATE catalog_node SET doc_count = GREATEST(0, doc_count + #{delta}) WHERE id = #{id}
+    </update>
+</mapper>
