@@ -326,9 +326,9 @@ CREATE TABLE `doc_annotation` (
 | GET | `/api/docs/{id}/versions/{version}` | `{version, contentMd, createdAt}` |
 | GET | `/api/search?q=&size=20` | 标题 + 正文 LIKE，返回 `[{docId,title,breadcrumb,snippet}]` |
 
-`GET /api/docs/{id}` 的 `data`：
+`GET /api/docs/{id}` 的 `data`（下面示例用四反引号外层围栏，因为 `raw` 字段里含三反引号）：
 
-```json
+````json
 {
   "id": 12,
   "title": "Java 方法与函数式接口",
@@ -350,7 +350,7 @@ CREATE TABLE `doc_annotation` (
     { "id": 5, "anchor": "b2-9f2a1c04", "anchorIndex": 2, "contentMd": "这里注意自动装箱…", "status": "ACTIVE", "blockSnippet": "public int add…", "createdAt": "…", "updatedAt": "…" }
   ]
 }
-```
+````
 
 - `blocks[].type` 取值：`heading` | `paragraph` | `code` | `list` | `table` | `quote` | `thematic_break` | `html`(禁用后不应出现) | `other`。
 - `blocks[].raw` 是**该块的原始 Markdown**（代码块含围栏行），前端逐块渲染。

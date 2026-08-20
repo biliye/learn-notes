@@ -168,6 +168,7 @@ T01 仓库骨架 ──┬─► T02 数据库迁移 ─────────
 - **Why**：确定目录与配置约定，避免后续 agent 各建一套结构。
 - **产出文件**：
   - `<根>/.gitignore`（忽略 `target/`、`node_modules/`、`dist/`、`.env`、`storage/`、IDE 目录）
+  - `<根>/.gitattributes`（`* text=auto eol=lf`，避免 Windows 开发 + Linux 容器构建之间的 CRLF 噪音；`*.sh eol=lf` 必须，否则容器内脚本报 `bad interpreter`）
   - `<根>/README.md`（项目简介、目录结构、本地启动、部署指引、文档投稿指引，指向 `docs/AGENT-DOC-SPEC.md`）
   - `<根>/.env.example`（键见下）
   - `<根>/backend/pom.xml`（groupId `com.learnnotes`，artifactId `learn-notes-backend`，Java 17，依赖：spring-boot-starter-web、mybatis-spring-boot-starter 3.0.x、mysql-connector-j、flyway-core + flyway-mysql、commonmark 0.22.x + commonmark-ext-gfm-tables + commonmark-ext-yaml-front-matter、jjwt-api/impl/jackson 0.12.x、spring-security-crypto、lombok、spring-boot-starter-test）
@@ -303,15 +304,15 @@ T01 仓库骨架 ──┬─► T02 数据库迁移 ─────────
   - 移动文档需同步维护两个 topic 的 `doc_count`；新增/删除同理。
   - `GET /api/docs/{id}/raw` 返回 `text/markdown;charset=UTF-8` 纯文本（非统一响应体，这是唯一例外，需在代码注释里说明）。
   - 删除文档级联删 `doc_version` 与 `doc_annotation`（应用层显式删，不依赖外键级联）。
-- **验收**：
-  ```bash
+- **验收**（下面示例用四反引号外层围栏，因为 JSON 里含三反引号代码块）：
+  ````bash
   curl -X POST localhost:8080/api/docs -H "Authorization: Bearer $T" -H 'Content-Type: application/json' \
     -d '{"topicId":<funcId>,"title":"Java 方法基础","contentMd":"# Java 方法基础\n\n方法是…\n\n```java\nint add(int a,int b){return a+b;}\n```\n"}'
   curl localhost:8080/api/docs/1 -H "Authorization: Bearer $T"   # blocks 含 heading/paragraph/code 三块，code 块 lang=java，anchor 形如 b2-xxxxxxxx
   curl -X PUT localhost:8080/api/docs/1 -H "Authorization: Bearer $T" -H 'Content-Type: application/json' -d '{"contentMd":"<改一段>","changeNote":"补充说明"}'
   curl localhost:8080/api/docs/1/versions -H "Authorization: Bearer $T"   # 两条版本
   curl -X PUT localhost:8080/api/docs/1 ... -d '{"contentMd":"<与上一次完全相同>"}'   # 版本号不变
-  ```
+  ````
 - **边界**：不做导入解析（T08）、不做见解（T09）、不做搜索（T10）、不做版本回滚（P2）。
 - **提示词**：
   > 在 `<项目根>/backend` 实现文档 CRUD 与版本管理，接口与详情 JSON 结构严格按 `docs/aegis/specs/2026-08-20-learn-notes-design.md` §5.3（`blocks` 用 T05 的 `MarkdownBlockParser` 现算、不落库；`annotations` 字段先返回空数组，后续任务接入）。要点：`content_hash` 相同则不产生新版本；`doc_version` 存新正文；列表查询必须显式列字段且不带 `content_md`；增删移文档时维护 `catalog_node.doc_count`；`/raw` 返回纯 markdown 文本（统一响应体的唯一例外，加注释说明）；删除文档时应用层级联删版本与见解。按卡内 curl 验收，完成后 git 提交一次 `feat(T07): 文档 CRUD 与版本管理`。
