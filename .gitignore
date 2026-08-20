@@ -1,0 +1,32 @@
+# --- 构建产物 ---
+target/
+node_modules/
+dist/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+
+# --- 环境与敏感配置 ---
+.env
+.env.local
+*.pem
+
+# --- 运行时数据（不入 git）---
+storage/
+!storage/.gitkeep
+logs/
+backup/
+learn-notes-backup/
+*.log
+
+# --- IDE / 系统 ---
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+
+# --- 前端 ---
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*

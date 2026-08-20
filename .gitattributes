@@ -1,0 +1,16 @@
+# 统一换行：文本文件入库均为 LF，避免 Windows 开发 + Linux 容器构建之间的 CRLF 噪音
+* text=auto eol=lf
+
+# 脚本必须 LF，否则容器内报 bad interpreter
+*.sh eol=lf
+*.ps1 eol=lf
+
+# 二进制不入文本归一化
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.zip binary
+*.gz binary
+*.tgz binary
