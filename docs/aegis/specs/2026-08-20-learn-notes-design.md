@@ -424,6 +424,7 @@ CREATE TABLE `doc_annotation` (
 |---|---|---|
 | POST | `/api/import/doc` | `application/json`：`{filename, content, categoryHint?, topicHint?, onConflict?}` |
 | POST | `/api/import/upload` | `multipart/form-data`：`files[]`（`.md`/`.markdown`，单文件 ≤ 2 MB，单次 ≤ 20 个）+ 可选 `categoryHint`/`topicHint` |
+| POST | `/api/import/zip` | `multipart/form-data`：`file`（.zip，可含 `.md`/`.markdown` 与 png/jpg/jpeg/gif/webp 图片）。**编辑器草稿流**：见下方说明 |
 
 `onConflict`：`NEW_VERSION`（默认）| `SKIP` | `FAIL`（409）。
 
@@ -446,6 +447,12 @@ CREATE TABLE `doc_annotation` (
 ```
 
 `resolvedBy` 取值：`HINT` | `FRONT_MATTER` | `FILENAME` | `INBOX`。多文件上传返回该对象的数组。
+
+**`POST /api/import/zip` —— 编辑器草稿流**（新建文档页「一键导入压缩包」，与 agent 直接入库的两个接口不同）：
+
+- 解压后**不入库、不建分类、不改版本**，只返回草稿：`{filename, title, slug, summary, tags, contentMd, importedImages, skippedImages, warnings}`；`contentMd` 为**剥离 front-matter**、相对路径图片引用已重写为 `/uploads/...` 的正文，由前端填入新建文档编辑器，用户核对后走 §5.3 `POST /api/docs` 手动保存（分类仍由用户在页面手动选择）。
+- 图片引用按 **md 所在目录**解析相对路径，复用 `ImageStorageService`（D11：magic number、哈希去重、大小上限）上传，**只上传被正文引用到的图片**；未被引用的图片不导入（计入 `skippedImages` 并提示），引用了但包内没有的图片保留原引用并提示。`http(s)` / `data:` / 已是 `/uploads/...` 的引用原样保留。
+- 限制：压缩包 ≤ 50MB、解压总量 ≤ 100MB、条目 ≤ 500、单 md ≤ 2MB、单图 ≤ `app.max-image-mb`；多个 md 只取路径排序第一个；路径穿越条目（`..` / 绝对路径）直接拒绝。
 
 ### 5.5 个人见解
 

@@ -3,7 +3,9 @@ package com.learnnotes.imports.controller;
 import com.learnnotes.common.BizException;
 import com.learnnotes.common.R;
 import com.learnnotes.imports.dto.ImportResult;
+import com.learnnotes.imports.dto.ZipImportResult;
 import com.learnnotes.imports.service.ImportService;
+import com.learnnotes.imports.service.ZipImportService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 导入接口（§5.4，agent 主入口）。鉴权见 AuthInterceptor：/api/import/** 接受 X-Api-Token。
+ * 导入接口（§5.4，agent 主入口 + 编辑器草稿流）。鉴权见 AuthInterceptor：/api/import/** 接受 X-Api-Token。
  */
 @RestController
 @RequestMapping("/api/import")
@@ -28,9 +30,11 @@ public class ImportController {
     private static final int MAX_FILES = 20;
 
     private final ImportService importService;
+    private final ZipImportService zipImportService;
 
-    public ImportController(ImportService importService) {
+    public ImportController(ImportService importService, ZipImportService zipImportService) {
         this.importService = importService;
+        this.zipImportService = zipImportService;
     }
 
     @PostMapping("/doc")
@@ -72,5 +76,14 @@ public class ImportController {
             filenames.add(name);
         }
         return R.ok(importService.importUpload(filenames, contents, categoryHint, topicHint));
+    }
+
+    /**
+     * 压缩包一键导入（§5.4 编辑器草稿流）：解压解析后返回草稿，不入库，
+     * 由前端填入新建文档编辑器，用户核对后走 POST /api/docs 手动保存。
+     */
+    @PostMapping("/zip")
+    public R<ZipImportResult> importZip(@RequestParam("file") MultipartFile file) {
+        return R.ok(zipImportService.importZip(file));
     }
 }

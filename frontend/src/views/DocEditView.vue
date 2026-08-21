@@ -13,6 +13,9 @@
           <el-input v-model="newTopicName" placeholder="新小方向名称" class="new-topic-input" maxlength="80" @keyup.enter="quickCreateTopic" />
           <el-button :loading="creatingTopic" size="small" @click="quickCreateTopic">＋ 新建小方向</el-button>
         </template>
+        <el-upload :show-file-list="false" accept=".zip" :auto-upload="false" :on-change="onPickZip">
+          <el-button :loading="importing">📦 一键导入压缩包</el-button>
+        </el-upload>
       </template>
       <el-input v-model="form.title" placeholder="文档标题" class="title-input" maxlength="200" />
       <el-input v-model="form.slug" placeholder="slug（留空自动生成）" class="slug-input" maxlength="120" />
@@ -30,9 +33,10 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import MarkdownEditor from '../components/MarkdownEditor.vue'
 import { getDoc, createDoc, updateDoc, downloadRaw } from '../api/doc'
+import { importZip } from '../api/import'
 import { createNode } from '../api/catalog'
 import { useCatalogStore } from '../stores/catalog'
 
@@ -52,6 +56,7 @@ const saving = ref(false)
 const editor = ref(null)
 const newTopicName = ref('')
 const creatingTopic = ref(false)
+const importing = ref(false)
 
 /** 所选大类下的小方向列表（未选大类时为空） */
 const topicsOfCategory = computed(() => {
@@ -154,6 +159,50 @@ async function quickCreateTopic() {
   } finally {
     creatingTopic.value = false
   }
+}
+
+/** 一键导入压缩包（§5.4 编辑器草稿流）：解析后填入源码/预览，由用户核对后保存 */
+async function onPickZip(uploadFile) {
+  const file = uploadFile.raw
+  if (!file) return
+  if (!/\.zip$/i.test(file.name)) {
+    ElMessage.warning('请选择 .zip 压缩包')
+    return
+  }
+  if (form.value.contentMd && form.value.contentMd.trim()) {
+    try {
+      await ElMessageBox.confirm('导入压缩包会覆盖当前编辑器内容，是否继续？', '导入确认', {
+        type: 'warning',
+        confirmButtonText: '继续',
+        cancelButtonText: '取消'
+      })
+    } catch (e) {
+      return
+    }
+  }
+  importing.value = true
+  try {
+    const data = await importZip(file)
+    if (data.title) form.value.title = data.title
+    if (data.slug) form.value.slug = data.slug
+    form.value.contentMd = data.contentMd || ''
+    if (data.warnings && data.warnings.length) {
+      ElMessageBox.alert(data.warnings.map(escapeHtml).join('<br/>'), '导入提示', {
+        type: 'warning',
+        dangerouslyUseHTMLString: true,
+        confirmButtonText: '知道了'
+      })
+    }
+    ElMessage.success(`已导入「${data.title || file.name}」，请核对后保存` + (data.importedImages ? `（图片 ${data.importedImages} 张已上传）` : ''))
+  } catch (e) {
+    // 拦截器已提示
+  } finally {
+    importing.value = false
+  }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
 function onPickImage(uploadFile) {

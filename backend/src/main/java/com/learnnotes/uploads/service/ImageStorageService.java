@@ -42,10 +42,6 @@ public class ImageStorageService {
         if (file == null || file.isEmpty()) {
             throw BizException.badRequest("file 不能为空");
         }
-        double maxMb = props.getMaxImageMb() <= 0 ? 5 : props.getMaxImageMb();
-        if (file.getSize() > maxMb * 1024 * 1024) {
-            throw BizException.badRequest("图片不能超过 " + (long) maxMb + "MB");
-        }
         byte[] bytes;
         try {
             bytes = file.getBytes();
@@ -53,9 +49,24 @@ public class ImageStorageService {
             throw BizException.badRequest("读取上传文件失败");
         }
         String originalName = file.getOriginalFilename() == null ? "" : file.getOriginalFilename();
-        String ext = extOf(originalName);
+        return saveBytes(bytes, originalName);
+    }
+
+    /**
+     * 以字节数组保存（zip 导入解包出的图片也走这里，D11 规则完全一致）。
+     */
+    public UploadResult saveBytes(byte[] bytes, String originalName) {
+        if (bytes == null || bytes.length == 0) {
+            throw BizException.badRequest("图片内容为空");
+        }
+        double maxMb = props.getMaxImageMb() <= 0 ? 5 : props.getMaxImageMb();
+        if (bytes.length > maxMb * 1024 * 1024) {
+            throw BizException.badRequest("图片不能超过 " + (long) maxMb + "MB");
+        }
+        String name = originalName == null ? "" : originalName;
+        String ext = extOf(name);
         if (!ALLOWED_EXT.contains(ext)) {
-            throw BizException.badRequest("仅支持 png/jpg/jpeg/gif/webp：" + originalName);
+            throw BizException.badRequest("仅支持 png/jpg/jpeg/gif/webp：" + name);
         }
         verifyMagicNumber(bytes, ext);
 
