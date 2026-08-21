@@ -17,8 +17,10 @@ import com.learnnotes.imports.service.ImportService;
 import com.learnnotes.markdown.Block;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.env.Environment;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -36,9 +38,16 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * 导出/回灌往返测试（计划卡 T19 核心价值）：
  * 造数据 → 导出 zip → 清空全部业务表 → 用导入接口 + 见解回灌还原 → 断言计数与内容完全一致。
- * 需要本地 MySQL（application.yml 默认 127.0.0.1:3306；测试环境用环境变量指向 3307）。
+ *
+ * <p><b>危险测试 —— 默认禁用</b>：@BeforeEach 会清空 doc / doc_version / doc_annotation
+ * 全部业务数据。必须显式 <code>-Droundtrip=true</code> 才允许运行，且要求
+ * <code>spring.datasource.url</code> 指向专用测试库（127.0.0.1:3307），
+ * 否则直接拒绝执行（防止误清本地/线上真实库）。
+ *
+ * <p>推荐用法：<code>mvn test -Droundtrip=true -DAPP_DB_URL=jdbc:mysql://127.0.0.1:3307/learn_notes_test...</code>
  */
 @SpringBootTest
+@EnabledIfSystemProperty(named = "roundtrip", matches = "true")
 class ExportRoundTripTest {
 
     @Autowired
@@ -59,9 +68,19 @@ class ExportRoundTripTest {
     DocMapper docMapper;
     @Autowired
     AppProperties props;
+    @Autowired
+    Environment env;
 
     @BeforeEach
     void clean() {
+        // 双保险：即便 -Droundtrip=true 误配，也拒绝指向非测试库的连接
+        String url = env.getProperty("spring.datasource.url", "");
+        boolean looksTest = url.contains("3307") || url.toLowerCase().contains("_test")
+                || url.toLowerCase().contains("test_");
+        if (!looksTest) {
+            throw new IllegalStateException("ExportRoundTripTest 会清空业务表，只允许指向专用测试库；"
+                    + "当前 spring.datasource.url=" + url + "，已拒绝执行");
+        }
         // 清空业务表，保留 Flyway 种子（INBOX/未归类）
         annotationMapper.deleteAll();
         docMapper.deleteAllVersions(); docMapper.deleteAllDocs();
