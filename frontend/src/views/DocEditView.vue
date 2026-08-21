@@ -1,11 +1,19 @@
 <template>
   <div class="doc-edit">
     <div class="edit-head">
-      <el-select v-if="!isEdit" v-model="form.topicId" placeholder="选择小方向" class="topic-select" filterable>
-        <el-option-group v-for="c in catalog.tree" :key="c.id" :label="c.name">
-          <el-option v-for="t in c.children" :key="t.id" :label="t.name" :value="t.id" />
-        </el-option-group>
-      </el-select>
+      <template v-if="!isEdit">
+        <el-select v-model="form.categoryId" placeholder="选择大类" class="category-select" filterable clearable @change="onCategoryChange">
+          <el-option v-for="c in catalog.tree" :key="c.id" :label="c.name" :value="c.id" />
+        </el-select>
+        <el-select v-model="form.topicId" placeholder="选择小方向" class="topic-select" filterable clearable :disabled="!form.categoryId">
+          <el-option v-for="t in topicsOfCategory" :key="t.id" :label="t.name" :value="t.id" />
+        </el-select>
+        <template v-if="form.categoryId && !topicsOfCategory.length">
+          <span class="empty-topic-hint">该大类下暂无小方向</span>
+          <el-input v-model="newTopicName" placeholder="新小方向名称" class="new-topic-input" maxlength="80" @keyup.enter="quickCreateTopic" />
+          <el-button :loading="creatingTopic" size="small" @click="quickCreateTopic">＋ 新建小方向</el-button>
+        </template>
+      </template>
       <el-input v-model="form.title" placeholder="文档标题" class="title-input" maxlength="200" />
       <el-input v-model="form.slug" placeholder="slug（留空自动生成）" class="slug-input" maxlength="120" />
       <el-input v-model="changeNote" placeholder="本次更新说明（可选）" class="note-input" maxlength="200" />
@@ -25,6 +33,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import MarkdownEditor from '../components/MarkdownEditor.vue'
 import { getDoc, createDoc, updateDoc, downloadRaw } from '../api/doc'
+import { createNode } from '../api/catalog'
 import { useCatalogStore } from '../stores/catalog'
 
 const route = useRoute()
@@ -41,9 +50,18 @@ const form = ref({
 const changeNote = ref('')
 const saving = ref(false)
 const editor = ref(null)
+const newTopicName = ref('')
+const creatingTopic = ref(false)
+
+/** 所选大类下的小方向列表（未选大类时为空） */
+const topicsOfCategory = computed(() => {
+  if (!form.value.categoryId) return []
+  const cat = catalog.tree.find((c) => c.id === form.value.categoryId)
+  return cat?.children || []
+})
 
 onMounted(async () => {
-  if (!catalog.loaded) catalog.load()
+  if (!catalog.loaded) await catalog.load()
   if (isEdit.value) {
     const doc = await getDoc(route.params.id)
     form.value = {
@@ -51,6 +69,15 @@ onMounted(async () => {
       title: doc.title,
       slug: doc.slug,
       contentMd: await rawFor(doc.id)
+    }
+  } else if (form.value.topicId) {
+    // 从左侧树带 topicId 进入：反查其父大类并回填，保证大类/小类分开选中
+    for (const c of catalog.tree) {
+      const found = (c.children || []).find((t) => t.id === Number(form.value.topicId))
+      if (found) {
+        form.value.categoryId = c.id
+        break
+      }
     }
   }
 })
@@ -64,7 +91,7 @@ async function save() {
     return
   }
   if (!isEdit.value && !form.value.topicId) {
-    ElMessage.warning('请选择小方向')
+    ElMessage.warning(form.value.categoryId ? '请选择小方向（该大类下暂无小方向时可点击「＋ 新建小方向」）' : '请先选择大类与小方向')
     return
   }
   saving.value = true
@@ -101,6 +128,34 @@ function cancel() {
   else router.push('/docs')
 }
 
+function onCategoryChange() {
+  // 切换大类后清空已选小方向，避免小方向与大类不匹配
+  form.value.topicId = null
+}
+
+/** 空大类下的内联快捷新建小方向（复用 POST /api/catalog，规格 §5.2） */
+async function quickCreateTopic() {
+  const name = newTopicName.value.trim()
+  if (!name) {
+    ElMessage.warning('请输入小方向名称')
+    return
+  }
+  creatingTopic.value = true
+  try {
+    await createNode({ parentId: form.value.categoryId, name })
+    await catalog.refresh()
+    const cat = catalog.tree.find((c) => c.id === form.value.categoryId)
+    const created = (cat?.children || []).find((t) => t.name === name)
+    if (created) form.value.topicId = created.id
+    newTopicName.value = ''
+    ElMessage.success('小方向已创建')
+  } catch (e) {
+    // 拦截器已提示
+  } finally {
+    creatingTopic.value = false
+  }
+}
+
 function onPickImage(uploadFile) {
   const file = uploadFile.raw
   if (file) editor.value?.insertImage(file)
@@ -122,7 +177,13 @@ function onPickImage(uploadFile) {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  .category-select { width: 150px; }
   .topic-select { width: 200px; }
+  .new-topic-input { width: 160px; }
+  .empty-topic-hint {
+    color: #909399;
+    font-size: 12px;
+  }
   .title-input { width: 280px; }
   .slug-input { width: 200px; }
   .note-input { width: 220px; }
