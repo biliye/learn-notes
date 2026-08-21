@@ -123,18 +123,23 @@ public final class MarkdownBlockParser {
         if (spans == null || spans.isEmpty()) {
             return "";
         }
-        // 行起始字符偏移表（columnIndex 以字符计）
+        // 块在原文中是连续区间：取首 span 起点、末 span 终点整体切片。
+        // 注意 span 的 length 不含行尾换行符，若逐段 append 拼接会丢失所有换行，
+        // 导致代码块/列表/表格渲染成一行（历史 bug）。
         int[] lineOffsets = lineOffsets(source);
-        StringBuilder sb = new StringBuilder();
-        for (SourceSpan span : spans) {
-            int line = span.getLineIndex();
-            int start = (line >= 0 && line < lineOffsets.length ? lineOffsets[line] : 0) + span.getColumnIndex();
-            int end = Math.min(start + span.getLength(), source.length());
-            if (start >= 0 && start < source.length()) {
-                sb.append(source, start, end);
-            }
+        SourceSpan first = spans.get(0);
+        SourceSpan last = spans.get(spans.size() - 1);
+        int start = lineOffset(lineOffsets, first) + first.getColumnIndex();
+        int end = Math.min(lineOffset(lineOffsets, last) + last.getColumnIndex() + last.getLength(), source.length());
+        if (start < 0 || start >= source.length() || end <= start) {
+            return "";
         }
-        return sb.toString();
+        return source.substring(start, end);
+    }
+
+    private static int lineOffset(int[] lineOffsets, SourceSpan span) {
+        int line = span.getLineIndex();
+        return line >= 0 && line < lineOffsets.length ? lineOffsets[line] : 0;
     }
 
     private static int[] lineOffsets(String source) {

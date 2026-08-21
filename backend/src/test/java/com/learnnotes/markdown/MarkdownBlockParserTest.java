@@ -51,6 +51,24 @@ class MarkdownBlockParserTest {
         assertFalse(collapsed.contains("    return a + b;"), "代码块不允许按正文规则折叠");
     }
 
+    /**
+     * 回归：raw 必须保留换行（历史 bug：span 逐段拼接丢换行，代码块/列表/表格挤成一行）。
+     */
+    @Test
+    void rawPreservesNewlines() {
+        String md = "# 标题\n\n第一段。\n\n```java\nint a;\n\nint b;\n```\n\n- 甲\n- 乙\n\n| 列A | 列B |\n|---|---|\n| 1 | 2 |";
+        List<Block> blocks = MarkdownBlockParser.parseBody(md).getBlocks();
+
+        Block code = blocks.stream().filter(b -> "code".equals(b.getType())).findFirst().orElseThrow();
+        assertEquals("```java\nint a;\n\nint b;\n```", code.getRaw(), "代码块 raw 应逐字保留（含空行）");
+
+        Block list = blocks.stream().filter(b -> "list".equals(b.getType())).findFirst().orElseThrow();
+        assertEquals("- 甲\n- 乙", list.getRaw(), "列表 raw 应保留换行");
+
+        Block table = blocks.stream().filter(b -> "table".equals(b.getType())).findFirst().orElseThrow();
+        assertEquals("| 列A | 列B |\n|---|---|\n| 1 | 2 |", table.getRaw(), "表格 raw 应保留换行");
+    }
+
     @Test
     void twoIdenticalParagraphsSameHashDifferentAnchor() {
         String md = "相同段落内容\n\n相同段落内容\n";

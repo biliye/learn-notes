@@ -9,6 +9,8 @@ const routes = [
     children: [
       { path: '', redirect: '/docs' },
       { path: 'docs', name: 'docs', component: () => import('../views/DocsHomeView.vue') },
+      // 新建页必须放在 docs/:id 之前，否则 "new" 会被当成文档 id
+      { path: 'docs/new', name: 'docNew', component: () => import('../views/DocEditView.vue') },
       { path: 'docs/:id', name: 'doc', component: () => import('../views/DocView.vue') },
       { path: 'docs/:id/edit', name: 'docEdit', component: () => import('../views/DocEditView.vue') },
       { path: 'catalog', name: 'catalog', component: () => import('../views/CatalogManageView.vue') },
