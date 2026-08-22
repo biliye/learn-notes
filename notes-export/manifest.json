@@ -1,12 +1,12 @@
 {
-  "exportedAt" : "2026-08-20T23:41:22.009514",
+  "exportedAt" : "2026-08-22T19:35:57.438077800",
   "specVersion" : "v1",
-  "zipName" : "learn-notes-export-20260820-2341.zip",
+  "zipName" : "learn-notes-export-20260822-1935.zip",
   "counts" : {
-    "categories" : 3,
-    "topics" : 4,
-    "docs" : 5,
-    "annotations" : 2,
+    "categories" : 2,
+    "topics" : 6,
+    "docs" : 13,
+    "annotations" : 0,
     "images" : 1
   },
   "categories" : [ {
@@ -15,35 +15,39 @@
     "remark" : null,
     "sortOrder" : 100,
     "topics" : [ {
-      "name" : "类",
-      "slug" : "class",
+      "name" : "AOP",
+      "slug" : "aop",
       "remark" : null,
       "sortOrder" : 100
     }, {
-      "name" : "函数",
-      "slug" : "function",
+      "name" : "认证授权",
+      "slug" : "auth",
+      "remark" : null,
+      "sortOrder" : 100
+    }, {
+      "name" : "项目实战",
+      "slug" : "project-practice",
+      "remark" : null,
+      "sortOrder" : 100
+    }, {
+      "name" : "WebSocket",
+      "slug" : "websocket",
       "remark" : null,
       "sortOrder" : 100
     } ]
   }, {
-    "name" : "MySQL",
-    "slug" : "mysql",
+    "name" : "Redis",
+    "slug" : "redis",
     "remark" : null,
     "sortOrder" : 100,
     "topics" : [ {
-      "name" : "索引",
-      "slug" : "index",
+      "name" : "缓存应用",
+      "slug" : "cache-app",
       "remark" : null,
       "sortOrder" : 100
-    } ]
-  }, {
-    "name" : "vue",
-    "slug" : "vue",
-    "remark" : null,
-    "sortOrder" : 100,
-    "topics" : [ {
-      "name" : "组件",
-      "slug" : "node-7359f06c",
+    }, {
+      "name" : "分布式锁",
+      "slug" : "distributed-lock",
       "remark" : null,
       "sortOrder" : 100
     } ]
