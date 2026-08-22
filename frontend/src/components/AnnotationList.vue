@@ -12,8 +12,10 @@
       <template v-else>
         <div class="ann-content" v-html="renderInline(ann.contentMd)" />
         <div class="ann-meta">
-          <span>{{ formatTime(ann.createdAt) }}</span>
-          <span v-if="ann.status === 'STALE'" class="stale-tag">⚠ 原文已变更，请确认</span>
+          <span class="meta-time">{{ formatTime(ann.createdAt) }}</span>
+          <span v-if="ann.status === 'STALE'" class="stale-tag">
+            <el-icon><WarningFilled /></el-icon> 原文已变更，请确认
+          </span>
           <span class="spacer" />
           <el-button v-if="ann.status === 'STALE'" link size="small" type="warning" @click="$emit('confirm', ann)">确认仍然适用</el-button>
           <el-button link size="small" @click="startEdit(ann)">编辑</el-button>
@@ -56,22 +58,40 @@ function formatTime(s) {
 .ann-list {
   .ann-item {
     padding: 8px 0;
-    border-top: 1px dashed var(--doc-border-color);
+    border-top: 1px dashed var(--ak-border-2);
     &:first-child { border-top: none; }
   }
   .ann-content {
     font-size: 14px;
     line-height: 1.6;
+    color: var(--ak-text-2);
     :deep(p) { margin: 0 0 6px; &:last-child { margin: 0; } }
+    :deep(code) {
+      background: var(--doc-code-inline-bg);
+      color: var(--doc-code-inline-color);
+      border-radius: 2px;
+      padding: 0.1em 0.35em;
+      font-size: 0.9em;
+      font-family: var(--code-block-font);
+    }
   }
   .ann-meta {
     display: flex;
     align-items: center;
     gap: 10px;
     margin-top: 4px;
-    color: #909399;
+    color: var(--ak-muted);
     font-size: 12px;
-    .stale-tag { color: #e6a23c; }
+    .meta-time {
+      font-family: var(--code-block-font);
+      font-size: 11px;
+    }
+    .stale-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      color: var(--ak-amber);
+    }
     .spacer { flex: 1; }
   }
 }

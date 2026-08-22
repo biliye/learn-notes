@@ -21,13 +21,22 @@ const html = computed(() => renderBlock(props.block.raw))
   :deep(table) {
     border-collapse: collapse;
     width: 100%;
+    border: 1px solid var(--ak-border);
     th, td {
-      border: 1px solid var(--doc-border-color);
+      border: 1px solid var(--ak-border);
       padding: 8px 12px;
       font-size: 14px;
     }
-    th { background: #f5f6f8; font-weight: 600; }
-    tr:nth-child(even) td { background: #fafbfc; }
+    th {
+      background: var(--ak-bg-3);
+      color: var(--ak-gold);
+      font-weight: 600;
+      font-family: var(--ak-font-display);
+      letter-spacing: 0.5px;
+      border-top: 2px solid var(--ak-gold-dim);
+    }
+    tr:nth-child(even) td { background: rgba(255, 255, 255, 0.015); }
+    tr:hover td { background: rgba(201, 168, 106, 0.06); }
   }
 }
 </style>

@@ -39,10 +39,11 @@ function save() {
   .preview {
     margin-top: 8px;
     padding: 8px 12px;
-    background: #fafbfc;
-    border-radius: 6px;
-    border: 1px dashed var(--doc-border-color);
+    background: var(--ak-bg-0);
+    border-radius: 2px;
+    border: 1px dashed var(--ak-border-2);
     font-size: 14px;
+    color: var(--ak-text-2);
     :deep(p) { margin: 0 0 8px; &:last-child { margin: 0; } }
   }
   .actions {

@@ -1,6 +1,9 @@
 <template>
   <aside class="toc-sidebar">
-    <div class="toc-title">目录</div>
+    <div class="toc-title">
+      <span class="toc-bar" aria-hidden="true"></span>
+      目录 / CONTENTS
+    </div>
     <div v-if="items.length" class="toc-list">
       <div
         v-for="item in items"
@@ -72,32 +75,52 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 .toc-sidebar {
-  width: 200px;
+  width: 210px;
   position: sticky;
   top: 68px;
   max-height: calc(100vh - 90px);
   overflow-y: auto;
   padding-left: 16px;
-  border-left: 1px solid var(--doc-border-color);
+  border-left: 1px solid var(--ak-border);
   flex-shrink: 0;
   .toc-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--code-block-font);
     font-size: 12px;
-    color: #909399;
-    margin-bottom: 8px;
+    color: var(--ak-muted);
+    margin-bottom: 10px;
     letter-spacing: 1px;
+    .toc-bar {
+      width: 12px;
+      height: 2px;
+      background: var(--ak-gold);
+      display: inline-block;
+    }
   }
   .toc-item {
-    padding: 3px 0;
+    position: relative;
+    padding: 4px 0 4px 10px;
     cursor: pointer;
     font-size: 13px;
-    color: #606266;
+    color: var(--ak-text-2);
+    border-left: 2px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
     a { text-decoration: none; color: inherit; display: block; }
-    &:hover { color: #409eff; }
-    &.active { color: #409eff; font-weight: 600; }
-    &.lv-2 { padding-left: 12px; }
-    &.lv-3 { padding-left: 24px; }
-    &.lv-4 { padding-left: 36px; }
+    &:hover {
+      color: var(--ak-gold);
+      border-left-color: var(--ak-gold-dim);
+    }
+    &.active {
+      color: var(--ak-gold-bright);
+      font-weight: 600;
+      border-left-color: var(--ak-gold);
+    }
+    &.lv-2 { padding-left: 20px; }
+    &.lv-3 { padding-left: 30px; }
+    &.lv-4 { padding-left: 40px; }
   }
-  .toc-empty { color: #c0c4cc; font-size: 13px; }
+  .toc-empty { color: var(--ak-faint); font-size: 13px; }
 }
 </style>

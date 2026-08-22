@@ -1,8 +1,9 @@
 <template>
   <div class="inbox-view">
-    <div class="page-head">
+    <div class="page-head ak-page-head">
       <h3>INBOX · 未归类文档</h3>
-      <el-button link type="primary" @click="$router.push('/docs')">← 返回</el-button>
+      <span class="ak-head-sub">PENDING CLASSIFICATION</span>
+      <el-button link type="primary" class="head-back" @click="$router.push('/docs')">← 返回</el-button>
     </div>
     <DocList ref="docList" :category-id="inboxId">
       <template #actions="{ doc }">
@@ -64,11 +65,7 @@ async function doMove() {
   margin: 0 auto;
   padding: 20px;
 }
-.page-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-  h3 { margin: 0; }
+.head-back {
+  margin-left: auto;
 }
 </style>

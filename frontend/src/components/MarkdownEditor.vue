@@ -1,7 +1,11 @@
 <template>
   <div class="md-editor">
     <div class="editor-pane">
-      <div class="pane-label">Markdown 源码</div>
+      <div class="pane-label">
+        <span class="pane-dot" aria-hidden="true"></span>
+        Markdown 源码
+        <span class="pane-code">// SOURCE</span>
+      </div>
       <textarea
         ref="textarea"
         v-model="content"
@@ -14,7 +18,11 @@
       />
     </div>
     <div class="preview-pane">
-      <div class="pane-label">预览（仅供预览，非权威切块）</div>
+      <div class="pane-label">
+        <span class="pane-dot pane-dot-green" aria-hidden="true"></span>
+        预览（仅供预览，非权威切块）
+        <span class="pane-code">// PREVIEW</span>
+      </div>
       <!-- 预览用前端本地切块渲染，不产生锚点、不作为权威（D3） -->
       <div class="preview-body prose" v-html="previewHtml" />
     </div>
@@ -106,17 +114,36 @@ defineExpose({ insertImage, save: () => emit('save', content.value) })
   flex: 1;
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--doc-border-color);
-  border-radius: 8px;
+  border: 1px solid var(--ak-border);
+  border-radius: 2px;
   overflow: hidden;
-  background: #fff;
+  background: var(--ak-bg-2);
 }
 .pane-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 8px 12px;
   font-size: 12px;
-  color: #909399;
-  border-bottom: 1px solid var(--doc-border-color);
-  background: #fafbfc;
+  color: var(--ak-text-2);
+  border-bottom: 1px solid var(--ak-border);
+  background: var(--ak-bg-3);
+  .pane-dot {
+    width: 8px;
+    height: 8px;
+    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+    background: var(--ak-gold);
+    &.pane-dot-green {
+      background: var(--ak-green);
+    }
+  }
+  .pane-code {
+    margin-left: auto;
+    font-family: var(--code-block-font);
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: var(--ak-faint);
+  }
 }
 .editor-textarea {
   flex: 1;
@@ -128,7 +155,9 @@ defineExpose({ insertImage, save: () => emit('save', content.value) })
   font-family: var(--code-block-font);
   font-size: 14px;
   line-height: 1.7;
-  background: #fbfbfd;
+  color: var(--ak-text-2);
+  caret-color: var(--ak-gold);
+  background: var(--ak-bg-0);
 }
 .preview-body {
   flex: 1;

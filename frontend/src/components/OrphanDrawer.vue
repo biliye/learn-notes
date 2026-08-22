@@ -14,9 +14,13 @@
       </div>
     </template>
     <div v-if="picking" class="pick-hint">
+      <el-icon class="pick-icon"><Aim /></el-icon>
       点击正文中的任意块完成挂载
     </div>
-    <div v-if="!orphans.length" class="empty">🎉 没有游离见解</div>
+    <div v-if="!orphans.length" class="empty">
+      <el-icon class="empty-icon"><CircleCheck /></el-icon>
+      没有游离见解
+    </div>
     <div v-for="o in orphans" :key="o.id" class="orphan-item" :class="{ picking }" @click="picking && pick(o)">
       <div class="orphan-content" v-html="renderInline(o.contentMd)" />
       <div class="orphan-snippet">原文快照：{{ o.blockSnippet || '（无）' }}</div>
@@ -67,38 +71,61 @@ function formatTime(s) {
   align-items: center;
   gap: 8px;
   font-weight: 600;
+  font-family: var(--ak-font-display);
+  letter-spacing: 1px;
+  color: var(--ak-gold);
 }
 .pick-hint {
-  background: #f0f7ff;
-  color: #409eff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(201, 168, 106, 0.08);
+  color: var(--ak-gold);
   padding: 8px 12px;
-  border-radius: 6px;
+  border: 1px dashed var(--ak-gold-dim);
+  border-radius: 2px;
   margin-bottom: 12px;
   font-size: 13px;
+  .pick-icon { color: var(--ak-gold); }
 }
-.empty { color: #909399; text-align: center; padding: 30px 0; }
+.empty {
+  color: var(--ak-muted);
+  text-align: center;
+  padding: 30px 0;
+  .empty-icon {
+    font-size: 28px;
+    color: var(--ak-green);
+    display: block;
+    margin-bottom: 8px;
+  }
+}
 .orphan-item {
-  border: 1px solid var(--doc-border-color);
-  border-radius: 8px;
+  border: 1px solid var(--ak-border);
+  border-left: 3px solid var(--ak-amber);
+  border-radius: 2px;
+  background: var(--ak-bg-2);
   padding: 10px 12px;
   margin-bottom: 10px;
   &.picking {
-    border-color: #409eff;
+    border-color: var(--ak-gold-dim);
     cursor: pointer;
-    &:hover { background: #f0f7ff; }
+    &:hover { background: var(--ak-bg-3); }
   }
   .orphan-content {
     font-size: 14px;
     line-height: 1.6;
+    color: var(--ak-text-2);
     :deep(p) { margin: 0 0 6px; &:last-child { margin: 0; } }
   }
   .orphan-snippet {
     margin-top: 6px;
     font-size: 12px;
-    color: #909399;
-    background: #f5f6f8;
+    color: var(--ak-muted);
+    font-family: var(--code-block-font);
+    background: var(--ak-bg-0);
+    border: 1px solid var(--ak-border);
     padding: 4px 8px;
-    border-radius: 4px;
+    border-radius: 2px;
     word-break: break-all;
     max-height: 60px;
     overflow: hidden;
@@ -107,8 +134,9 @@ function formatTime(s) {
     display: flex;
     align-items: center;
     margin-top: 6px;
-    color: #909399;
+    color: var(--ak-muted);
     font-size: 12px;
+    font-family: var(--code-block-font);
     .spacer { flex: 1; }
   }
 }

@@ -41,27 +41,53 @@ function onNodeClick(data) {
 </script>
 
 <style scoped lang="scss">
+:deep(.el-tree) {
+  background: transparent;
+  --el-tree-node-hover-bg-color: var(--ak-bg-3);
+  .el-tree-node__content {
+    height: 30px;
+    border-radius: 0;
+    transition: background 0.2s;
+  }
+  .el-tree-node.is-current > .el-tree-node__content {
+    background: var(--ak-bg-4);
+    box-shadow: inset 2px 0 0 var(--ak-gold);
+  }
+  .el-tree-node__expand-icon {
+    color: var(--ak-gold-dim);
+    &:hover { color: var(--ak-gold); }
+  }
+}
 .tree-node {
   display: flex;
   align-items: center;
   gap: 6px;
   width: 100%;
+  font-size: 13px;
   .node-label {
     flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    color: var(--ak-text-2);
+  }
+  .is-current .node-label {
+    color: var(--ak-gold-bright);
+    font-weight: 600;
   }
   .auto-dot {
     width: 8px;
     height: 8px;
-    border-radius: 50%;
-    background: #e6a23c;
+    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+    background: var(--ak-amber);
     flex-shrink: 0;
   }
   .node-count {
-    color: #909399;
-    font-size: 12px;
+    color: var(--ak-faint);
+    font-family: var(--code-block-font);
+    font-size: 11px;
+    min-width: 18px;
+    text-align: right;
   }
 }
 </style>

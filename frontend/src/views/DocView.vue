@@ -3,20 +3,28 @@
     <div class="doc-layout">
       <div class="doc-main">
         <div class="doc-header">
-          <el-breadcrumb separator="/">
+          <el-breadcrumb separator="◆">
             <el-breadcrumb-item v-for="(b, i) in doc.breadcrumb" :key="i">{{ b.name }}</el-breadcrumb-item>
           </el-breadcrumb>
           <h1 class="doc-title">{{ doc.title }}</h1>
           <div class="doc-sub">
             <el-tag v-for="t in doc.tags" :key="t" size="small" type="info" class="tag">{{ t }}</el-tag>
-            <span class="meta">版本 v{{ doc.currentVersion }}</span>
+            <span class="meta meta-ver">VER. v{{ doc.currentVersion }}</span>
             <span class="meta">更新于 {{ formatTime(doc.updatedAt) }}</span>
           </div>
           <div class="doc-actions">
-            <el-button size="small" @click="$router.push(`/docs/${doc.id}/edit`)">编辑</el-button>
-            <el-button size="small" @click="showVersions = true">历史版本</el-button>
-            <el-button size="small" @click="downloadRaw">下载 md</el-button>
-            <el-button size="small" type="danger" plain @click="removeDoc">删除</el-button>
+            <el-button size="small" class="action-btn" @click="$router.push(`/docs/${doc.id}/edit`)">
+              <el-icon><Edit /></el-icon> 编辑
+            </el-button>
+            <el-button size="small" class="action-btn" @click="showVersions = true">
+              <el-icon><Clock /></el-icon> 历史版本
+            </el-button>
+            <el-button size="small" class="action-btn" @click="downloadRaw">
+              <el-icon><Download /></el-icon> 下载 md
+            </el-button>
+            <el-button size="small" type="danger" plain class="action-btn" @click="removeDoc">
+              <el-icon><Delete /></el-icon> 删除
+            </el-button>
           </div>
         </div>
 
@@ -179,27 +187,70 @@ async function onPickAnchor(anchor) {
 .doc-main {
   flex: 1;
   min-width: 0;
+  background: var(--ak-bg-2);
+  border: 1px solid var(--ak-border);
+  border-radius: 2px;
+  padding: 28px 32px 32px;
+  position: relative;
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--ak-gold), transparent 45%);
+  }
 }
 .doc-header {
   margin-bottom: 24px;
   padding-bottom: 16px;
-  border-bottom: 1px solid var(--doc-border-color);
+  border-bottom: 1px solid var(--ak-border);
+  :deep(.el-breadcrumb__inner) {
+    color: var(--ak-muted);
+    font-size: 13px;
+  }
+  :deep(.el-breadcrumb__item:last-child .el-breadcrumb__inner) {
+    color: var(--ak-gold);
+  }
   .doc-title {
-    margin: 10px 0 8px;
-    font-size: 26px;
+    margin: 12px 0 10px;
+    font-family: var(--ak-font-display);
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: 1px;
     line-height: 1.3;
+    color: var(--ak-text);
   }
   .doc-sub {
     display: flex;
     align-items: center;
-    gap: 10px;
-    color: #909399;
+    gap: 12px;
+    color: var(--ak-muted);
     font-size: 13px;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
+    .tag {
+      border-radius: 0;
+      background: rgba(201, 168, 106, 0.08);
+      border-color: var(--ak-gold-dim);
+      color: var(--ak-gold);
+    }
+    .meta-ver {
+      color: var(--ak-gold);
+      font-family: var(--code-block-font);
+    }
+    .meta {
+      font-family: var(--code-block-font);
+      font-size: 12px;
+    }
   }
   .doc-actions {
     display: flex;
     gap: 8px;
+    .action-btn {
+      border-radius: 2px;
+      :deep(.el-icon) { margin-right: 4px; }
+    }
   }
 }
 .orphan-entry {

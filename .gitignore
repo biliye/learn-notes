@@ -26,6 +26,11 @@ learn-notes-backup/
 .DS_Store
 Thumbs.db
 
+# --- ZCode 工具数据 / Python 缓存 ---
+.zcode/
+__pycache__/
+*.pyc
+
 # --- 前端 ---
 npm-debug.log*
 yarn-error.log*

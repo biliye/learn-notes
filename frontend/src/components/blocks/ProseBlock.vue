@@ -24,10 +24,15 @@ const html = computed(() => renderBlock(props.block.raw))
     max-width: 100%;
     display: block;
     margin: 8px 0;
-    border-radius: 4px;
+    border: 1px solid var(--ak-border);
+    border-radius: 2px;
   }
   :deep(a) {
-    color: #409eff;
+    color: var(--ak-gold);
+  }
+  :deep(strong) {
+    color: var(--ak-gold-bright);
+    font-weight: 600;
   }
 }
 </style>

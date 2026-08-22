@@ -2,27 +2,32 @@
   <div class="docs-home">
     <template v-if="searchQuery">
       <!-- 搜索结果 -->
-      <div class="page-head">
-        <h3>搜索「{{ searchQuery }}」的结果</h3>
-        <el-button link type="primary" @click="backToList">返回列表</el-button>
+      <div class="page-head ak-page-head">
+        <h3>搜索「{{ searchQuery }}」</h3>
+        <span class="ak-head-sub">SEARCH RESULTS</span>
+        <el-button link type="primary" class="head-action" @click="backToList">← 返回列表</el-button>
       </div>
       <div v-if="searchResults.length" class="search-results">
         <div v-for="r in searchResults" :key="r.docId" class="search-item" @click="$router.push(`/docs/${r.docId}`)">
           <div class="search-breadcrumb">
             <span v-for="(b, i) in r.breadcrumb" :key="b.id">
-              <template v-if="i > 0"> / </template>{{ b.name }}
+              <template v-if="i > 0"><span class="crumb-sep" aria-hidden="true">◆</span></template>{{ b.name }}
             </span>
           </div>
           <div class="search-title">{{ r.title }}</div>
           <div class="search-snippet" v-html="highlightSnippet(r.snippet)" />
+          <div class="search-go" aria-hidden="true">▸</div>
         </div>
       </div>
       <el-empty v-else description="没有命中结果" />
     </template>
     <template v-else>
-      <div class="page-head">
+      <div class="page-head ak-page-head">
         <h3>{{ currentTopic ? currentTopic.name : '全部文档' }}</h3>
-        <el-button type="primary" @click="newDoc">＋ 新建文档</el-button>
+        <span class="ak-head-sub">{{ currentTopic ? 'TOPIC DIRECTORY' : 'MASTER INDEX' }}</span>
+        <el-button type="primary" class="head-action ak-btn-slant" @click="newDoc">
+          <el-icon><Plus /></el-icon> 新建文档
+        </el-button>
       </div>
       <DocList :topic-id="topicId" :category-id="categoryId" ref="docList" />
     </template>
@@ -94,32 +99,64 @@ function highlightSnippet(snippet) {
   margin: 0 auto;
   padding: 20px;
 }
-.page-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-  h3 { margin: 0; }
+.head-action {
+  margin-left: auto;
+  :deep(.el-icon) { margin-right: 4px; }
 }
 .search-item {
-  background: #fff;
-  border: 1px solid var(--doc-border-color);
-  border-radius: 8px;
-  padding: 12px 16px;
+  position: relative;
+  background: var(--ak-bg-2);
+  border: 1px solid var(--ak-border);
+  border-left: 3px solid var(--ak-border-2);
+  border-radius: 2px;
+  padding: 12px 40px 12px 16px;
   margin-bottom: 10px;
   cursor: pointer;
-  &:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
-  .search-breadcrumb { color: #909399; font-size: 12px; margin-bottom: 4px; }
-  .search-title { font-weight: 600; margin-bottom: 4px; }
+  transition: border-color 0.2s, background 0.2s;
+  &:hover {
+    background: var(--ak-bg-3);
+    border-left-color: var(--ak-gold);
+  }
+  .search-breadcrumb {
+    color: var(--ak-muted);
+    font-size: 12px;
+    margin-bottom: 4px;
+    .crumb-sep {
+      color: var(--ak-gold-dim);
+      font-size: 8px;
+      margin: 0 6px;
+      vertical-align: middle;
+    }
+  }
+  .search-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--ak-text);
+  }
   .search-snippet {
-    color: #606266;
+    color: var(--ak-text-2);
     font-size: 13px;
     line-height: 1.6;
     :deep(mark) {
-      background: #ffe58f;
+      background: var(--ak-gold-glow);
+      color: var(--ak-gold-bright);
       padding: 0 2px;
       border-radius: 2px;
     }
+  }
+  .search-go {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--ak-gold-dim);
+    font-size: 14px;
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+  }
+  &:hover .search-go {
+    opacity: 1;
+    transform: translateY(-50%) translateX(3px);
   }
 }
 </style>

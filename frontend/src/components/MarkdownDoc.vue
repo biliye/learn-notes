@@ -112,12 +112,14 @@ defineExpose({ startPick, stopPick: () => (picking.value = false) })
   position: relative;
   &.pick-target {
     .block-slot {
-      border: 2px dashed #409eff;
-      border-radius: 8px;
+      border: 1px dashed var(--ak-gold);
+      border-radius: 2px;
       padding: 4px 8px;
       cursor: pointer;
       transition: background 0.15s;
-      &:hover { background: #f0f7ff; }
+      &:hover {
+        background: rgba(201, 168, 106, 0.08);
+      }
     }
   }
 }
@@ -129,15 +131,21 @@ defineExpose({ startPick, stopPick: () => (picking.value = false) })
   right: 8px;
   top: 4px;
   opacity: 0;
-  transition: opacity 0.15s;
-  border: 1px solid #409eff;
-  color: #409eff;
-  background: #fff;
-  border-radius: 4px;
-  font-size: 12px;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+  border: 1px solid var(--ak-gold-dim);
+  color: var(--ak-gold);
+  background: var(--ak-bg-2);
+  border-radius: 2px;
+  font-family: var(--code-block-font);
+  font-size: 11px;
+  letter-spacing: 0.5px;
   padding: 2px 8px;
   cursor: pointer;
   z-index: 5;
+  &:hover {
+    background: var(--ak-gold);
+    color: var(--ak-bg-0);
+  }
 }
 .block-slot:hover .add-ann-btn {
   opacity: 1;

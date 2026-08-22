@@ -1,8 +1,11 @@
 <template>
   <div class="catalog-manage">
-    <div class="page-head">
+    <div class="page-head ak-page-head">
       <h3>分类管理</h3>
-      <el-button type="primary" @click="openCreate(null)">＋ 新增大类</el-button>
+      <span class="ak-head-sub">CATALOG CONTROL</span>
+      <el-button type="primary" class="head-add ak-btn-slant" @click="openCreate(null)">
+        <el-icon><Plus /></el-icon> 新增大类
+      </el-button>
     </div>
     <el-table :data="flatRows" row-key="id" :tree-props="{ children: 'children' }" default-expand-all>
       <el-table-column prop="name" label="名称" min-width="160">
@@ -163,15 +166,29 @@ function isProtected(row) {
   margin: 0 auto;
   padding: 20px;
 }
-.page-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-  h3 { margin: 0; }
+.head-add {
+  margin-left: auto;
+  :deep(.el-icon) { margin-right: 4px; }
 }
 .auto-tag {
-  color: #e6a23c;
+  color: var(--ak-amber);
   margin-right: 4px;
+}
+:deep(.el-table) {
+  background: var(--ak-bg-2);
+  border: 1px solid var(--ak-border);
+  border-radius: 2px;
+  --el-table-border-color: var(--ak-border);
+  --el-table-header-bg-color: var(--ak-bg-3);
+  --el-table-tr-bg-color: var(--ak-bg-2);
+  --el-table-row-hover-bg-color: var(--ak-bg-3);
+  --el-table-header-text-color: var(--ak-gold);
+  --el-table-text-color: var(--ak-text-2);
+  --el-table-expanded-cell-bg-color: var(--ak-bg-2);
+  th.el-table__cell {
+    font-weight: 600;
+    font-family: var(--ak-font-display);
+    letter-spacing: 0.5px;
+  }
 }
 </style>

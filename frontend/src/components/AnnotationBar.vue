@@ -1,8 +1,11 @@
 <template>
   <div class="ann-bar" :class="{ stale: hasStale }">
     <span class="bar-main" @click="$emit('toggle')">
-      💡 我的见解 ({{ annotations.length }})
-      <span v-if="hasStale" class="stale-mark">⚠ 原文已变更，请确认</span>
+      <el-icon class="bar-icon"><Lightbulb /></el-icon>
+      我的见解 ({{ annotations.length }})
+      <span v-if="hasStale" class="stale-mark">
+        <el-icon><WarningFilled /></el-icon> 原文已变更，请确认
+      </span>
     </span>
     <span class="bar-actions">
       <el-button v-if="!expanded" link size="small" @click.stop="$emit('expand-all')">全部展开</el-button>
@@ -52,23 +55,34 @@ function onAdd(content) {
 <style scoped lang="scss">
 .ann-bar {
   margin: 10px 0 18px;
-  border: 1px dashed #d9d9d9;
-  border-radius: 6px;
+  border: 1px dashed var(--ak-gold-dim);
+  border-radius: 2px;
   padding: 6px 12px;
-  background: #fffdf5;
+  background: rgba(201, 168, 106, 0.05);
+  border-left: 3px solid var(--ak-gold-dim);
   &.stale {
-    border-color: #e6a23c;
-    background: #fff7e6;
+    border-color: var(--ak-amber);
+    border-left-color: var(--ak-amber);
+    background: rgba(201, 141, 61, 0.08);
   }
   .bar-main {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     cursor: pointer;
     font-size: 13px;
-    color: #b8860b;
+    color: var(--ak-gold);
     font-weight: 600;
     user-select: none;
+    .bar-icon {
+      color: var(--ak-gold);
+    }
     .stale-mark {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
       margin-left: 8px;
-      color: #e6a23c;
+      color: var(--ak-amber);
       font-weight: 400;
     }
   }

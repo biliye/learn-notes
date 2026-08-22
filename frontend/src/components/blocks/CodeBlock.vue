@@ -45,23 +45,48 @@ async function copy() {
   margin: 0 0 20px;
 }
 .code-block {
+  position: relative;
   background: var(--code-block-bg);
   border-radius: var(--code-block-radius);
+  border: 1px solid #262a36;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  /* 金色角括号 */
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    pointer-events: none;
+    z-index: 2;
+  }
+  &::before {
+    top: -1px;
+    left: -1px;
+    border-top: 2px solid var(--ak-gold-dim);
+    border-left: 2px solid var(--ak-gold-dim);
+  }
+  &::after {
+    bottom: -1px;
+    right: -1px;
+    border-bottom: 2px solid var(--ak-gold-dim);
+    border-right: 2px solid var(--ak-gold-dim);
+  }
 }
 .code-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 6px 12px;
-  background: rgba(255, 255, 255, 0.06);
+  background: #20242e;
+  border-bottom: 1px solid #262a36;
   .code-lang {
     color: var(--code-lang-color);
     font-family: var(--code-block-font);
     font-size: 12px;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
   }
   .copy-btn {
     display: inline-flex;
@@ -69,12 +94,16 @@ async function copy() {
     gap: 4px;
     background: var(--code-copy-bg);
     color: var(--code-block-text);
-    border: none;
-    border-radius: 4px;
+    border: 1px solid transparent;
+    border-radius: 2px;
     padding: 2px 8px;
     font-size: 12px;
     cursor: pointer;
-    &:hover { background: rgba(255, 255, 255, 0.2); }
+    transition: background 0.15s, border-color 0.15s;
+    &:hover {
+      background: rgba(201, 168, 106, 0.2);
+      border-color: var(--ak-gold-dim);
+    }
   }
 }
 .code-pre {
@@ -87,13 +116,15 @@ async function copy() {
     line-height: 1.6;
     color: var(--code-block-text);
     white-space: pre;
-    // highlight.js 深色主题覆盖
-    :deep(.hljs-keyword) { color: #569cd6; }
-    :deep(.hljs-string) { color: #ce9178; }
-    :deep(.hljs-comment) { color: #6a9955; font-style: italic; }
-    :deep(.hljs-number) { color: #b5cea8; }
-    :deep(.hljs-title), :deep(.hljs-title.function_) { color: #dcdcaa; }
-    :deep(.hljs-built_in) { color: #4ec9b0; }
+    // highlight.js 深色主题覆盖（Arknight 战术终端色）
+    :deep(.hljs-keyword) { color: #7fb3e0; }
+    :deep(.hljs-string) { color: #d4b26f; }
+    :deep(.hljs-comment) { color: #6a7259; font-style: italic; }
+    :deep(.hljs-number) { color: #8fbf9f; }
+    :deep(.hljs-title), :deep(.hljs-title.function_) { color: #e0c283; }
+    :deep(.hljs-built_in) { color: #6fa8a0; }
+    :deep(.hljs-attr) { color: #b6b1a3; }
+    :deep(.hljs-params) { color: #9aa3b2; }
   }
 }
 </style>

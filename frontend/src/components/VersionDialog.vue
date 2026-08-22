@@ -62,11 +62,24 @@ function formatTime(s) {
   overflow-y: auto;
   font-size: 15px;
   line-height: 1.7;
+  color: var(--ak-text);
   :deep(pre) {
-    background: #f5f6f8;
+    background: var(--code-block-bg);
     padding: 12px;
-    border-radius: 6px;
+    border-radius: 2px;
+    border: 1px solid var(--ak-border);
     overflow-x: auto;
+    color: var(--code-block-text);
+    font-family: var(--code-block-font);
   }
+  :deep(code) {
+    background: var(--doc-code-inline-bg);
+    color: var(--doc-code-inline-color);
+    border-radius: 2px;
+    padding: 0.1em 0.35em;
+    font-family: var(--code-block-font);
+    font-size: 0.9em;
+  }
+  :deep(a) { color: var(--ak-gold); }
 }
 </style>

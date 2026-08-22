@@ -1,5 +1,12 @@
 <template>
   <div class="doc-edit">
+    <div class="edit-bar">
+      <span class="edit-bar-title">
+        <span class="edit-bar-mark" aria-hidden="true"></span>
+        {{ isEdit ? '编辑文档 / EDIT DOC' : '新建文档 / NEW DOC' }}
+      </span>
+      <span class="edit-bar-sub">AUTHORING TERMINAL</span>
+    </div>
     <div class="edit-head">
       <template v-if="!isEdit">
         <el-select v-model="form.categoryId" placeholder="选择大类" class="category-select" filterable clearable @change="onCategoryChange">
@@ -11,19 +18,27 @@
         <template v-if="form.categoryId && !topicsOfCategory.length">
           <span class="empty-topic-hint">该大类下暂无小方向</span>
           <el-input v-model="newTopicName" placeholder="新小方向名称" class="new-topic-input" maxlength="80" @keyup.enter="quickCreateTopic" />
-          <el-button :loading="creatingTopic" size="small" @click="quickCreateTopic">＋ 新建小方向</el-button>
+          <el-button :loading="creatingTopic" size="small" @click="quickCreateTopic">
+            <el-icon><Plus /></el-icon> 新建小方向
+          </el-button>
         </template>
         <el-upload :show-file-list="false" accept=".zip" :auto-upload="false" :on-change="onPickZip">
-          <el-button :loading="importing">📦 一键导入压缩包</el-button>
+          <el-button :loading="importing">
+            <el-icon><Box /></el-icon> 一键导入压缩包
+          </el-button>
         </el-upload>
       </template>
       <el-input v-model="form.title" placeholder="文档标题" class="title-input" maxlength="200" />
       <el-input v-model="form.slug" placeholder="slug（留空自动生成）" class="slug-input" maxlength="120" />
       <el-input v-model="changeNote" placeholder="本次更新说明（可选）" class="note-input" maxlength="200" />
-      <el-button type="primary" :loading="saving" @click="save">保存 (Ctrl+S)</el-button>
+      <el-button type="primary" class="save-btn ak-btn-slant" :loading="saving" @click="save">
+        <el-icon><Check /></el-icon> 保存 (Ctrl+S)
+      </el-button>
       <el-button @click="cancel">取消</el-button>
       <el-upload :show-file-list="false" accept="image/*" :auto-upload="false" :on-change="onPickImage">
-        <el-button>插入图片</el-button>
+        <el-button>
+          <el-icon><Picture /></el-icon> 插入图片
+        </el-button>
       </el-upload>
     </div>
     <MarkdownEditor ref="editor" v-model="form.contentMd" @save="save" />
@@ -221,20 +236,57 @@ function onPickImage(uploadFile) {
   flex-direction: column;
   gap: 12px;
 }
+.edit-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  .edit-bar-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--ak-font-display);
+    font-weight: 600;
+    font-size: 16px;
+    letter-spacing: 1px;
+    color: var(--ak-text);
+    .edit-bar-mark {
+      width: 10px;
+      height: 10px;
+      clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+      background: var(--ak-gold);
+    }
+  }
+  .edit-bar-sub {
+    font-family: var(--code-block-font);
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--ak-faint);
+  }
+}
 .edit-head {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  background: var(--ak-bg-2);
+  border: 1px solid var(--ak-border);
+  border-radius: 2px;
+  padding: 10px 12px;
   .category-select { width: 150px; }
   .topic-select { width: 200px; }
   .new-topic-input { width: 160px; }
   .empty-topic-hint {
-    color: #909399;
+    color: var(--ak-muted);
     font-size: 12px;
   }
   .title-input { width: 280px; }
   .slug-input { width: 200px; }
   .note-input { width: 220px; }
+  :deep(.el-input__wrapper) {
+    border-radius: 2px;
+  }
+  .save-btn {
+    :deep(.el-icon) { margin-right: 4px; }
+  }
 }
 </style>
