@@ -60,7 +60,12 @@
 
   /* 布局 */
   --sidebar-width: 288px;
+  --sidebar-width-mobile: min(288px, 82vw);
   --topbar-height: 52px;
+
+  /* 移动端断点（与组件内 @media 保持一致） */
+  --bp-mobile: 768px;
+  --bp-narrow: 480px;
 
   /* 圆角：几乎直角（Arknight 风格） */
   --el-border-radius-base: 2px;
@@ -78,6 +83,12 @@ body,
   height: 100%;
   margin: 0;
   padding: 0;
+}
+
+/* 阻止 iOS Safari 在横屏/旋转时自动放大字号（移动端适配） */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
@@ -362,4 +373,24 @@ html.dark .el-breadcrumb__separator {
   border: none;
   border-top: 1px solid var(--ak-border);
   margin: 24px 0;
+}
+
+/* ---------- 移动端全局（断点与组件内 @media 一致） ---------- */
+@media (max-width: 768px) {
+  /* 滚动条更窄，触屏下不抢横向空间 */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  /* 正文宽表格：小屏下整表横向滚动（display:block 触发匿名表格盒，列仍对齐） */
+  .prose table {
+    display: block;
+    overflow-x: auto;
+  }
+
+  /* 弹层内正文（版本预览等）同样允许横向滚动 */
+  .prose {
+    overflow-x: auto;
+  }
 }

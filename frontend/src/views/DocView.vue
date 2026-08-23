@@ -48,7 +48,7 @@
           </el-badge>
         </div>
       </div>
-      <TocSidebar :blocks="doc.blocks" />
+      <TocSidebar class="doc-toc" :blocks="doc.blocks" />
     </div>
 
     <VersionDialog v-model="showVersions" :doc-id="doc.id" />
@@ -246,6 +246,7 @@ async function onPickAnchor(anchor) {
   }
   .doc-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     .action-btn {
       border-radius: 2px;
@@ -255,5 +256,35 @@ async function onPickAnchor(anchor) {
 }
 .orphan-entry {
   margin-top: 24px;
+}
+
+/* ---------- 移动端：隐藏右侧目录，正文单栏阅读 ---------- */
+@media (max-width: 768px) {
+  .doc-view {
+    padding: 16px 0 40px;
+  }
+  .doc-layout {
+    display: block;
+    padding: 0 12px;
+  }
+  .doc-toc {
+    display: none;
+  }
+  .doc-main {
+    padding: 20px 14px 24px;
+  }
+  .doc-sub {
+    flex-wrap: wrap;
+  }
+  .doc-title {
+    font-size: 22px;
+  }
+  .doc-actions {
+    .action-btn {
+      flex: 1;
+      justify-content: center;
+      margin-left: 0;
+    }
+  }
 }
 </style>

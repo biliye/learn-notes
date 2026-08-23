@@ -90,4 +90,11 @@ function onNodeClick(data) {
     text-align: right;
   }
 }
+
+/* 移动端：增大触摸目标（桌面 30px 偏小，抽屉内 36px 更易点） */
+@media (max-width: 768px) {
+  :deep(.el-tree-node__content) {
+    height: 36px;
+  }
+}
 </style>

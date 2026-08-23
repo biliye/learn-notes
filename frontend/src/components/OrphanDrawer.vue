@@ -2,7 +2,7 @@
   <el-drawer
     v-model="visible"
     title="游离见解（ORPHAN）"
-    size="380px"
+    size="min(380px, 92vw)"
     :with-header="true"
   >
     <template #header>

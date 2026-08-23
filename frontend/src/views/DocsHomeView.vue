@@ -159,4 +159,18 @@ function highlightSnippet(snippet) {
     transform: translateY(-50%) translateX(3px);
   }
 }
+
+/* ---------- 移动端：页头可换行、搜索结果卡片触屏箭头常显 ---------- */
+@media (max-width: 768px) {
+  .docs-home {
+    padding: 14px 12px;
+  }
+  :deep(.page-head) {
+    flex-wrap: wrap;
+  }
+  .search-go {
+    opacity: 1;
+    transform: translateY(-50%);
+  }
+}
 </style>

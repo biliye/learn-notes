@@ -1,6 +1,15 @@
 <template>
   <div class="md-editor">
-    <div class="editor-pane">
+    <!-- 移动端：源码/预览 单栏切换标签（桌面双栏并排，隐藏该标签条） -->
+    <div class="mode-tabs">
+      <button class="mode-tab" :class="{ active: mode === 'source' }" @click="mode = 'source'">
+        <span class="mode-dot" aria-hidden="true"></span> 源码
+      </button>
+      <button class="mode-tab" :class="{ active: mode === 'preview' }" @click="mode = 'preview'">
+        <span class="mode-dot mode-dot-green" aria-hidden="true"></span> 预览
+      </button>
+    </div>
+    <div v-show="mode === 'source'" class="editor-pane">
       <div class="pane-label">
         <span class="pane-dot" aria-hidden="true"></span>
         Markdown 源码
@@ -17,7 +26,7 @@
         @drop.prevent="onDrop"
       />
     </div>
-    <div class="preview-pane">
+    <div v-show="mode === 'preview'" class="preview-pane">
       <div class="pane-label">
         <span class="pane-dot pane-dot-green" aria-hidden="true"></span>
         预览（仅供预览，非权威切块）
@@ -45,6 +54,9 @@ const content = computed({
   set: (v) => emit('update:modelValue', v)
 })
 const textarea = ref(null)
+
+// 移动端单栏切换：source / preview（桌面双栏并排，不受影响）
+const mode = ref('source')
 
 // 预览：整篇本地渲染（仅预览用）
 const previewHtml = computed(() => renderBlock(content.value))
@@ -109,6 +121,10 @@ defineExpose({ insertImage, save: () => emit('save', content.value) })
   height: calc(100vh - 260px);
   min-height: 420px;
 }
+/* 移动端单栏切换标签：桌面隐藏 */
+.mode-tabs {
+  display: none;
+}
 .editor-pane,
 .preview-pane {
   flex: 1;
@@ -162,8 +178,55 @@ defineExpose({ insertImage, save: () => emit('save', content.value) })
 .preview-body {
   flex: 1;
   overflow-y: auto;
+  overflow-x: auto;
   padding: 14px 16px;
   font-size: 15px;
   line-height: 1.75;
+}
+
+/* ---------- 移动端：单栏 + 源码/预览切换 ---------- */
+@media (max-width: 768px) {
+  .md-editor {
+    flex-direction: column;
+    height: calc(100dvh - 340px);
+    min-height: 300px;
+  }
+  .mode-tabs {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .mode-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    border: 1px solid var(--ak-border);
+    border-radius: 2px;
+    background: var(--ak-bg-2);
+    color: var(--ak-text-2);
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+    &.active {
+      background: var(--ak-bg-4);
+      border-color: var(--ak-gold-dim);
+      color: var(--ak-gold);
+      font-weight: 600;
+    }
+    .mode-dot {
+      width: 7px;
+      height: 7px;
+      clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+      background: var(--ak-gold);
+      &.mode-dot-green {
+        background: var(--ak-green);
+      }
+    }
+  }
+  .editor-pane,
+  .preview-pane {
+    min-height: 0;
+  }
 }
 </style>

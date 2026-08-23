@@ -132,7 +132,7 @@ async function onSubmit() {
 
 /* ---- 登录面板 ---- */
 .login-panel {
-  width: 380px;
+  width: min(380px, calc(100vw - 40px));
   background: linear-gradient(180deg, var(--ak-bg-3), var(--ak-bg-2));
   border: 1px solid var(--ak-border-2);
   border-radius: 2px;
@@ -220,5 +220,19 @@ async function onSubmit() {
 
 @media (prefers-reduced-motion: reduce) {
   .scan-line { animation: none; }
+}
+
+/* ---------- 移动端：面板与装饰压缩 ---------- */
+@media (max-width: 768px) {
+  .login-panel {
+    padding: 28px 22px 16px;
+  }
+  .deco-diamonds {
+    display: none;
+  }
+  .panel-foot {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
 }
 </style>

@@ -100,4 +100,16 @@ function onAdd(content) {
     clear: both;
   }
 }
+
+/* ---------- 移动端：标题行与操作按钮垂直堆叠 ---------- */
+@media (max-width: 768px) {
+  .ann-bar {
+    padding: 8px 10px;
+  }
+  .bar-actions {
+    float: none;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+}
 </style>

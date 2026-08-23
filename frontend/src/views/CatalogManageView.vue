@@ -14,11 +14,11 @@
           {{ row.name }}
         </template>
       </el-table-column>
-      <el-table-column prop="slug" label="slug" min-width="140" />
-      <el-table-column prop="remark" label="注释" min-width="180" show-overflow-tooltip />
-      <el-table-column prop="sortOrder" label="排序" width="80" />
+      <el-table-column v-if="!isMobile" prop="slug" label="slug" min-width="140" />
+      <el-table-column v-if="!isMobile" prop="remark" label="注释" min-width="180" show-overflow-tooltip />
+      <el-table-column v-if="!isMobile" prop="sortOrder" label="排序" width="80" />
       <el-table-column prop="docCount" label="文档数" width="80" />
-      <el-table-column label="操作" width="260" fixed="right">
+      <el-table-column label="操作" width="260" :fixed="isMobile ? false : 'right'">
         <template #default="{ row }">
           <el-button v-if="!row.children" link size="small" type="primary" @click="$router.push({ path: '/docs', query: { topicId: row.id } })">查看</el-button>
           <el-button link size="small" @click="openCreate(row)">＋ 小方向</el-button>
@@ -29,7 +29,7 @@
       </el-table-column>
     </el-table>
 
-    <el-dialog v-model="dialog.visible" :title="dialog.title" width="480px">
+    <el-dialog v-model="dialog.visible" :title="dialog.title" width="min(480px, 92vw)">
       <el-form label-width="80px">
         <el-form-item label="父节点">
           <el-select v-model="dialog.parentId" placeholder="选择大类（留空为新建大类）" clearable filterable>
@@ -47,7 +47,7 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="moveDialog.visible" title="移动小方向" width="400px">
+    <el-dialog v-model="moveDialog.visible" title="移动小方向" width="min(400px, 92vw)">
       <el-select v-model="moveDialog.targetCategoryId" placeholder="选择目标大类" style="width: 100%">
         <el-option v-for="c in catalog.tree" :key="c.id" :label="c.name" :value="c.id" />
       </el-select>
@@ -64,8 +64,12 @@ import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { createNode, updateNode, moveNode, deleteNode } from '../api/catalog'
 import { useCatalogStore } from '../stores/catalog'
+import { useIsMobile } from '../composables/useIsMobile'
 
 const catalog = useCatalogStore()
+
+// 移动端：精简表格列（隐藏 slug/注释/排序）
+const isMobile = useIsMobile()
 
 const flatRows = computed(() => catalog.tree)
 

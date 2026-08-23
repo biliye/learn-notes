@@ -1,6 +1,11 @@
 <template>
   <div class="layout">
-    <aside class="sidebar">
+    <!-- 移动端遮罩：抽屉展开时点击关闭 -->
+    <transition name="fade">
+      <div v-if="sidebarOpen" class="backdrop" @click="sidebarOpen = false" aria-hidden="true"></div>
+    </transition>
+
+    <aside class="sidebar" :class="{ open: sidebarOpen }">
       <div class="brand-block">
         <div class="brand-mark" aria-hidden="true">
           <span class="brand-diamond"></span>
@@ -11,14 +16,18 @@
         </div>
       </div>
       <div class="sidebar-nav">
-        <el-button link class="nav-btn" @click="$router.push('/docs')">
+        <el-button link class="nav-btn" @click="go('/docs')">
           <el-icon><FolderOpened /></el-icon> 文档库
         </el-button>
-        <el-button link class="nav-btn" @click="$router.push('/catalog')">
+        <el-button link class="nav-btn" @click="go('/catalog')">
           <el-icon><Grid /></el-icon> 分类管理
         </el-button>
-        <el-button link class="nav-btn" @click="$router.push('/inbox')">
+        <el-button link class="nav-btn" @click="go('/inbox')">
           <el-icon><Message /></el-icon> INBOX
+        </el-button>
+        <!-- 移动端：导出备份包入口（桌面在顶栏） -->
+        <el-button link class="nav-btn mobile-export" @click="downloadExport">
+          <el-icon><Download /></el-icon> 导出备份包
         </el-button>
       </div>
       <div class="sidebar-label">/ 分类目录</div>
@@ -32,6 +41,9 @@
     <div class="main">
       <header class="topbar">
         <div class="topbar-left">
+          <button class="hamburger" aria-label="打开导航" @click="sidebarOpen = true">
+            <el-icon :size="18"><Menu /></el-icon>
+          </button>
           <span class="topbar-crumb" aria-hidden="true">//</span>
           <span class="topbar-tag">资料检索</span>
         </div>
@@ -46,7 +58,7 @@
           <el-dropdown @command="onCommand">
             <span class="user-chip">
               <span class="user-avatar" aria-hidden="true">{{ initial }}</span>
-              {{ auth.user?.nickname || auth.user?.username }}
+              <span class="user-name">{{ auth.user?.nickname || auth.user?.username }}</span>
               <el-icon><ArrowDown /></el-icon>
             </span>
             <template #dropdown>
@@ -67,7 +79,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import CatalogTree from '../components/CatalogTree.vue'
@@ -80,17 +92,29 @@ const auth = useAuthStore()
 const catalog = useCatalogStore()
 
 const q = ref('')
+const sidebarOpen = ref(false)
 
 const initial = computed(() => {
   const name = auth.user?.nickname || auth.user?.username || '?'
   return String(name).charAt(0).toUpperCase()
 })
 
+// 路由变化时自动收起移动端抽屉
+watch(() => router.currentRoute.value.fullPath, () => {
+  sidebarOpen.value = false
+})
+
 onMounted(() => {
   if (!catalog.loaded) catalog.load()
 })
 
+function go(path) {
+  sidebarOpen.value = false
+  router.push(path)
+}
+
 function onSelectTopic(node) {
+  sidebarOpen.value = false
   router.push({ path: '/docs', query: { topicId: node.id } })
 }
 
@@ -207,6 +231,10 @@ function onCommand(cmd) {
     }
   }
 }
+/* 移动端专用入口：桌面隐藏 */
+.mobile-export {
+  display: none;
+}
 .sidebar-label {
   padding: 14px 16px 6px;
   font-family: var(--code-block-font);
@@ -280,6 +308,24 @@ function onCommand(cmd) {
     }
   }
 }
+/* 移动端汉堡按钮：桌面隐藏 */
+.hamburger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--ak-border);
+  background: var(--ak-bg-2);
+  color: var(--ak-gold);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  &:hover {
+    background: var(--ak-bg-3);
+    color: var(--ak-gold-bright);
+  }
+}
 .search-input {
   width: 320px;
   :deep(.el-input__wrapper) {
@@ -317,6 +363,12 @@ function onCommand(cmd) {
     font-weight: 700;
     font-size: 14px;
   }
+  .user-name {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   &:hover {
     color: var(--ak-gold);
   }
@@ -324,6 +376,22 @@ function onCommand(cmd) {
 .content {
   flex: 1;
   overflow-y: auto;
+}
+
+/* 移动端遮罩 + 抽屉过渡 */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 10, 14, 0.6);
+  z-index: 1190;
+}
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.25s;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
 @media (max-width: 900px) {
@@ -334,6 +402,71 @@ function onCommand(cmd) {
     width: 200px;
   }
   .brand-sub {
+    display: none;
+  }
+}
+
+/* ---------- 移动端：侧栏变抽屉，顶栏重排 ---------- */
+@media (max-width: 768px) {
+  .layout {
+    display: block;
+    height: 100%;
+  }
+  .main {
+    height: 100%;
+  }
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: var(--sidebar-width-mobile);
+    max-width: 82vw;
+    z-index: 1200;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    box-shadow: 8px 0 24px rgba(0, 0, 0, 0.45);
+    &.open {
+      transform: translateX(0);
+    }
+  }
+  .hamburger {
+    display: inline-flex;
+  }
+  .mobile-export {
+    display: flex;
+    margin-top: 2px;
+  }
+  .export-btn {
+    display: none;
+  }
+  .topbar {
+    padding: 0 10px;
+    gap: 8px;
+  }
+  .topbar-left {
+    flex-shrink: 0;
+  }
+  .topbar-tag {
+    display: none;
+  }
+  .search-input {
+    flex: 1;
+    width: auto;
+    min-width: 0;
+  }
+  .topbar-right {
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .user-name {
+    max-width: 72px;
+  }
+}
+
+@media (max-width: 480px) {
+  .user-name,
+  .topbar-crumb {
     display: none;
   }
 }

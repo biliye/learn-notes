@@ -152,4 +152,15 @@ defineExpose({ load })
     border-radius: 2px;
   }
 }
+
+/* ---------- 移动端：卡片 meta 允许换行 ---------- */
+@media (max-width: 768px) {
+  .doc-card {
+    padding: 12px 14px;
+  }
+  .doc-meta {
+    flex-wrap: wrap;
+    gap: 6px 10px;
+  }
+}
 </style>

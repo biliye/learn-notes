@@ -10,7 +10,7 @@
         <el-button link size="small" type="primary" @click.stop="openMove(doc)">移动到…</el-button>
       </template>
     </DocList>
-    <el-dialog v-model="moveDialog.visible" title="移动到小方向" width="400px">
+    <el-dialog v-model="moveDialog.visible" title="移动到小方向" width="min(400px, 92vw)">
       <el-select v-model="moveDialog.topicId" placeholder="选择目标小方向" style="width: 100%" filterable>
         <el-option-group v-for="c in catalog.tree" :key="c.id" :label="c.name">
           <el-option v-for="t in c.children" :key="t.id" :label="t.name" :value="t.id" />

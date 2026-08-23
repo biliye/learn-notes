@@ -289,4 +289,31 @@ function onPickImage(uploadFile) {
     :deep(.el-icon) { margin-right: 4px; }
   }
 }
+
+/* ---------- 移动端：工具栏控件整行排布 ---------- */
+@media (max-width: 768px) {
+  .doc-edit {
+    padding: 12px 10px;
+  }
+  .edit-bar {
+    flex-wrap: wrap;
+  }
+  .edit-head {
+    padding: 10px 8px;
+    .category-select,
+    .topic-select,
+    .new-topic-input,
+    .title-input,
+    .slug-input,
+    .note-input {
+      width: 100%;
+    }
+    .empty-topic-hint {
+      width: 100%;
+    }
+    .save-btn {
+      flex: 1;
+    }
+  }
+}
 </style>

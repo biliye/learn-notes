@@ -150,4 +150,11 @@ defineExpose({ startPick, stopPick: () => (picking.value = false) })
 .block-slot:hover .add-ann-btn {
   opacity: 1;
 }
+
+/* 移动端无 hover：见解按钮常显 */
+@media (max-width: 768px) {
+  .add-ann-btn {
+    opacity: 1;
+  }
+}
 </style>

@@ -1,15 +1,15 @@
 <template>
-  <el-dialog v-model="visible" title="历史版本" width="640px">
+  <el-dialog v-model="visible" title="历史版本" width="min(640px, 92vw)">
     <el-table :data="versions" size="small" highlight-current-row @row-click="showVersion">
       <el-table-column prop="version" label="版本" width="70" />
       <el-table-column prop="changeNote" label="更新说明" show-overflow-tooltip />
-      <el-table-column prop="createdAt" label="时间" width="160">
+      <el-table-column prop="createdAt" label="时间" width="150">
         <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
       </el-table-column>
     </el-table>
     <el-empty v-if="!versions.length" description="暂无历史版本" />
 
-    <el-dialog v-model="showContent" width="720px" append-to-body :title="`版本 v${currentVersion} 正文`">
+    <el-dialog v-model="showContent" width="min(720px, 92vw)" append-to-body :title="`版本 v${currentVersion} 正文`">
       <div class="version-content" v-html="contentHtml" />
     </el-dialog>
   </el-dialog>
@@ -60,6 +60,7 @@ function formatTime(s) {
 .version-content {
   max-height: 60vh;
   overflow-y: auto;
+  overflow-x: auto;
   font-size: 15px;
   line-height: 1.7;
   color: var(--ak-text);
