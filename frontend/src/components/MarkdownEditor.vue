@@ -9,7 +9,7 @@
         <span class="mode-dot mode-dot-green" aria-hidden="true"></span> 预览
       </button>
     </div>
-    <div v-show="mode === 'source'" class="editor-pane">
+    <div v-show="!isMobile || mode === 'source'" class="editor-pane">
       <div class="pane-label">
         <span class="pane-dot" aria-hidden="true"></span>
         Markdown 源码
@@ -26,7 +26,7 @@
         @drop.prevent="onDrop"
       />
     </div>
-    <div v-show="mode === 'preview'" class="preview-pane">
+    <div v-show="!isMobile || mode === 'preview'" class="preview-pane">
       <div class="pane-label">
         <span class="pane-dot pane-dot-green" aria-hidden="true"></span>
         预览（仅供预览，非权威切块）
@@ -43,6 +43,7 @@ import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { renderBlock } from '../utils/markdown'
 import { uploadImage } from '../api/upload'
+import { useIsMobile } from '../composables/useIsMobile'
 
 const props = defineProps({
   modelValue: { type: String, default: '' }
@@ -55,7 +56,8 @@ const content = computed({
 })
 const textarea = ref(null)
 
-// 移动端单栏切换：source / preview（桌面双栏并排，不受影响）
+// 桌面双栏并排（源码+预览同时可见）；移动端单栏切换：source / preview
+const isMobile = useIsMobile()
 const mode = ref('source')
 
 // 预览：整篇本地渲染（仅预览用）

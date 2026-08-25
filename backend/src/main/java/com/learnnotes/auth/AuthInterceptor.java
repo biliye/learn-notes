@@ -1,6 +1,7 @@
 package com.learnnotes.auth;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.learnnotes.auth.mapper.SysUserMapper;
 import com.learnnotes.common.ErrorCode;
 import com.learnnotes.common.R;
 import com.learnnotes.config.AppProperties;
@@ -16,19 +17,22 @@ import java.util.Set;
 
 /**
  * 鉴权拦截器（D7）：拦 /api/**。
- * - 白名单：POST /api/auth/login、GET /api/health
- * - 其余要求 Authorization: Bearer &lt;jwt&gt;
- * - /api/import/** 额外接受 X-Api-Token（常量时间比较，供 agent 脚本免登录调用，R16）
+ * - 白名单：POST /api/auth/login、POST /api/auth/register、GET /api/health
+ * - 其余要求 Authorization: Bearer &lt;jwt&gt;（解析出 userId/username/role 写入 request）
+ * - /api/import/** 与 /api/export/all 额外接受 X-Api-Token（常量时间比较，供 agent 脚本免登录调用，R16）；
+ *   该通道归到首个 ADMIN 账号名下（V3 起 agent 导入的数据属管理员）
  */
 @Component
 public class AuthInterceptor implements HandlerInterceptor {
 
     private final JwtService jwtService;
+    private final SysUserMapper userMapper;
     private final AppProperties props;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public AuthInterceptor(JwtService jwtService, AppProperties props) {
+    public AuthInterceptor(JwtService jwtService, SysUserMapper userMapper, AppProperties props) {
         this.jwtService = jwtService;
+        this.userMapper = userMapper;
         this.props = props;
     }
 
@@ -46,16 +50,19 @@ public class AuthInterceptor implements HandlerInterceptor {
             String token = request.getHeader("X-Api-Token");
             if (props.getApiToken() != null && !props.getApiToken().isEmpty()
                     && constantTimeEquals(props.getApiToken(), token)) {
-                request.setAttribute("username", "api-token");
-                return true;
+                SysUser admin = userMapper.findFirstAdmin();
+                if (admin != null) {
+                    setUser(request, new CurrentUser(admin.getId(), admin.getUsername(), admin.getRole()));
+                    return true;
+                }
             }
         }
 
         String auth = request.getHeader("Authorization");
         if (auth != null && auth.startsWith("Bearer ")) {
-            String username = jwtService.parseUsername(auth.substring(7));
-            if (username != null) {
-                request.setAttribute("username", username);
+            CurrentUser user = jwtService.parse(auth.substring(7));
+            if (user != null) {
+                setUser(request, user);
                 return true;
             }
         }
@@ -64,8 +71,13 @@ public class AuthInterceptor implements HandlerInterceptor {
         return false;
     }
 
+    private void setUser(HttpServletRequest request, CurrentUser user) {
+        request.setAttribute("username", user.username());
+        request.setAttribute(CurrentUser.ATTR, user);
+    }
+
     private boolean isWhitelisted(String method, String uri) {
-        if ("POST".equals(method) && "/api/auth/login".equals(uri)) {
+        if ("POST".equals(method) && ("/api/auth/login".equals(uri) || "/api/auth/register".equals(uri))) {
             return true;
         }
         if ("GET".equals(method) && "/api/health".equals(uri)) {

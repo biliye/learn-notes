@@ -14,7 +14,8 @@ const routes = [
       { path: 'docs/:id', name: 'doc', component: () => import('../views/DocView.vue') },
       { path: 'docs/:id/edit', name: 'docEdit', component: () => import('../views/DocEditView.vue') },
       { path: 'catalog', name: 'catalog', component: () => import('../views/CatalogManageView.vue') },
-      { path: 'inbox', name: 'inbox', component: () => import('../views/InboxView.vue') }
+      { path: 'inbox', name: 'inbox', component: () => import('../views/InboxView.vue') },
+      { path: 'admin/docs', name: 'adminDocs', component: () => import('../views/AdminDocsView.vue'), meta: { requiresAdmin: true } }
     ]
   },
   { path: '/:pathMatch(.*)*', redirect: '/docs' }
@@ -25,11 +26,14 @@ const router = createRouter({
   routes
 })
 
-// 全局登录守卫（R25）：无 token 且非公开页 → 跳登录并带 redirect
+// 全局登录守卫（R25）：无 token 且非公开页 → 跳登录并带 redirect；管理页仅 ADMIN 可进
 router.beforeEach((to) => {
   const auth = useAuthStore()
   if (!to.meta.public && !auth.token) {
     return { name: 'login', query: { redirect: to.fullPath } }
+  }
+  if (to.meta.requiresAdmin && !auth.isAdmin) {
+    return { name: 'docs' }
   }
   if (to.name === 'login' && auth.token) {
     return { name: 'docs' }

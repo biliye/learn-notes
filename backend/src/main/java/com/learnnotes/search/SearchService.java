@@ -1,5 +1,6 @@
 package com.learnnotes.search;
 
+import com.learnnotes.auth.CurrentUser;
 import com.learnnotes.catalog.entity.CatalogNode;
 import com.learnnotes.catalog.mapper.CatalogNodeMapper;
 import com.learnnotes.common.BizException;
@@ -15,7 +16,7 @@ import java.util.Map;
 
 /**
  * 搜索（R9、D10）：MySQL LIKE 双字段匹配，返回 docId/title/breadcrumb/snippet，上限 50 条。
- * 不做分词、不做 ES、不做高亮 HTML（只给 ** 标记，前端自行处理）。
+ * 不做分词、不做 ES、不做高亮 HTML（只给 ** 标记，前端自行处理）。V3 起只搜当前用户自己的文档。
  */
 @Service
 public class SearchService {
@@ -31,14 +32,14 @@ public class SearchService {
         this.catalogMapper = catalogMapper;
     }
 
-    public List<Map<String, Object>> search(String q, Integer size) {
+    public List<Map<String, Object>> search(CurrentUser user, String q, Integer size) {
         if (q == null || q.length() < 1) {
             throw BizException.badRequest("q 不能为空");
         }
         int limit = size == null ? MAX_RESULT : Math.min(Math.max(size, 1), MAX_RESULT);
         String pattern = SearchUtil.escapeLike(q.trim());
         List<Map<String, Object>> results = new ArrayList<>();
-        for (DocSearchRow row : docMapper.search(pattern, limit)) {
+        for (DocSearchRow row : docMapper.search(user.userId(), pattern, limit)) {
             Map<String, Object> m = new HashMap<>();
             m.put("docId", row.getId());
             m.put("title", row.getTitle());

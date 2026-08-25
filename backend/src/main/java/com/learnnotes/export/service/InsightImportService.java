@@ -3,6 +3,7 @@ package com.learnnotes.export.service;
 import com.learnnotes.annotation.ReanchorService;
 import com.learnnotes.annotation.entity.DocAnnotation;
 import com.learnnotes.annotation.mapper.DocAnnotationMapper;
+import com.learnnotes.auth.CurrentUser;
 import com.learnnotes.catalog.entity.CatalogNode;
 import com.learnnotes.catalog.mapper.CatalogNodeMapper;
 import com.learnnotes.common.BizException;
@@ -22,6 +23,7 @@ import java.util.Map;
 
 /**
  * 见解回灌（R33、§5.7）：按 anchor 重建见解，未命中走 D6 重挂，重复 (anchor, contentMd) 跳过（幂等）。
+ * V3 起只在当前用户自己的分类树内定位文档。
  */
 @Service
 public class InsightImportService {
@@ -38,9 +40,9 @@ public class InsightImportService {
     }
 
     @Transactional
-    public Map<String, Object> importInsights(String categorySlug, String topicSlug, String docSlug,
-                                              List<Map<String, Object>> insights) {
-        Doc doc = locateDoc(categorySlug, topicSlug, docSlug);
+    public Map<String, Object> importInsights(CurrentUser user, String categorySlug, String topicSlug,
+                                              String docSlug, List<Map<String, Object>> insights) {
+        Doc doc = locateDoc(user, categorySlug, topicSlug, docSlug);
         if (doc == null) {
             throw BizException.notFound("目标文档不存在，请先导入文档：" + categorySlug + "/" + topicSlug + "/" + docSlug);
         }
@@ -111,19 +113,19 @@ public class InsightImportService {
         return result;
     }
 
-    private Doc locateDoc(String categorySlug, String topicSlug, String docSlug) {
+    private Doc locateDoc(CurrentUser user, String categorySlug, String topicSlug, String docSlug) {
         if (docSlug == null || topicSlug == null || categorySlug == null) {
             return null;
         }
-        CatalogNode category = catalogMapper.selectByParentAndSlug(0, categorySlug);
+        CatalogNode category = catalogMapper.selectByParentAndSlug(user.userId(), 0, categorySlug);
         if (category == null) {
             return null;
         }
-        CatalogNode topic = catalogMapper.selectByParentAndSlug(category.getId(), topicSlug);
+        CatalogNode topic = catalogMapper.selectByParentAndSlug(user.userId(), category.getId(), topicSlug);
         if (topic == null) {
             return null;
         }
-        return docMapper.selectByTopicAndSlug(topic.getId(), docSlug);
+        return docMapper.selectByTopicAndSlug(user.userId(), topic.getId(), docSlug);
     }
 
     private int anchorIndex(String anchor, Object fallback) {

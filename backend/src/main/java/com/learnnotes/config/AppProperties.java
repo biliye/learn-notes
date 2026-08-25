@@ -12,6 +12,7 @@ public class AppProperties {
 
     private Jwt jwt = new Jwt();
     private Admin admin = new Admin();
+    private Register register = new Register();
     /** agent 导入专用 API Token（R16） */
     private String apiToken;
     /** 导入原文落盘根目录（R17） */
@@ -32,5 +33,11 @@ public class AppProperties {
     public static class Admin {
         private String username;
         private String password;
+    }
+
+    @Data
+    public static class Register {
+        /** 是否开放注册（默认开；私密部署可关） */
+        private boolean enabled = true;
     }
 }

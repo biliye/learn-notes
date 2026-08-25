@@ -14,6 +14,7 @@ public class CatalogNode {
     public static final int LEVEL_TOPIC = 2;
 
     private Long id;
+    private Long ownerId;
     private Long parentId;
     private Integer nodeLevel;
     private String name;

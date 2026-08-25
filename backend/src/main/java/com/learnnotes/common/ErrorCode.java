@@ -10,6 +10,8 @@ public final class ErrorCode {
     public static final int BAD_REQUEST = 40000;
     /** 未登录 / token 失效 */
     public static final int UNAUTHORIZED = 40100;
+    /** 无权限（越权访问他人数据 / 非管理员访问管理接口） */
+    public static final int FORBIDDEN = 40300;
     /** 资源不存在 */
     public static final int NOT_FOUND = 40400;
     /** 冲突（非空删除、slug 冲突且 onConflict=FAIL 等） */

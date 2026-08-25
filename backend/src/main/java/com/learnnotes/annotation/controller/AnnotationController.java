@@ -2,7 +2,9 @@ package com.learnnotes.annotation.controller;
 
 import com.learnnotes.annotation.dto.AnnotationDto;
 import com.learnnotes.annotation.service.AnnotationService;
+import com.learnnotes.auth.CurrentUser;
 import com.learnnotes.common.R;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 /**
- * 个人见解接口（§5.5）。
+ * 个人见解接口（§5.5）。数据按当前登录用户隔离。
  */
 @RestController
 @RequestMapping("/api/annotations")
@@ -27,31 +29,34 @@ public class AnnotationController {
     }
 
     @PostMapping
-    public R<AnnotationDto> create(@RequestBody Map<String, Object> body) {
+    public R<AnnotationDto> create(HttpServletRequest request, @RequestBody Map<String, Object> body) {
         return R.ok(service.create(
+                CurrentUser.from(request),
                 asLong(body.get("docId")),
                 (String) body.get("anchor"),
                 (String) body.get("contentMd")));
     }
 
     @PutMapping("/{id}")
-    public R<AnnotationDto> update(@PathVariable Long id, @RequestBody Map<String, Object> body) {
-        return R.ok(service.update(id, (String) body.get("contentMd")));
+    public R<AnnotationDto> update(HttpServletRequest request, @PathVariable Long id,
+                                   @RequestBody Map<String, Object> body) {
+        return R.ok(service.update(CurrentUser.from(request), id, (String) body.get("contentMd")));
     }
 
     @PostMapping("/{id}/reanchor")
-    public R<AnnotationDto> reanchor(@PathVariable Long id, @RequestBody Map<String, Object> body) {
-        return R.ok(service.reanchorManual(id, (String) body.get("anchor")));
+    public R<AnnotationDto> reanchor(HttpServletRequest request, @PathVariable Long id,
+                                     @RequestBody Map<String, Object> body) {
+        return R.ok(service.reanchorManual(CurrentUser.from(request), id, (String) body.get("anchor")));
     }
 
     @PostMapping("/{id}/confirm")
-    public R<AnnotationDto> confirm(@PathVariable Long id) {
-        return R.ok(service.confirm(id));
+    public R<AnnotationDto> confirm(HttpServletRequest request, @PathVariable Long id) {
+        return R.ok(service.confirm(CurrentUser.from(request), id));
     }
 
     @DeleteMapping("/{id}")
-    public R<Void> delete(@PathVariable Long id) {
-        service.delete(id);
+    public R<Void> delete(HttpServletRequest request, @PathVariable Long id) {
+        service.delete(CurrentUser.from(request), id);
         return R.ok();
     }
 

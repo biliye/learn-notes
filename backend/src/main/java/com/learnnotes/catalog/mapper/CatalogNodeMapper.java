@@ -9,16 +9,18 @@ import java.util.List;
 @Mapper
 public interface CatalogNodeMapper {
 
-    List<CatalogNode> selectAll();
+    List<CatalogNode> selectAll(@Param("ownerId") Long ownerId);
 
     CatalogNode selectById(@Param("id") Long id);
 
-    /** parent_id=0 表示查找大类 */
-    CatalogNode selectByParentAndSlug(@Param("parentId") long parentId, @Param("slug") String slug);
+    /** parent_id=0 表示查找大类（owner_id 限定归属用户） */
+    CatalogNode selectByParentAndSlug(@Param("ownerId") Long ownerId,
+                                      @Param("parentId") long parentId,
+                                      @Param("slug") String slug);
 
-    int countByParent(@Param("parentId") long parentId);
+    int countByParent(@Param("ownerId") Long ownerId, @Param("parentId") long parentId);
 
-    List<CatalogNode> selectByParent(@Param("parentId") long parentId);
+    List<CatalogNode> selectByParent(@Param("ownerId") Long ownerId, @Param("parentId") long parentId);
 
     int insert(CatalogNode node);
 

@@ -25,6 +25,10 @@ public class BizException extends RuntimeException {
         return new BizException(ErrorCode.UNAUTHORIZED, 401, msg);
     }
 
+    public static BizException forbidden(String msg) {
+        return new BizException(ErrorCode.FORBIDDEN, 403, msg);
+    }
+
     public static BizException notFound(String msg) {
         return new BizException(ErrorCode.NOT_FOUND, 404, msg);
     }

@@ -74,6 +74,16 @@ curl -X POST http://127.0.0.1:8088/api/auth/login \
 
 ---
 
+## 1.1 多用户说明（V3 起）
+
+- **注册**：登录页有「立即注册」入口，任何人可注册（`APP_REGISTER_ENABLED=false` 可关闭）；注册即自动建好该用户的 INBOX/未归类分类。
+- **数据隔离**：每个用户只能看到自己的分类与文档（搜索/导入/导出同样只作用于自己的数据）。
+- **管理员**：初始账号（`APP_ADMIN_USERNAME`）角色为 `ADMIN`，侧栏多出「全部文档」入口，可查看所有用户的文档与用户列表；升级存量部署时原账号自动转为管理员，历史数据全部归属到该账号。
+- **agent 导入通道**：`X-Api-Token`（备份/投稿脚本）导入的数据归属管理员账号。
+- **升级影响**：升级后旧 token 失效，所有已登录用户需重新登录一次（V3 迁移由 Flyway 自动执行，无需手工 SQL）。
+
+---
+
 ## 2. 与 astrbot / napcat 共存注意事项
 
 1. **不要动既有容器**，不要对它们执行任何操作。
@@ -120,6 +130,17 @@ server {
 ---
 
 ## 4. 升级流程
+
+日常更新走一键脚本（本机 Git Bash，经阿里云 Workbench CLI 操作无公网 IP 的服务器）：
+
+```bash
+./scripts/update-server.sh            # 完整更新：git pull --ff-only + 重建 + 验证
+./scripts/update-server.sh --check    # 只查看服务器 git / 容器状态
+```
+
+脚本要求：本地已 `git push`、已安装 `workbench` CLI（`--output json` 模式，规避 Windows 下 text 模式的 exec-stream bug）。
+
+等价的手工操作（服务器上执行）：
 
 ```bash
 cd /opt/learn-notes

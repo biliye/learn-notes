@@ -31,6 +31,8 @@ app:
   admin:
     username: ${APP_ADMIN_USERNAME:}
     password: ${APP_ADMIN_PASSWORD:}
+  register:
+    enabled: ${APP_REGISTER_ENABLED:true}
   api-token: ${APP_API_TOKEN:}
   storage-dir: ${APP_STORAGE_DIR:storage/docs}
   upload-dir: ${APP_UPLOAD_DIR:storage/uploads}

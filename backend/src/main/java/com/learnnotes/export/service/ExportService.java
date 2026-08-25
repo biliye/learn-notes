@@ -3,6 +3,7 @@ package com.learnnotes.export.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.learnnotes.annotation.entity.DocAnnotation;
 import com.learnnotes.annotation.mapper.DocAnnotationMapper;
+import com.learnnotes.auth.CurrentUser;
 import com.learnnotes.catalog.entity.CatalogNode;
 import com.learnnotes.catalog.mapper.CatalogNodeMapper;
 import com.learnnotes.common.SlugUtil;
@@ -35,6 +36,7 @@ import java.util.zip.ZipOutputStream;
 /**
  * 全量导出（R31–R32、D12）：人可读 md 文件树 + 见解旁挂 + 图片 + manifest.json。
  * 目录结构与 .insights.json 字段是恢复路径的输入格式，改动须回评审。
+ * V3 起：管理员导出全部；普通用户只导出自己的文档与分类。
  */
 @Service
 public class ExportService {
@@ -63,18 +65,19 @@ public class ExportService {
     /**
      * 流式写出 zip（HTTP 路径由 Controller 包装为 StreamingResponseBody，禁止内存拼整包）。
      */
-    public void writeZip(OutputStream out) throws IOException {
-        List<CatalogNode> categories = catalogMapper.selectByParent(0).stream()
+    public void writeZip(OutputStream out, CurrentUser user) throws IOException {
+        List<CatalogNode> categories = catalogMapper.selectByParent(user.userId(), 0).stream()
                 // INBOX 是 Flyway 种子的常驻兜底路径，不参与恢复计数
                 .filter(c -> !"inbox".equals(c.getSlug()))
                 .toList();
         Map<Long, List<CatalogNode>> childrenByCategory = new LinkedHashMap<>();
         for (CatalogNode c : categories) {
-            childrenByCategory.put(c.getId(), catalogMapper.selectByParent(c.getId()).stream()
+            childrenByCategory.put(c.getId(), catalogMapper.selectByParent(user.userId(), c.getId()).stream()
                     .filter(t -> !"uncategorized".equals(t.getSlug()))
                     .toList());
         }
-        List<Doc> docs = docMapper.selectAll();
+        // 管理员导出全部用户数据；普通用户只导出自己的
+        List<Doc> docs = user.isAdmin() ? docMapper.selectAll() : docMapper.selectByOwner(user.userId());
 
         // 图片引用集合（去掉 /uploads/ 前缀，得到相对 uploadDir 的路径）
         Set<String> referencedImages = new HashSet<>();

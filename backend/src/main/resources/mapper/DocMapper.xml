@@ -9,14 +9,15 @@
     </sql>
 
     <sql id="detailCols">
-        id, topic_id, slug, title, summary, tags, source_filename, current_version,
+        id, owner_id, topic_id, slug, title, summary, tags, source_filename, current_version,
         content_md, content_hash, block_count, word_count, sort_order, created_at, updated_at
     </sql>
 
     <sql id="filterWhere">
         <where>
+            AND d.owner_id = #{ownerId}
             <if test="topicId != null">AND d.topic_id = #{topicId}</if>
-            <if test="categoryId != null">AND d.topic_id IN (SELECT id FROM catalog_node WHERE parent_id = #{categoryId})</if>
+            <if test="categoryId != null">AND d.topic_id IN (SELECT id FROM catalog_node WHERE owner_id = #{ownerId} AND parent_id = #{categoryId})</if>
             <if test="keyword != null and keyword != ''">AND (d.title LIKE #{keyword} ESCAPE '\\' OR d.content_md LIKE #{keyword} ESCAPE '\\')</if>
         </where>
     </sql>
@@ -45,13 +46,13 @@
     <select id="selectByTopicAndSlug" resultType="com.learnnotes.doc.entity.Doc">
         SELECT
         <include refid="detailCols"/>
-        FROM doc WHERE topic_id = #{topicId} AND slug = #{slug} LIMIT 1
+        FROM doc WHERE owner_id = #{ownerId} AND topic_id = #{topicId} AND slug = #{slug} LIMIT 1
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO doc (topic_id, slug, title, summary, tags, source_filename, current_version,
+        INSERT INTO doc (owner_id, topic_id, slug, title, summary, tags, source_filename, current_version,
                          content_md, content_hash, block_count, word_count, sort_order)
-        VALUES (#{topicId}, #{slug}, #{title}, #{summary}, #{tags}, #{sourceFilename}, #{currentVersion},
+        VALUES (#{ownerId}, #{topicId}, #{slug}, #{title}, #{summary}, #{tags}, #{sourceFilename}, #{currentVersion},
                 #{contentMd}, #{contentHash}, #{blockCount}, #{wordCount}, #{sortOrder})
     </insert>
 
@@ -79,7 +80,7 @@
     </delete>
 
     <select id="countByTopic" resultType="int">
-        SELECT COUNT(*) FROM doc WHERE topic_id = #{topicId}
+        SELECT COUNT(*) FROM doc WHERE owner_id = #{ownerId} AND topic_id = #{topicId}
     </select>
 
     <select id="selectAll" resultType="com.learnnotes.doc.entity.Doc">
@@ -88,12 +89,56 @@
         FROM doc
     </select>
 
+    <select id="selectByOwner" resultType="com.learnnotes.doc.entity.Doc">
+        SELECT
+        <include refid="detailCols"/>
+        FROM doc WHERE owner_id = #{ownerId}
+    </select>
+
+    <select id="countByOwner" resultType="long">
+        SELECT COUNT(*) FROM doc WHERE owner_id = #{ownerId}
+    </select>
+
     <select id="search" resultType="com.learnnotes.doc.dto.DocSearchRow">
         SELECT d.id, d.title, d.topic_id, d.content_md
         FROM doc d
-        WHERE d.title LIKE #{pattern} ESCAPE '\\' OR d.content_md LIKE #{pattern} ESCAPE '\\'
+        WHERE d.owner_id = #{ownerId}
+          AND (d.title LIKE #{pattern} ESCAPE '\\' OR d.content_md LIKE #{pattern} ESCAPE '\\')
         ORDER BY d.updated_at DESC
         LIMIT #{limit}
+    </select>
+
+    <!-- 管理员跨用户列表：只带摘要列，不带正文 -->
+    <sql id="adminPageCols">
+        d.id, d.title, d.topic_id, d.owner_id, d.word_count, d.updated_at,
+        u.username AS owner_username, u.nickname AS owner_nickname,
+        t.name AS topic_name, c.name AS category_name
+    </sql>
+
+    <select id="selectAdminPage" resultType="com.learnnotes.admin.dto.AdminDocRow">
+        SELECT
+        <include refid="adminPageCols"/>
+        FROM doc d
+        JOIN sys_user u ON u.id = d.owner_id
+        LEFT JOIN catalog_node t ON t.id = d.topic_id
+        LEFT JOIN catalog_node c ON c.id = t.parent_id
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (d.title LIKE #{keyword} ESCAPE '\\' OR d.content_md LIKE #{keyword} ESCAPE '\\')
+            </if>
+        </where>
+        ORDER BY d.updated_at DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="countAdminPage" resultType="long">
+        SELECT COUNT(*)
+        FROM doc d
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (d.title LIKE #{keyword} ESCAPE '\\' OR d.content_md LIKE #{keyword} ESCAPE '\\')
+            </if>
+        </where>
     </select>
 
     <delete id="deleteAllVersions">

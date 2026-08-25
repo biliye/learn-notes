@@ -1,8 +1,10 @@
 package com.learnnotes.export.controller;
 
+import com.learnnotes.auth.CurrentUser;
 import com.learnnotes.common.R;
 import com.learnnotes.export.service.ExportService;
 import com.learnnotes.export.service.InsightImportService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 导出与回灌接口（§5.7）。
+ * 导出与回灌接口（§5.7）。导出按当前用户隔离：管理员全量、普通用户仅自己的数据。
  */
 @RestController
 @RequestMapping("/api")
@@ -32,9 +34,10 @@ public class ExportController {
     }
 
     @GetMapping(value = "/export/all", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    public ResponseEntity<StreamingResponseBody> exportAll() {
+    public ResponseEntity<StreamingResponseBody> exportAll(HttpServletRequest request) {
+        CurrentUser user = CurrentUser.from(request);
         String filename = exportService.zipFileName();
-        StreamingResponseBody body = outputStream -> exportService.writeZip(outputStream);
+        StreamingResponseBody body = outputStream -> exportService.writeZip(outputStream, user);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION,
                         "attachment; filename=\"" + filename + "\"")
@@ -43,10 +46,11 @@ public class ExportController {
     }
 
     @PostMapping("/import/insights")
-    public R<Map<String, Object>> importInsights(@RequestBody Map<String, Object> body) {
+    public R<Map<String, Object>> importInsights(HttpServletRequest request, @RequestBody Map<String, Object> body) {
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> insights = (List<Map<String, Object>>) body.get("insights");
         return R.ok(insightImportService.importInsights(
+                CurrentUser.from(request),
                 (String) body.get("categorySlug"),
                 (String) body.get("topicSlug"),
                 (String) body.get("docSlug"),

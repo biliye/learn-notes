@@ -1,11 +1,13 @@
 package com.learnnotes.imports.controller;
 
+import com.learnnotes.auth.CurrentUser;
 import com.learnnotes.common.BizException;
 import com.learnnotes.common.R;
 import com.learnnotes.imports.dto.ImportResult;
 import com.learnnotes.imports.dto.ZipImportResult;
 import com.learnnotes.imports.service.ImportService;
 import com.learnnotes.imports.service.ZipImportService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,7 +22,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 导入接口（§5.4，agent 主入口 + 编辑器草稿流）。鉴权见 AuthInterceptor：/api/import/** 接受 X-Api-Token。
+ * 导入接口（§5.4，agent 主入口 + 编辑器草稿流）。
+ * 鉴权见 AuthInterceptor：/api/import/** 接受 X-Api-Token（数据归到管理员账号）。
  */
 @RestController
 @RequestMapping("/api/import")
@@ -38,8 +41,9 @@ public class ImportController {
     }
 
     @PostMapping("/doc")
-    public R<ImportResult> importDoc(@RequestBody Map<String, Object> body) {
+    public R<ImportResult> importDoc(HttpServletRequest request, @RequestBody Map<String, Object> body) {
         return R.ok(importService.importDoc(
+                CurrentUser.from(request),
                 (String) body.get("filename"),
                 (String) body.get("content"),
                 (String) body.get("categoryHint"),
@@ -48,7 +52,8 @@ public class ImportController {
     }
 
     @PostMapping("/upload")
-    public R<List<ImportResult>> importUpload(@RequestParam("files") List<MultipartFile> files,
+    public R<List<ImportResult>> importUpload(HttpServletRequest request,
+                                              @RequestParam("files") List<MultipartFile> files,
                                               @RequestParam(required = false) String categoryHint,
                                               @RequestParam(required = false) String topicHint) {
         if (files == null || files.isEmpty()) {
@@ -75,7 +80,7 @@ public class ImportController {
             }
             filenames.add(name);
         }
-        return R.ok(importService.importUpload(filenames, contents, categoryHint, topicHint));
+        return R.ok(importService.importUpload(CurrentUser.from(request), filenames, contents, categoryHint, topicHint));
     }
 
     /**

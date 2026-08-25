@@ -1,5 +1,6 @@
 package com.learnnotes.imports.service;
 
+import com.learnnotes.auth.CurrentUser;
 import com.learnnotes.catalog.entity.CatalogNode;
 import com.learnnotes.catalog.mapper.CatalogNodeMapper;
 import com.learnnotes.catalog.service.CatalogService;
@@ -28,7 +29,7 @@ import java.util.Locale;
 
 /**
  * 文档导入与自动归类（R12–R17、D8）—— agent 的主入口。
- * 原文一字不改入库。
+ * 原文一字不改入库。V3 起数据归到当前登录用户（X-Api-Token 通道归到管理员）。
  */
 @Slf4j
 @Service
@@ -57,8 +58,8 @@ public class ImportService {
     }
 
     @Transactional
-    public ImportResult importDoc(String filename, String content, String categoryHint, String topicHint,
-                                  String onConflict) {
+    public ImportResult importDoc(CurrentUser user, String filename, String content,
+                                  String categoryHint, String topicHint, String onConflict) {
         if (content == null || content.isBlank()) {
             throw BizException.badRequest("content 不能为空");
         }
@@ -76,9 +77,9 @@ public class ImportService {
         result.setWarnings(new ArrayList<>(parsedBody.getWarnings()));
         result.getWarnings().addAll(meta.getWarnings());
 
-        // 1. 归类节点（不存在自动创建并标记 auto_created=1，R14）
-        CatalogNode category = ensureNode(0L, CatalogNode.LEVEL_CATEGORY, meta.getCategoryName(), meta.getCategorySlug());
-        CatalogNode topic = ensureNode(category.getId(), CatalogNode.LEVEL_TOPIC, meta.getTopicName(), meta.getTopicSlug());
+        // 1. 归类节点（不存在自动创建并标记 auto_created=1，R14；按当前用户隔离）
+        CatalogNode category = ensureNode(user.userId(), 0L, CatalogNode.LEVEL_CATEGORY, meta.getCategoryName(), meta.getCategorySlug());
+        CatalogNode topic = ensureNode(user.userId(), category.getId(), CatalogNode.LEVEL_TOPIC, meta.getTopicName(), meta.getTopicSlug());
         result.setCategory(nodeInfo(category));
         result.setTopic(nodeInfo(topic));
 
@@ -92,7 +93,7 @@ public class ImportService {
         validateDocSlug(docSlug);
 
         // 3. 冲突处理（R15：slug 重复默认视为同文档新版本）
-        Doc existing = docMapper.selectByTopicAndSlug(topic.getId(), docSlug);
+        Doc existing = docMapper.selectByTopicAndSlug(user.userId(), topic.getId(), docSlug);
         if (existing != null) {
             switch (mode) {
                 case ON_CONFLICT_SKIP -> {
@@ -108,7 +109,7 @@ public class ImportService {
                 case ON_CONFLICT_FAIL -> throw BizException.conflict(
                         "slug 冲突：" + docSlug + "，onConflict=FAIL 拒绝覆盖");
                 default -> {
-                    DocService.UpdateResult ur = docService.update(existing.getId(), title,
+                    DocService.UpdateResult ur = docService.update(user, existing.getId(), title,
                             meta.getSummary(), meta.getTags(), content, "agent 导入更新", filename);
                     result.setDocId(existing.getId());
                     result.setCreated(false);
@@ -117,7 +118,7 @@ public class ImportService {
                 }
             }
         } else {
-            Doc doc = docService.create(topic.getId(), title, docSlug, meta.getSummary(), meta.getTags(),
+            Doc doc = docService.create(user, topic.getId(), title, docSlug, meta.getSummary(), meta.getTags(),
                     content, filename);
             if (meta.getOrder() != null) {
                 docMapper.update(setOrderDoc(doc.getId(), meta.getOrder()));
@@ -131,14 +132,14 @@ public class ImportService {
         result.setSlug(docSlug);
 
         // 4. 原文落盘（R17，备份 L3）——事务提交后执行，失败只记 warning 不回滚
-        String storedPath = docStorage.pathFor(category.getSlug(), topic.getSlug(), docSlug);
+        String storedPath = docStorage.pathFor(user.username(), category.getSlug(), topic.getSlug(), docSlug);
         result.setStoredPath(storedPath);
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
                     try {
-                        docStorage.write(category.getSlug(), topic.getSlug(), docSlug, content);
+                        docStorage.write(user.username(), category.getSlug(), topic.getSlug(), docSlug, content);
                     } catch (Exception e) {
                         log.warn("原文落盘失败（不影响入库）：{}", e.getMessage());
                     }
@@ -146,7 +147,7 @@ public class ImportService {
             });
         } else {
             try {
-                docStorage.write(category.getSlug(), topic.getSlug(), docSlug, content);
+                docStorage.write(user.username(), category.getSlug(), topic.getSlug(), docSlug, content);
             } catch (Exception e) {
                 log.warn("原文落盘失败（不影响入库）：{}", e.getMessage());
             }
@@ -157,7 +158,7 @@ public class ImportService {
     /**
      * 多文件上传：逐个处理，单个失败不影响其他（R12）。
      */
-    public List<ImportResult> importUpload(List<String> filenames, List<String> contents,
+    public List<ImportResult> importUpload(CurrentUser user, List<String> filenames, List<String> contents,
                                            String categoryHint, String topicHint) {
         List<ImportResult> results = new ArrayList<>();
         for (int i = 0; i < filenames.size(); i++) {
@@ -166,7 +167,7 @@ public class ImportService {
             ImportResult r = new ImportResult();
             r.setFilename(filename);
             try {
-                r = importDoc(filename, content, categoryHint, topicHint, ON_CONFLICT_NEW_VERSION);
+                r = importDoc(user, filename, content, categoryHint, topicHint, ON_CONFLICT_NEW_VERSION);
             } catch (Exception e) {
                 r.setError(e.getMessage());
             }
@@ -177,33 +178,34 @@ public class ImportService {
 
     // ---------- 内部 ----------
 
-    private CatalogNode ensureNode(Long parentId, int level, String name, String slugHint) {
+    private CatalogNode ensureNode(Long ownerId, Long parentId, int level, String name, String slugHint) {
         if (name == null || name.isBlank()) {
             throw BizException.badRequest("分类名称缺失");
         }
         String normalizedName = name.trim().replaceAll("\\s", "").toLowerCase(Locale.ROOT);
         // 匹配顺序：slug 精确（忽略大小写）→ name 精确 → name 去空格并小写
-        for (CatalogNode node : catalogMapper.selectByParent(parentId)) {
+        for (CatalogNode node : catalogMapper.selectByParent(ownerId, parentId)) {
             if (slugHint != null && node.getSlug().equalsIgnoreCase(slugHint)) {
                 return node;
             }
         }
-        for (CatalogNode node : catalogMapper.selectByParent(parentId)) {
+        for (CatalogNode node : catalogMapper.selectByParent(ownerId, parentId)) {
             if (node.getName().equals(name.trim())) {
                 return node;
             }
         }
-        for (CatalogNode node : catalogMapper.selectByParent(parentId)) {
+        for (CatalogNode node : catalogMapper.selectByParent(ownerId, parentId)) {
             if (node.getName().replaceAll("\\s", "").toLowerCase(Locale.ROOT).equals(normalizedName)) {
                 return node;
             }
         }
         String slug = slugHint != null && !slugHint.isBlank() ? slugHint : SlugUtil.slugify(name, "node");
         // slug 冲突时追加 -2（与手动创建一致）
-        if (catalogMapper.selectByParentAndSlug(parentId, slug) != null) {
-            slug = slug + "-" + (catalogMapper.countByParent(parentId) + 1);
+        if (catalogMapper.selectByParentAndSlug(ownerId, parentId, slug) != null) {
+            slug = slug + "-" + (catalogMapper.countByParent(ownerId, parentId) + 1);
         }
         CatalogNode node = new CatalogNode();
+        node.setOwnerId(ownerId);
         node.setParentId(parentId);
         node.setNodeLevel(level);
         node.setName(name.trim());

@@ -3,7 +3,7 @@
 <mapper namespace="com.learnnotes.auth.mapper.SysUserMapper">
 
     <sql id="cols">
-        id, username, password_hash, nickname, created_at, updated_at
+        id, username, password_hash, nickname, role, created_at, updated_at
     </sql>
 
     <select id="findByUsername" resultType="com.learnnotes.auth.SysUser">
@@ -12,12 +12,31 @@
         FROM sys_user WHERE username = #{username} LIMIT 1
     </select>
 
+    <select id="findFirstAdmin" resultType="com.learnnotes.auth.SysUser">
+        SELECT
+        <include refid="cols"/>
+        FROM sys_user WHERE role = 'ADMIN' ORDER BY id LIMIT 1
+    </select>
+
+    <select id="selectAll" resultType="com.learnnotes.auth.SysUser">
+        SELECT
+        <include refid="cols"/>
+        FROM sys_user ORDER BY id
+    </select>
+
+    <select id="selectAllWithDocCount" resultType="com.learnnotes.admin.dto.AdminUserRow">
+        SELECT u.id, u.username, u.nickname, u.role, u.created_at,
+               (SELECT COUNT(*) FROM doc d WHERE d.owner_id = u.id) AS doc_count
+        FROM sys_user u
+        ORDER BY u.id
+    </select>
+
     <select id="countAll" resultType="int">
         SELECT COUNT(*) FROM sys_user
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO sys_user (username, password_hash, nickname)
-        VALUES (#{username}, #{passwordHash}, #{nickname})
+        INSERT INTO sys_user (username, password_hash, nickname, role)
+        VALUES (#{username}, #{passwordHash}, #{nickname}, #{role})
     </insert>
 </mapper>

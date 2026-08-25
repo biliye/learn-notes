@@ -25,6 +25,9 @@
         <el-button link class="nav-btn" @click="go('/inbox')">
           <el-icon><Message /></el-icon> INBOX
         </el-button>
+        <el-button v-if="auth.isAdmin" link class="nav-btn" @click="go('/admin/docs')">
+          <el-icon><DataAnalysis /></el-icon> 全部文档
+        </el-button>
         <!-- 移动端：导出备份包入口（桌面在顶栏） -->
         <el-button link class="nav-btn mobile-export" @click="downloadExport">
           <el-icon><Download /></el-icon> 导出备份包

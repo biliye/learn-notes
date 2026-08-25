@@ -1,5 +1,6 @@
 package com.learnnotes.doc.service;
 
+import com.learnnotes.auth.CurrentUser;
 import com.learnnotes.catalog.entity.CatalogNode;
 import com.learnnotes.catalog.service.CatalogService;
 import com.learnnotes.common.BizException;
@@ -30,7 +31,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * 文档 CRUD + 版本 + 详情装配（R5、R10、R11、§5.3）。
+ * 文档 CRUD + 版本 + 详情装配（R5、R10、R11、§5.3）。V3 起按用户隔离：
+ * 普通用户只能读写自己的文档；管理员可访问任意文档。
  */
 @Service
 public class DocService {
@@ -55,7 +57,7 @@ public class DocService {
 
     // ---------- 读 ----------
 
-    public DocPageDto list(Long topicId, Long categoryId, String keyword, int page, int size) {
+    public DocPageDto list(CurrentUser user, Long topicId, Long categoryId, String keyword, int page, int size) {
         if (page < 1) {
             page = 1;
         }
@@ -66,8 +68,8 @@ public class DocService {
         if (keyword != null && !keyword.isBlank()) {
             kw = "%" + SearchUtil.escapeLike(keyword.trim()) + "%";
         }
-        long total = docMapper.countList(topicId, categoryId, kw);
-        List<DocListItem> items = docMapper.selectList(topicId, categoryId, kw, (page - 1) * size, size).stream()
+        long total = docMapper.countList(user.userId(), topicId, categoryId, kw);
+        List<DocListItem> items = docMapper.selectList(user.userId(), topicId, categoryId, kw, (page - 1) * size, size).stream()
                 .map(this::toListItem)
                 .collect(Collectors.toList());
         DocPageDto dto = new DocPageDto();
@@ -94,11 +96,11 @@ public class DocService {
         return item;
     }
 
-    public DocDetailDto detail(Long id) {
-        Doc doc = requireById(id);
-        CatalogNode topic = catalogService.requireById(doc.getTopicId());
+    public DocDetailDto detail(Long id, CurrentUser user) {
+        Doc doc = requireById(id, user);
+        CatalogNode topic = catalogService.requireById(doc.getTopicId(), user);
         CatalogNode category = topic.getParentId() == null || topic.getParentId() == 0
-                ? null : catalogService.requireById(topic.getParentId());
+                ? null : catalogService.requireById(topic.getParentId(), user);
 
         DocDetailDto dto = new DocDetailDto();
         dto.setId(doc.getId());
@@ -127,12 +129,12 @@ public class DocService {
         return dto;
     }
 
-    public String raw(Long id) {
-        return requireById(id).getContentMd();
+    public String raw(Long id, CurrentUser user) {
+        return requireById(id, user).getContentMd();
     }
 
-    public List<Map<String, Object>> versions(Long id) {
-        requireById(id);
+    public List<Map<String, Object>> versions(Long id, CurrentUser user) {
+        requireById(id, user);
         List<Map<String, Object>> result = new ArrayList<>();
         for (DocVersion v : versionMapper.selectByDoc(id)) {
             Map<String, Object> m = new HashMap<>();
@@ -144,8 +146,8 @@ public class DocService {
         return result;
     }
 
-    public Map<String, Object> versionContent(Long id, int version) {
-        requireById(id);
+    public Map<String, Object> versionContent(Long id, int version, CurrentUser user) {
+        requireById(id, user);
         DocVersion v = versionMapper.selectByDocAndVersion(id, version);
         if (v == null) {
             throw BizException.notFound("版本不存在：" + version);
@@ -160,9 +162,9 @@ public class DocService {
     // ---------- 写 ----------
 
     @Transactional
-    public Doc create(Long topicId, String title, String slug, String summary, List<String> tags,
+    public Doc create(CurrentUser user, Long topicId, String title, String slug, String summary, List<String> tags,
                       String contentMd, String sourceFilename) {
-        requireTopic(topicId);
+        requireTopic(topicId, user);
         if (title == null || title.isBlank()) {
             throw BizException.badRequest("标题不能为空");
         }
@@ -170,10 +172,10 @@ public class DocService {
             throw BizException.badRequest("正文不能为空");
         }
         String finalSlug = slug == null || slug.isBlank() ? SlugUtil.slugify(title) : slug;
-        if (docMapper.selectByTopicAndSlug(topicId, finalSlug) != null) {
+        if (docMapper.selectByTopicAndSlug(user.userId(), topicId, finalSlug) != null) {
             throw BizException.conflict("该小方向下已存在 slug 为 " + finalSlug + " 的文档");
         }
-        Doc doc = buildDoc(topicId, finalSlug, title, summary, tags, contentMd, sourceFilename, 1, 100);
+        Doc doc = buildDoc(user.userId(), topicId, finalSlug, title, summary, tags, contentMd, sourceFilename, 1, 100);
         docMapper.insert(doc);
         writeVersion(doc, 1, null);
         catalogService.incrDocCount(topicId, 1);
@@ -185,9 +187,9 @@ public class DocService {
      * 正文变化则版本 +1、写 doc_version（存新正文）、触发 D6 重挂。
      */
     @Transactional
-    public UpdateResult update(Long id, String title, String summary, List<String> tags,
+    public UpdateResult update(CurrentUser user, Long id, String title, String summary, List<String> tags,
                                String contentMd, String changeNote, String sourceFilename) {
-        Doc doc = requireById(id);
+        Doc doc = requireById(id, user);
         if (contentMd == null || contentMd.isBlank()) {
             throw BizException.badRequest("正文不能为空");
         }
@@ -205,7 +207,7 @@ public class DocService {
         List<Block> oldBlocks = MarkdownBlockParser.parse(doc.getContentMd()).getBlocks();
         List<Block> newBlocks = MarkdownBlockParser.parse(contentMd).getBlocks();
 
-        Doc updated = buildDoc(doc.getTopicId(), doc.getSlug(),
+        Doc updated = buildDoc(doc.getOwnerId(), doc.getTopicId(), doc.getSlug(),
                 title != null ? title : doc.getTitle(),
                 summary != null ? summary : doc.getSummary(),
                 tags != null ? tags : splitTags(doc.getTags()),
@@ -222,9 +224,9 @@ public class DocService {
     }
 
     @Transactional
-    public void move(Long id, Long topicId) {
-        Doc doc = requireById(id);
-        requireTopic(topicId);
+    public void move(CurrentUser user, Long id, Long topicId) {
+        Doc doc = requireById(id, user);
+        requireTopic(topicId, user);
         if (Objects.equals(doc.getTopicId(), topicId)) {
             return;
         }
@@ -234,8 +236,8 @@ public class DocService {
     }
 
     @Transactional
-    public void delete(Long id) {
-        Doc doc = requireById(id);
+    public void delete(CurrentUser user, Long id) {
+        Doc doc = requireById(id, user);
         annotationAccess.deleteByDoc(id);
         versionMapper.deleteByDoc(id);
         docMapper.deleteById(id);
@@ -244,10 +246,11 @@ public class DocService {
 
     // ---------- 内部 ----------
 
-    private Doc buildDoc(Long topicId, String slug, String title, String summary, List<String> tags,
+    private Doc buildDoc(Long ownerId, Long topicId, String slug, String title, String summary, List<String> tags,
                          String contentMd, String sourceFilename, int version, Integer sortOrder) {
         List<Block> blocks = MarkdownBlockParser.parse(contentMd).getBlocks();
         Doc doc = new Doc();
+        doc.setOwnerId(ownerId);
         doc.setTopicId(topicId);
         doc.setSlug(slug);
         doc.setTitle(title == null ? "" : title.trim());
@@ -280,21 +283,27 @@ public class DocService {
         versionMapper.insert(v);
     }
 
-    private CatalogNode requireTopic(Long topicId) {
-        CatalogNode node = catalogService.requireById(topicId);
+    private CatalogNode requireTopic(Long topicId, CurrentUser user) {
+        CatalogNode node = catalogService.requireById(topicId, user);
         if (node.getNodeLevel() != CatalogNode.LEVEL_TOPIC) {
             throw BizException.badRequest("文档只能挂在某个小方向（node_level=2）下");
         }
         return node;
     }
 
-    public Doc requireById(Long id) {
+    /**
+     * 按 id 取文档并校验归属：本人或管理员可访问，否则 403。
+     */
+    public Doc requireById(Long id, CurrentUser user) {
         if (id == null) {
             throw BizException.badRequest("id 不能为空");
         }
         Doc doc = docMapper.selectById(id);
         if (doc == null) {
             throw BizException.notFound("文档不存在：" + id);
+        }
+        if (!user.isAdmin() && !doc.getOwnerId().equals(user.userId())) {
+            throw BizException.forbidden("无权访问该文档");
         }
         return doc;
     }

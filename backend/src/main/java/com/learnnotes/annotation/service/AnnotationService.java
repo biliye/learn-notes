@@ -4,8 +4,10 @@ import com.learnnotes.annotation.ReanchorService;
 import com.learnnotes.annotation.dto.AnnotationDto;
 import com.learnnotes.annotation.entity.DocAnnotation;
 import com.learnnotes.annotation.mapper.DocAnnotationMapper;
+import com.learnnotes.auth.CurrentUser;
 import com.learnnotes.common.BizException;
 import com.learnnotes.doc.AnnotationAccess;
+import com.learnnotes.doc.entity.Doc;
 import com.learnnotes.doc.mapper.DocMapper;
 import com.learnnotes.markdown.AnchorUtil;
 import com.learnnotes.markdown.Block;
@@ -19,6 +21,7 @@ import java.util.stream.Collectors;
 
 /**
  * 个人见解服务（R18–R22、D5/D6）。硬要求：任何情况下不得自动删除见解。
+ * V3 起校验见解所属文档归属（本人或管理员），防止越权读写他人文档下的见解。
  */
 @Service
 public class AnnotationService implements AnnotationAccess {
@@ -83,16 +86,16 @@ public class AnnotationService implements AnnotationAccess {
     // ---------- 业务接口 ----------
 
     @Transactional
-    public AnnotationDto create(Long docId, String anchor, String contentMd) {
+    public AnnotationDto create(CurrentUser user, Long docId, String anchor, String contentMd) {
         if (contentMd == null || contentMd.isBlank()) {
             throw BizException.badRequest("见解内容不能为空");
         }
-        requireDoc(docId);
+        requireDoc(docId, user);
         Block block = findBlockByAnchor(docId, anchor);
         if (block == null) {
             throw BizException.badRequest("anchor 不在当前块列表中：" + anchor);
         }
-        int docVersion = requireDoc(docId).getCurrentVersion();
+        int docVersion = requireDoc(docId, user).getCurrentVersion();
         DocAnnotation ann = new DocAnnotation();
         ann.setDocId(docId);
         ann.setAnchorHash(AnchorUtil.parseHash(anchor));
@@ -106,19 +109,21 @@ public class AnnotationService implements AnnotationAccess {
     }
 
     @Transactional
-    public AnnotationDto update(Long id, String contentMd) {
+    public AnnotationDto update(CurrentUser user, Long id, String contentMd) {
         if (contentMd == null || contentMd.isBlank()) {
             throw BizException.badRequest("见解内容不能为空");
         }
-        requireAnn(id);
+        DocAnnotation ann = requireAnn(id);
+        requireDoc(ann.getDocId(), user);
         mapper.updateContent(id, contentMd.trim());
         return AnnotationDto.from(mapper.selectById(id));
     }
 
     /** 手动重挂（R22：ORPHAN → ACTIVE） */
     @Transactional
-    public AnnotationDto reanchorManual(Long id, String anchor) {
+    public AnnotationDto reanchorManual(CurrentUser user, Long id, String anchor) {
         DocAnnotation ann = requireAnn(id);
+        requireDoc(ann.getDocId(), user);
         Block block = findBlockByAnchor(ann.getDocId(), anchor);
         if (block == null) {
             throw BizException.badRequest("anchor 不在当前块列表中：" + anchor);
@@ -130,8 +135,9 @@ public class AnnotationService implements AnnotationAccess {
 
     /** STALE → ACTIVE，同时刷新 block_snippet（R22） */
     @Transactional
-    public AnnotationDto confirm(Long id) {
+    public AnnotationDto confirm(CurrentUser user, Long id) {
         DocAnnotation ann = requireAnn(id);
+        requireDoc(ann.getDocId(), user);
         Block block = findBlockByAnchor(ann.getDocId(), ann.getAnchorHash());
         mapper.updateAnchor(id, ann.getAnchorHash(), ann.getAnchorIndex(),
                 DocAnnotation.STATUS_ACTIVE,
@@ -140,8 +146,9 @@ public class AnnotationService implements AnnotationAccess {
     }
 
     @Transactional
-    public void delete(Long id) {
-        requireAnn(id);
+    public void delete(CurrentUser user, Long id) {
+        DocAnnotation ann = requireAnn(id);
+        requireDoc(ann.getDocId(), user);
         mapper.deleteById(id);
     }
 
@@ -155,10 +162,13 @@ public class AnnotationService implements AnnotationAccess {
         return ann;
     }
 
-    private com.learnnotes.doc.entity.Doc requireDoc(Long docId) {
-        com.learnnotes.doc.entity.Doc doc = docMapper.selectById(docId);
+    private Doc requireDoc(Long docId, CurrentUser user) {
+        Doc doc = docMapper.selectById(docId);
         if (doc == null) {
             throw BizException.notFound("文档不存在：" + docId);
+        }
+        if (!user.isAdmin() && !doc.getOwnerId().equals(user.userId())) {
+            throw BizException.forbidden("无权访问该文档");
         }
         return doc;
     }
@@ -168,7 +178,12 @@ public class AnnotationService implements AnnotationAccess {
         if (hash == null) {
             return null;
         }
-        return MarkdownBlockParser.parse(requireDoc(docId).getContentMd()).getBlocks().stream()
+        // 调用方均已先 requireDoc(docId, user) 校验归属，这里只读正文解析块列表
+        Doc doc = docMapper.selectById(docId);
+        if (doc == null) {
+            throw BizException.notFound("文档不存在：" + docId);
+        }
+        return MarkdownBlockParser.parse(doc.getContentMd()).getBlocks().stream()
                 .filter(b -> b.getAnchor().endsWith("-" + hash))
                 .findFirst()
                 .orElse(null);

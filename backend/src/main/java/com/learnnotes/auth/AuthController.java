@@ -28,6 +28,12 @@ public class AuthController {
         return R.ok(authService.login(body.get("username"), body.get("password")));
     }
 
+    /** 注册（V3 起开放，APP_REGISTER_ENABLED 可关） */
+    @PostMapping("/register")
+    public R<Map<String, Object>> register(@RequestBody Map<String, String> body) {
+        return R.ok(authService.register(body.get("username"), body.get("password"), body.get("nickname")));
+    }
+
     @GetMapping("/me")
     public R<Map<String, Object>> me(HttpServletRequest request) {
         String username = (String) request.getAttribute("username");

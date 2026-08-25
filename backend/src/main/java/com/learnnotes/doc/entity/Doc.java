@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 public class Doc {
 
     private Long id;
+    private Long ownerId;
     private Long topicId;
     private String slug;
     private String title;
