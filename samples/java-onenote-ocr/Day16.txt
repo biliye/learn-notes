@@ -1,0 +1,92 @@
+[IMAGE 1]
+日志框架
+Slf4j
+JUL
+Log4j
+Logback
+(Java.util.logging)
+JUL：这是JaVaSE平台提供的官方日志框架，也被称为JUL。配置相对简单，但不够灵活，性能较差。
+Log4j：一个流行的日志框架，提供了灵活的配置选项，支持多种输出目标。
+Logback：基于Log4j升级而来，提供了更多的功能和配置选项，性能优于Log4j。
+SLf4j（SimpleLoggingFacadeforJava）：简单日志门面，提供了一套日志操作的标准接口及抽象类，允许应用程序使用
+同的底层日志框架。
+
+[IMAGE 2]
+publicclassLogTest
+public static void main(String[]args){
+//获取日志对象
+Logger logger =LoggerFactory.getLogger(name:"LogTest.class");
+logger.trace("trace");
+Logger.debug（"debug");
+logger.info("info");
+Logger.warn("warn");
+logger.error("erpor");
+
+[IMAGE 3]
+Logback配置文件logback.xml
+该配置文件是对Logback日志框架输出的日志进行控制的，可以来配置输出的格式、位置及日志开关等。
+常用的两种输出日志的位置：控制台、系统文件
+<!--控制台输出-->
+<appender name="coNsoLE" class="ch.qos.logback.core.ConsoleAppender">...</appender>
+<！--控制台输出
+<appender name="FILE"class="ch.qos.logback.core.rolling.RollingFileAppender">...</appender>
+开启日志（ALL），取消日志（OFF)
+<rootlevel="ALL">
+<appender-refref="coNsoLE"/>
+<appender-refref="FILE"/>
+</root>
+
+[IMAGE 4]
+日志级别
+日志级别指的是日志信息的类型，日志都会分级别，常见的日志级别如下（优先级由低到高）：
+日志级别
+说明
+记录方式
+trace
+追踪，记录程序运行轨迹
+【使用很少】
+log.trace("...")
+debug
+调试，记录程序调试过程中的信息，实际应用中一般将其视为最低级别【使用较多】
+log.debug("...")
+info
+记录程序运行的重要信息，如：数据库连接、网络连接、io操作【使用较多】
+log.info("...")
+warn
+警告信息，可能会发生问题【使用较多】
+log.warn("...")
+error
+错误信息【使用较多】
+log.error("...")
+
+[IMAGE 5]
+枚举定义格式
+修饰符
+enum枚举类名{
+枚举项1，枚举项2，枚举项3..
+enumSeason
+SPRING，SUMMER，AUTUMN，WINTER;
+
+[IMAGE 6]
+www.itheima.com
+枚举的特点
+每一个枚举项其实就是该枚举的一个对象
+通过枚举类名去访问指定的枚举项
+所有枚举类都是Enum的子类
+枚举也是类，可以定义成员变量
+枚举类的第一行上必须是枚举项，最后一个枚举项后的分号是可以省略的
+但是如果枚举类有其他的东西，这个分号就不能省略（建议不要省略）
+枚举类可以有构造器，但必须是private的，它默认也是private
+枚举类也可以有抽象方法，但是枚举项必须重写该方法
+
+[IMAGE 7]
+6 usages
+enum
+Season
+//枚举项：枚举类的对象
+3usages
+1 usage
+Stringname;
+8 usages
+privateSeason(Stringname){
+this.name=name;

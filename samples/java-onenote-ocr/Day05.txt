@@ -1,0 +1,332 @@
+[IMAGE 1]
+
+public String
+toString()
+返回该对象的字符串表示
+public String toString(){
+return getClass().getName()+"@"+Integer.toHexString(hashCode());
+getCLass().getName():类名称,全类名(包名+类名)
+Integer.toHexString():转十六进制
+hashCode（）：返回的是对象内存地址+哈希算法，算出来的整数（哈希值）
+细节：使用打印语句，打印对象名的时候，println方法，源码层面，会自动调用该对象的toString方法，
+public static String value0f(object obj){
+return(obj==null)?"null":obj.toString();
+
+
+[IMAGE 2]
+
+o.java
+publicbooleanequals(objectobj){
+A2
+/
+this:stu1
+obj:stu2
+return (this == obj);
+结论:Object类中的equals方法,默认比较的是对象内存地址
+-通常会重写equals方法，让对象之间，比较内容
+
+
+[IMAGE 3]
+
+public booleanequals(object o)
+//this:stu1
+//o:stu2
+if (this==o){
+//两个对象做地址值的比较，如果地址相同，里面的内容肯定相同，直接返回为true.
+return true;
+/1代码要是能够走到这里，代表地址肯定不相同
+代码要是能够走到这里，代表stu1，肯定不是null
+//stu1不是nuLl,stu2是null,就直接返回false
+//this.getClass()！=o.getClass():两个对象的字节码是否相同
+//如果字节码不相同，就意味着类型不相同，直接返回false
+if(o==nullllthis.getClass()!=o.getClass()){
+return false;
+//代码要是能够走到这里，代表字节码相同，类型肯定相同.
+//向下转型
+Studentstudent=(Student)o;
+//比较
+
+
+[IMAGE 4]
+
+public static void main(String[]args){
+Studentstu1=null;
+Student stu2=new Student(name:"张三",age:23);
+//问题:0bjects.equals方法,和stu1.equals方法,有什么区别?
+//细节:Objects.equals方法,内部依赖于我们自己所编写的equals
+//好处:Objects.equals方法,内部带有非nuLl判断
+System.out.println(0bjects.equals(stu1,stu2));
+System.out.println("看看我执行了吗?");
+
+
+[IMAGE 5]
+
+Objects的常见方法:
+方法名
+说明
+比较两个对象的，底层会先进行非空判断，从而可以避免空指针
+public staticboolean equals(object a,Object b)
+异常。再进行equals比较
+public static boolean isNull(object obj)
+判断变量是否为
+null
+
+
+[IMAGE 6]
+
+Math类
+包含执行基本数字运算的方法
+Math类的常用方法
+方法名
+说明
+public static int abs(int a)
+获取参数绝对值
+public static double ceil(double a)
+向上取整
+public static double floor(double a)
+向下取整
+public static int round(float a)
+四舍五入
+public static int max(int a,int b)
+获取两个int值中的较大值
+public static double pow(double a,double b)
+返回a的b次幂的值
+public static double random()
+返回值为double的随机值，范围[0.0,1.0)
+
+
+[IMAGE 7]
+
+黑马程序员
+多一句没有，少一句不行，用更短时间，教会更实用的技术！
+www.itheima.com
+System类概述
+System的功能是静态的，都是直接用类名调用即可
+常用方法
+方法名
+说明
+终止当前运行的Java虚拟机，非
+publicstaticvoidexit(intstatus)
+零表示异常终止
+public static long currentTimeMillis()
+返回当前系统的时间毫秒值形式
+publicstaticvoidarraycopy(数据源数组,起始索引l,目的地数组,起始索引l,拷贝个数)
+数组拷贝
+
+
+[IMAGE 8]
+
+publicclass BigDecimalDemo{
+BigDecimal类：解决小数运算中，出现的不精确问题
+BigDecimal创建对象:
+pubLicBigDecimaL(doublevaL):不推荐,无法保证小数运算的精确
+public BigDecimal(String val)
+public static BigDecimal valueOf(double val)
+public static void main(String[] args){
+BigDecimal bd1=new BigDecimal(val:"0.1");
+BigDecimal bd2=new BigDecimal(val:"0.2");
+System.out.println(bd1.add(bd2));
+
+
+[IMAGE 9]
+
+malDemo.java
+BigUecimaL创建对象:
+pubLicBigDecimaL(doublevaL):不推荐,无法保证小数运算的精确
+public BigDecimal(String val)
+public static BigDecimal valueof(double val)
+BigDecimal常用成员方法:
+public BigDecimal add(BigDecimalb):加法
+public BigDecimal subtract(BigDecimalb):减法
+public BigDecimal multiply(BigDecimal b):乘法
+public BigDecimal divide(BigDecimalb):除法
+pubLicBigDecimaldivide(另一个BigDecimal对象,精确几位,舍入模式):除法
+注意：如果使用BigDecimal运算，出现了除不尽的情况，就会出现异常
+public static void main(String[]args){
+BigDecimalbd1 =BigDecimal.value0f(10.0);
+BigDecimalbd2=BigDecimal.value0f(3.0);
+System.out.println(bd1.divide(bd2,2,b)
+ROunl
+
+
+[IMAGE 10]
+
+15
+public static BigDecimal valueof(double val)
+16
+17
+BigDecimal常用成员方法:
+18
+19
+public BigDecimal add(BigDecimal b):加法
+20
+public BigDecimalsubtract(BigDecimalb):减法
+21
+public BigDecimalmultiply(BigDecimalb):乘法
+22
+public BigDecimaldivide(BigDecimalb):除法
+23
+pubLicBigDecimaldivide(另一个BigDecimal对象,精确几位,舍入模式):除法
+24
+25
+注意：如果使用BigDecimal运算，出现了除不尽的情况，就会出现异常
+26
+27
+public static void main(String[] args){
+28
+29
+BigDecimal bd1 =BigDecimal.value0f(10.0);
+30
+BigDecimalbd2=BigDecimal.value0f(3.0);
+31
+32
+System.out.println(bd1.divide(bd2,
+scale:2,RoundingMode.HALF_UP));
+1/3.33
+33
+System.out.println(bd1.divide(bd2,
+scale:2,RoundingMode.UP));
+1/3.34
+34
+System.out.println(bd1.divide(bd2,
+scale:2,RoundingMode.DOWN));
+1/3.33
+35
+36
+BigDecimal result = bd1.divide(bd2,scale:2,RoundingMode.HALF_UP);
+37
+38
+doublev=result.doubleValue();
+39
+40
+Math.abs(v);
+
+
+[IMAGE 11]
+
+包装类：将基本数据类型，包装成类，变成引用数据类型
+手动装箱：调用方法，手动将基本数据类型，包装成类
+1.publicInteger(intvalue):通过构造方法(不推荐)
+2.public staticIntegervalueOf(inti):通过静态方法
+手动拆箱：调用方法，手动将包装类，拆成（转换）基本数据类型
+1.publicintintValue():以int类型返回该Integer的值
+JDK5版本开始，出现了自动拆装箱：
+1.自动装箱：可以将基本数据类型，直接赋值给包装类的变量
+2.自动拆箱：可以将包装类的数据，直接赋值给基本数据类型变量
+
+
+[IMAGE 12]
+
+public class IntegerMethodDemo
+/*
+Integer常用方法:
+public static String toBinaryString (int i):转二进制
+public static String to0ctalString (int i):转八进制
+public static String toHexString (int i)
+：转十六进制
+public static int parseInt (String s)
+：将数字字符串，转换为数字
+public static void main(String[] args){
+
+
+[IMAGE 13]
+
+/iew.java
+Integer.java
+StudentDemo.java
+自动装箱的时候，如果装箱的数据范围，是-128~127，==号比较的结果就是true，反之都是false
+自动装箱的原理：自动帮我们调用了Integer.value0f（127）；
+//i=127
+public static Integer valueof(int i){
+if(i>=-128&&i<=127){
+returnIntegerCache.cache[255];
+returnnew Integer(i);
+如果装箱的数据，不在-128～127之间，会重新创建新的对象
+如果装箱的数据，在-128～127之间，不会创建新的对象，而是从底层的数组中，取出一个提前创建好的Integer对象，返回
+Integer类中,底层存在一个长度为256个大小的数组,Integer[]cache
+在数组中，存储了256个Integer对象，分别是-128～127
+
+
+[IMAGE 14]
+
+Arrays类介绍:
+数组操作工具类，专门用于操作数组元素
+方法名
+说明
+public static String toString(类型[] a)
+将数组元素拼接为带有格式的字符串
+publicstaticbooleanequals(类型[]a,类型[b)
+比较两个数组内容是否相同
+public static int binarySearch(int[] a, int key)
+查找元素在数组中的索引（二分查找法）
+public static void sort(类型[] a)
+对数组进行默认升序排序
+
+
+[IMAGE 15]
+
+www.itheima.com
+字符类(默认匹配一个字符)
+预定义的字符类(默认匹配一个字符)
+[abc]
+只能是a,b,或c
+任何字符
+[^abc]
+除了a，b，c之外的任何字符
+Id
+一个数字：[0-9]
+[a-zA-Z]
+a到zA到Z，包括（范围）
+ID
+非数字：[^0-9]
+[a-d[m-p]]
+a到d,或m通过p:([a-dm-p]联合)
+Is
+一个空白字符:【\t\n\xOB\f\r]
+[a-z&&[def]]
+d,e,或f(交集)
+非空白字符：[^\s]
+[a-z&&[^bc]]
+a到z,除了b和c:([ad-z]减法)
+1w
+[a-zA-Z_0-9]英文、数字、下划线
+[a-z&&[^m-p]]
+a到z,除了m到p:([a-lq-z]减法)
+IW
+[^\w]一个非单词字符
+贪婪的量词（配合匹配多个字符）
+X?
+×，一次或根本不
+X*
+×，零次或多次(任意次数）
+X+
+X，一次或多次
+x(n}
+X，正好n次
+x{n,}
+X，至少n次
+x{n,m}
+X，至少n但不超过m次
+
+
+[IMAGE 16]
+
+使用正则表达式爬取信息
+需求：请把下面文本中的电话，邮箱，座机号码，热线都爬取出来。
+public static void main(String[] args){
+Stringdata="来黑马程序员学习Java,
+"电话：18666668888，18699997777或者联系”+
+"邮箱:boniu@itcast.cn邮箱:bozai@itcast.cn邮箱2:dlei0009@163.com"+
+"座机电话：01036517895，010-98951256”+
+“热线电话：400-618-9090，400-618-4000，4006184000，4006189090"；
+//定义爬取正则
++(]+x
+d{7,8}1400-11d{3}-11d4}";
+//将正则表达式封装为一个Pattern对象
+Pattern pattern =Pattern.compile(regex);
+//获取匹配器对象
+Matcher matcher =pattern.matcher(data);
+//通过匹配器，从内容中爬取信息
+while(matcher.find()){
+System.out.println(matcher.group());
+

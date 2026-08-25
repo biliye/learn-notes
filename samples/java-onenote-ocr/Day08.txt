@@ -1,0 +1,136 @@
+[IMAGE 1]
+
+异常体系
+Throwable
+Error
+Exception
+RuntimeException
+除RuntimeException之
+及其子类
+外所有的异常
+Error
+严重级别问题
+常见的:栈内存溢出(StackOverflowError)
+堆内存溢出(OutOfMemoryError)
+Exception:
+RuntimeException及其子类:运行时异常
+除RuntimeException之外所有的异常:编译时异常
+高级软
+
+
+[IMAGE 2]
+
+黑马程序员
+多一句没有，少一句不行，用更短时间，教会更实用的技术！
+www.itheima.com
+1．异常是什么？
+异常是代码在编译或者执行的过程中可能出现的错误。
+2．异常的体系结构？
+Throwable
+总结
+Error：严重级别问题，通常跟系统有关
+Exception：异常类，程序常见的错误
+3.Exception的分类?
+编译时异常、运行时异常。
+编译时异常：没有继承RuntimeExcpetion的异常，编译阶段就会出错。
+运行时异常:继承自RuntimeException的异常或其子类
+编译阶段不报错，运行可能报错
+
+
+[IMAGE 3]
+
+异常的处理方式：
+1.try...catch捕获异常
+好处：
+异常对象可以被捕
+后续的代码可以继续执行
+格式：
+try{
+可能会出现异常的代码
+}catch(异常名称对象名){
+异常的处理方案
+执行流程：
+1.执行try中的代码，看是否有异常对象产生
+2.没有：catch就不会捕获，后续代码继续执行
+3.有：catch捕获异常对象，执行catch中的处理方案，后续代码继续执行
+2.throws抛出异常
+
+
+[IMAGE 4]
+
+try{
+System.out.println(10/o);
+fos.write("abc".getBytes());
+fos.close();
+catch (IoException e){
+e.printStackTrace();
+finally
+工
+
+
+[IMAGE 5]
+
+1relatedproblem
+publicvoid setAge(intage)throwsException{
+if(age>=θ&&age<=120){
+this.age =age;
+}else{
+错误的年龄
+工
+thrownewException("年龄范围有误,需要0~120之间的年龄");
+
+
+[IMAGE 6]
+
+while(true){
+try{
+age=Integer.parseInt(sc.nextLine());
+stu.setAge(age);
+break;
+catch(NumberFormatExceptione){
+System.out.println("年龄输入有误,请重新输入整数年龄:");
+catch(Exceptione){//Exceptione=newException("年龄范围有误,需要θ~120之间的年龄");
+Stringmessage=e.getMessage();
+System.out.println(message);
+
+
+[IMAGE 7]
+
+throw和throws的区别
+throw:用在方法中,后面跟的是异常对象,其作用是抛出异常对象
+throWs：用在方法名后面，起到声明作用
+声明此方法中存在异常，调用者需要进行处理
+细节：
+抛出的异常对象如果是编译时异常,必须使用throws声明
+如果是运行时异常,则不需要写throws
+
+
+[IMAGE 8]
+
+异常的细节
+Throwable的常用方法:
+方法名
+说明
+publicString getMessage()
+获取异常的错误原因
+publicvoidprintStackTrace()
+展示完整的异常错误信息
+子类重写父类方法时，不能抛出父类没有的异常，或者比父类更大的异常
+
+
+[IMAGE 9]
+
+自定义异常的分类
+1、自定义编译时异常
+定义一个异常类继承Exception.
+重写构造器
+2、自定义运行时异常
+定义一个异常类继承RuntimeException.
+重写构造器。
+
+
+[IMAGE 10]
+
+子类重写父类方法时，不能抛出父类没有的异常，或者比父类更大的异常
+*/
+

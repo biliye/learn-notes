@@ -1,0 +1,117 @@
+[IMAGE 1]
+
+Collection的使用
+说明
+方法名称
+把给定的对象添加到当前集合中
+public boolean add(E e)
+public void clear()
+清空集合中所有的元素
+把给定的对象在当前集合中删除
+public boolean remove(E e)
+public boolean contains(object obj)
+判断当前集合中是否包含给定的对象
+public boolean isEmpty()
+判断当前集合是否为空
+返回集合中元素的个数/集合的长度
+public int size()
+注意事项
+remove（）contains（）底层依赖对象的equals方法
+
+[IMAGE 2]
+
+迭代器遍历
+Iterator<String>it=集合对象.iterator();
+while(it.hasNext()）{
+String s=it.next();
+System.out.println(s);
+hashNext（）：判断集合中是否还有元素
+next（）：取出集合元素，并将指针向后移动
+注意：在循环过程中next方法最好只调用一次
+
+[IMAGE 3]
+
+List集合的遍历方式：
+1.迭代器遍历
+2.增强for循环
+3.foreach方法
+4.普通for循环
+ListIterator
+5.
+（List集合特有的迭代器）
+
+[IMAGE 4]
+
+List接口的特点：存取有序，有索引，可以存储重复的
+和索引有关的API：
+publicvoidadd（intindex，Eelement）：在指定的索引位置，添加元素
+pubLicEremove（intindex）：根据索引删除集合中的元素
+pubLicEset（intindex，Eelement）：根据索引修改集合中的元素
+pubLicEget（intindex）：返回指定索引处的元素
+
+[IMAGE 5]
+
+list2.add(111);
+Integer e=111;
+list2.add(222);
+list2.add(333);
+list2.remove(Integer.value0f(222));
+
+[IMAGE 6]
+
+并发修改异常：ConcurrentModificationException
+场景：使用[选代器]遍历集合的过程中，调用了[集合对象]的添加，删除方法，就会出现此异常
+解决方案：选代器的遍历过程中，不允许使用集合对象的添加或删除，那就使用迭代器，自己的添加或删除方法
+public static void main(String[]args）{
+List<String>list=new ArrayList<>();
+List.add（"眼瞅着你不是真正的高兴"）；
+List.add("温油");
+List.add（"离开俺们这香表面")；
+list.add（"伤心的人别扭秧歌")；
+List.add("私奔到东北");
+ListIterator<String>it=list.listIterator();
+while（it.hasNext()){
+String s = it.next();
+if（"温油".equals(s)）{
+it.add("哈哈");
+
+[IMAGE 7]
+
+1aDITITDCDAT.Id
+DEFAULILAFALII
+LCNCVIUAIA
+如果只是创建了集合容器，没有进行过添加操作，底层数组默认长度为0
+
+[IMAGE 8]
+
+y.itheima.com
+ArrayList源码解析
+使用空参构造器创建的集合，在底层创建一个默认长度为0的数组
+添加第一个元素时，底层会创建一个新的长度为10的数组
+存满时，会扩容1.5倍
+
+[IMAGE 9]
+
+LinkedList类
+LinkedList底层基于双链表实现的，查询元素慢，增删首尾元素是非常快的
+特有方法
+说明
+在该列表开头插入指定的元素
+public void addFirst(E e)
+将指定的元素追加到此列表的末尾
+public void addLast(E e)
+返回此列表中的第一个元素
+public E getFirst()
+public E getLast()
+返回此列表中的最后一个元素
+从此列表中删除并返回第一个元素
+public E removeFirst()
+public E removeLast()
+从此列表中删除并返回最后一个元素
+
+[IMAGE 10]
+
+LinkedList集合，底层是双向链表结构，查找元素的时候会从头部
+或者尾部逐个查找
+但是它属于List体系中的集合，也可以使用get方法，根据索引直接获取元素，
+

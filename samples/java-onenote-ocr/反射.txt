@@ -1,0 +1,69 @@
+[IMAGE 1]
+获取class对象的三种方式
+class.forName（"全类名"）；
+类名.class
+对象.getclass（）；
+
+[IMAGE 2]
+利用反射获取构造方法
+Class类中用于获取构造方法的方法
+Constructor<?>[getConstructors()：返回所有公共构造方法对象的数组
+Constructor<?>[]getDeclaredConstructors()：返回所有构造方法对象的数组
+Constructor<T>getConstructor(Class<?>..parameterTypes)：返回单个公共构造方法对象
+Constructor<T>getDeclaredConstructor(Class<?>..parameterTypes)：返回单个构造方法对象
+Constructor类中用于创建对象的方法
+Tnewlnstance(Object...initargs)：根据指定的构造方法创建对象
+setAccessible(booleanflag)：设置为true,表示取消访问检查
+
+[IMAGE 3]
+利用反射获取成员方法
+Class类中用于获取成员方法的方法
+Method[]getMethods()：返回所有公共成员方法对象的数组，包括继承的
+Method[getDeclaredMethads()：返回所有成员方法对象的数组，不包括继承的
+Method getMethod(String name,Class<?>..parameterTypes）：返回单个公共成员方法对象
+Method getDeclaredMethod(String name, Class<?>...parameterTypes)：返回单个成员方法对象
+Method类中用于创建对象的方法
+Object invoke(Object obj, Object.. args)：运行方法
+参数一：用obj对象调用该方法
+参数二：调用方法的传递的参数（如果没有就不写）
+返回值：方法的返回值（如果没有就不写）
+
+[IMAGE 4]
+什么是反射？
+反射允许对成员变量，成员方法和构造方法的信息进行编程访问
+类
+字段（成员变量）
+字段（成员变量）
+获取修饰符
+获取名字
+获取类型
+赋值/获取值
+构造方法
+构造方法
+获取修饰符
+获取名字
+获取形参
+创建对象
+成员方法
+成员方法
+获取修饰符
+获取名字
+获取形参
+获取返回值
+抛出的异常
+获取注解
+运行方法
+
+[IMAGE 5]
+m.setAccessible(true);
+
+[IMAGE 6]
+利用反射获取成员变量
+Class类中用于获取成员变量的方法
+Field[] getFields()：返回所有公共成员变量对象的数组
+Field[]getDeclaredFields()：返回所有成员变量对象的数组
+Field getField(String name)：返回单个公共成员变量对象
+Field getDeclaredField(String name)：返回单个成员变量对象
+Field类中用于创建对象的方法
+void set(Object obj, Object value)：赋值
+Objectget(Objectobj）获取值。

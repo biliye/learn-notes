@@ -1,0 +1,165 @@
+[IMAGE 1]
+
+泛型方法
+1.非静态的方法：内部的泛型，会根据类的泛型去匹配
+2.
+静态的方法
+：静态方法中如果加入了泛型，
+必须声明出自已独立的泛型
+一
+时机：在调用方法，传入实际参数的时候，确定到具体的类型
+
+[IMAGE 2]
+
+publicstatic<T>void printArray(T[]Iarr）{
+System.out.print("[");
+for（inti=θ;i<arr.length-1;i++）{
+System.out.print（arr[i]+",");
+System.out.println（arr[arr.length -1]+"]");
+
+[IMAGE 3]
+
+colaosatJauaasseaatiaod
+?
+泛型通配符
+？：任意类型
++
+
+[IMAGE 4]
+
+￥
+泛型通配符
+？：任意类型
+？extendsE：可以传入的是E，或者是E的子类
+？sUperE：可以传入的是E，或者是E的父类
+
+[IMAGE 5]
+
+public static void main(String[]args）{
+ArrayList<Coder>list1=new ArrayList<>();
+list1.add(new Coder();
+ArrayList<Manager>list2 = new ArrayList<>();
+List2.add(new Manager());
+ArrayList<String>list3= new ArrayList<>();
+list3.add("abc");
+method(list1);
+method(list2);
+method(list3);
+public static void method(ArrayList<? extends Employee>list){
+for (object o:list){
+EmpLoyee e=（Employee)o;
+e.workO;
+
+[IMAGE 6]
+
+非静态方法：泛型是根据类的泛型去匹配的
+publicclassArrayList<E>{
+publicbooleanadd(Ee）{
+静态方法：需要声明出自己独立的泛型
+publicstatic<T>void printArray(T[]array){
+
+[IMAGE 7]
+
+类实现接口的时候，如果接口带有泛型，有两种操作方式
+1.类实现接口的时候，直接确定类型
+2.延续接口的泛型，等创建对象的时候再确定
+publicinterfaceList<E>{
+publicclass ArrayList<E>implementsList<E>{
+
+[IMAGE 8]
+
+www.itheima.com
+数据结构（红黑树）添加节点规则
+红黑树在添加节点的时候，添加的节点默认是红色的
+根
+直接变为黑色
+添加节点
+父黑色
+则不需要任何操作
+将“父”设为黑色，将“叔叔”设为黑色
+将“祖父”设为“红色”
+叔叔红色
+如果祖父为根，再将根变回黑色
+非根
+如果祖父非根，将祖父设置为当前节点再进行其他判断
+叔叔黑色
+把父设置为当前节点并左旋，再进行判断
+父红色
+当前节点时父的右孩子
+将“父”设为“黑色”
+叔叔黑色
+将“祖父”变为“红色”
+当前节点是父的左孩子
+以祖父为支点进行右旋
+
+[IMAGE 9]
+
+TreeSet<Student>ts=new TreeSet<>();
+new Student（name:"王五"，age:25)
+ts.add(new Student（name:"王五"，age:25));
+ts.add(new Student（name:"张三"，age:23));
+ts.add(new Student（name:"李四"，age:24));
+ts.add(new Student（name:“赵六"，age:26));
+compareTo:
+new Student（name:“李四"，age:24)
+①：集合中只有newStudent("王五"，25)
+1：正序排列
+-1：倒序排序
+new Student（name:“赵六"，age:26)
+new Student（name:“赵六"，age:26)
+new Student（name:"李四"，age:24)
+添加节点：
+new Student（name:"张三"，age:23)
+1．小的左边走
+new Student（name:"王五i"，age:25）
+取出的顺序：左，中，右
+2.大的右边走
+3．一样的不存
+当我们调用add方法，向TreeSet添加元素的时候，内部会自动调用compareTo方法
+根据这个方法的返回值，来决定节点怎么走
+
+[IMAGE 10]
+
+TreeSet排序（自然排序）
+1.类实现Comparable接口
+2.重写compareTo方法
+3.根据方法的返回值，来组织排序规则
+负数：左边走
+正数：右边走
+①：不存
+
+[IMAGE 11]
+
+public class StudentimplementsComparable<Student>{
+this.xxx -o.xxx
+正序
+降序
+0.xxx -this.xxx
+@override
+publicintcompareTo(Studento){
+returno.age-this.age;
+
+[IMAGE 12]
+
+TreeSet的两种排序方式
+自然排序
+重点：如果同具备自然排序，和比较器排序，会优先按照
+比较器进行排序操作
+比较器排序
+Java已经写好类，大多数都具有自然排序的规则，这些规则放在源代码中，我们无法修改
+(String, Integer, Double..)
+String：默认是字典顺序排序
+Integer：默认是升序排序
+Double：默认是升序排序
+如果我们要实现的需求，排序规则，跟已经具备的自然排序，不一样，
+这时候就要使用比较器排序.
+
+[IMAGE 13]
+
+TreeSet<>(new Comparator<String>(){
+TreeSet<String>ts=new
+@override
+public int compare(String o1，String o2){
+returnθ;
+）;
+

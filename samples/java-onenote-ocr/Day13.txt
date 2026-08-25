@@ -1,0 +1,406 @@
+[IMAGE 1]
+IO流体系结构
+万能流
+Inputstream
+字节输入流
+FileInputStream
+字节流
+抽象类
+抽象类的子类
+Outputstream
+字节输出流
+Fileoutputstream
+纯文本文件
+字符输入流
+Reader
+FileReader
+字符流
+抽象类
+抽象类的子类
+Writer
+字符输出流
+FileWriter
+
+[IMAGE 2]
+fos.write（"你好你好".getBytes（)）；
+
+[IMAGE 3]
+FileoutputStream字节输出流
+D:\A.txt
+Java程序
+e
+构造方法
+说明
+FileOutputStream(String name)
+输出流关联文件，文件路径以字符串形式给出
+FileOutputStream(File file)
+输出流关联文件，文件路径以File对象形式给出
+注意事项
+关联的文件如果不存在：自动创建
+存在：会清空现有的，再开始写入
+
+[IMAGE 4]
+FileoutputStream字节输出流
+构造方法
+说明
+FileoutputStream(String name)
+输出流关联文件，文件路径以字符串形式给出
+FileOutputStream(String name,boolean append)
+第二个参数是追加写入的开关
+FileOutputStream(File file)
+输出流关联文件，文件路径以File对象形式给出
+FileOutputStream(File file,boolean append)
+第二个参数是追加写入的开关
+成员方法
+说明
+void write(int b)
+写出单个字节
+void write(byte[] b)
+写出一个字节数组
+void write(byte[] b,int off,int len)
+写出字节数组的一部分
+
+[IMAGE 5]
+I0流的异常处理方式：jdk7版本开始
+public static void main(String[] args)
+try（FileOutputStream fos =new File0utputStream(name:"D:\\B.txt");){
+fos.write（"abc".getBytes());
+catch（IoException e)
+e.printStackTrace();
+工
+
+[IMAGE 6]
+FileInputStream
+字节输入流
+构造方法
+说明
+将字节数组转换为字符串
+public String
+参数1：字节数组
+(byte[] bytes, int offset,int length)
+参数2：起始索引
+参数3：转换的个数
+
+[IMAGE 7]
+public static void main(String[] args)throws IoException {
+FileInputStream
+fis =new FileInputStream[name:"D:\\A.txt");
+//准备菜篮子，用于装（字节）
+byte[] bys =new byte[2];
+int len;
+while（（len =fis.read（bys）)!=-1）{
+String S=new String（bys,offset:θ，len);
+System.out.print(s);
+fis.close();
+
+[IMAGE 8]
+字节缓冲流读写过程
+一次性读取8192个字节，将内置数组装满
+D:\IA.txt
+BufferedInputStream
+FileInputStream
+字节缓冲输入流对象
+Java程序
+10000个字节
+普通的流对象
+new byte[8192]
+BufferedoutputStream
+E:\IA.txt
+Fileoutputstream
+Java程序
+字节缓冲输出流对象
+普通的流对象
+new byte[8192];
+一次性写出
+将内置的数组装满8192个字节
+
+[IMAGE 9]
+FileReader：用于读取纯文本文件，解决中文乱码问题
+构造方法：
+1.publicFileReader（StringfileName）字符输入流关联文件，路径以字符串形式给出
+2.publicFileReader（Filefile）字符输入流关联文件，路径以File对象形式给出
+成员方法：
+pubLicintread（）：读取单个字符
+publicintread（char[]cbuf）：读取一个字符数组，返回读取到的有效字符个数
+
+[IMAGE 10]
+平台默认字符编码：Unicode-UTF-8的形式
+重点记忆：中文字符，通常都是由负数的字节进行组成的，
+特殊情况：可能会出现正数，但是就算有正数，第一个字节肯定是负数
+编码：字符转字节
+pubLicbyte[]getBytes（）：使用平台默认字符编码方式，对字符串编码
+pubLicbyte[]getBytes（StringcharsetName）：使用使用字符编码方式，对字符串编码
+解码：字节转字符
+publicString（byte[]bytes）：使用平台默认字符编码方式，对字符串解码
+pubLicString（byte[]bytes，StringcharsetName）：使用使用字符编码方式，对字符串解码
+
+[IMAGE 11]
+FileWriter字符输出流
+构造方法
+说明
+FileWriter(String fileName)
+字符输出流关联文件，路径以字符串形式给出
+FileWriter(String fileName, boolean append)
+参数2：追加写入的开关
+FileWriter(File file)
+字符输出流关联文件，路径以File对象形式给出
+FileWriter(File file,boolean append)
+参数2：追加写入的开关
+
+[IMAGE 12]
+FileWriter字符输出流
+成员方法
+说明
+publicvoid write(intc)
+写出单个字符
+public void write(char[] cbuf)
+写出一个字符数组
+public write(char[] cbuf,int off,int len)
+写出字符数组的一部分
+public void write(String str)
+写出字符串
+publicvoid write(String str，int off，int len）写出字符串的一部分
+
+[IMAGE 13]
+构造方法
+说明
+将字节数组转换为字符串
+public String
+参数1：字节数组
+(byte[]bytes,int offset，int length)
+参数2：起始索引1
+参数3：转换的个数
+
+[IMAGE 14]
+注意事项：字符输出流写出数据，需要调用flush或close方法，数据才会写出
+flush（）：刷出数据，刷出后可以继续写出
+close（）：关闭流释放资源，顺便刷出数据，关闭后不可以维续写出
+
+[IMAGE 15]
+fw.write(
+str:
+"
+r
+n
+");
+
+[IMAGE 16]
+字节缓冲流在源代码中内置了字符数组，可以提高读写效率
+BufferedReader
+BufferedWriter
+注意：缓冲流不具备读写功能，它们只是对普通的流对象进行包装
+真正和文件建立关联的，还是普通的流对象
+构造方法
+说明
+BufferedReader(Readerreader)
+对传入的字符输入流进行包装
+Bufferedwriter(Writer writer)
+对传入的字符输出流进行包装
+
+[IMAGE 17]
+字符缓冲流中的特有方法
+BufferedReader
+成员方法
+说明
+public String readLine()
+读取一行字符串，读取到末尾返回null
+BufferedWriter
+成员方法
+说明
+public void newLine()
+写出换行符（具有跨平台性）
+
+[IMAGE 18]
+转换流的使用
+InputStreamReader(InputStream in,String charsetName)
+按照指定的字符编码读取
+DutputStreamWriter（outputStream out，String charsetName)
+按照指定的字符编码写出
+
+[IMAGE 19]
+序列化流
+可以在流中，以字节的形式直接读写对象
+成员方法
+说明
+ObjectInputStream
+Object readobject()
+从流中读取对象（反序列化）
+构造方法
+说明
+public ObjectInputStream(InputStream in)
+对象输入流关联文件，关联方式使用字节输入流
+ObjectoutputStream
+构造方法
+说明
+public ObjectOutputStream(OutputStream out)
+对象输出流关联文件，关联方式使用字节输出流
+成员方法
+说明
+void writeobject(object obj)
+在流中将对象写出（序列化）
+
+[IMAGE 20]
+序列化流的作用是？
+可以在流中，以字节的形式直接读写对象
+序列化流我们用的是哪个类读取，又是哪个类在写？
+ObjectInputStream、ObjectoutputStream
+调用的方法是？
+readobject(）writeobject()
+类需要实现什么接口才可以序列化？
+Serializable接口
+实现接口后，推荐多做一步操作，这一步是？
+手动加入seriaLVersionUID
+transient关键字的作用是？
+被transient修饰的成员变量不会被序列化
+
+[IMAGE 21]
+序列化流的操作流程
+Settings
+Q
+Editor ) Inspections
+>Appearance &Behavior
+Profile:
+Keymap
+Project Default Pro
+Editor
+>General
+Non-serializable object passed to ObjectOutputStream
+Reports classes that implement
+Code Editing
+‘readObject(’ or "writeObject0’ not declared 'private'
+Serializable and do not declare a
+Font
+'readResolve0’orwriteReplace0’not declaredprotected”
+serialTersient'ID field.
+>Color Scheme
+‘record” contains ignored members
+四
+Without a serialVersionlID field, any
+‘@Serial' annotation used on wrong member
+Code Style
+change to the class will make previously
+@Serial annotetion could be used
+serialized versions unreadlable.
+Inspections
+‘"Serializable’ object implicitly stores non-'Serializable' object
+File and Code Templates
+Serializable class with unconstructable ancestor
+Example:
+File Encodings
+Sorializable.class without.'roadObjoctO'and writeObject0*
+clacxMaininnlen
+nts Serial1zah1
+Live Templates
+Serializable class without 'serialVersionUID*
+File Types
+Serializable non-static inner class without 'serialVersionUID
+Seyerity.
+WNE
+In All Scor.
+Android Layout Editor
+‘serialPersistentFields' field not declared 'private static final ObjectStreamfield[
+>Copyright
+'serialVersionUID' field not declared private static final long’
+Options
+>Inlay Hints
+Transient field in non-serializable class
+Transient field is not initialized on deserialization
+Ignore subclasses of:
+Duplicates
+Test frameworks
+口
+>Emmet
+TestNG
+口
+ java.awt.Component
+GUI Designer
+Threading issues
+口
+Intentions
+toString0 issues
+>Language Injections
+Verbose or redundant code constructs
+√
+>Natural Languages
+Visibility
+ofeal
+Reader Mode
+Disable new inspections by default
+TextMate Bundles
+OK
+Cancel
+Apply
+
+[IMAGE 22]
+打印流介绍
+打印流可以实现方便、高效的打印数据到文件中去，并且可以指定字符编码
+可以实现打印什么数据就是什么数据，例如打印整数97写出去就是97
+
+[IMAGE 23]
+1.创建对象关联文件
+public PrintStream
+(outputStream
+os)
+public PrintStream (File f)
+public PrintStream
+（File f，String csn)
+publicPrintStream
+(String filepath)
+public PrintStream （String filepath，String csn)
+2.写出方法
+write（）：写出一个字节，不建议使用，无法原样写入，
+print（）：原样写入数据，无换行
+printLn（）：原样写入数据，带有换行
+
+[IMAGE 24]
+黑马程序员
+一句没有，少一句不行，用更短时间，教会更实用的技术！
+www.itheima.com
+打印流介绍
+PrintWriter字符打印流
+构造器
+说明
+public PrintWriter（OutputStream os)
+打印流直接通向字节输出流管道
+public PrintWriter(Writer w)
+打印流直接通向字符输出流管道
+public PrintWriter(File f,String csn)
+打印流直接通向文件对象
+public PrintWriter (String filepath, String csn)
+打印流直接通向文件路径
+方法
+说明
+public void print\println(Xxx xx)
+打印任意类型的数据出去
+
+[IMAGE 25]
+方法
+说明
+Object setProperty(String key,String value)
+添加（修改）一个键值对
+String getProperty(String key)
+根据键获取值
+Set<String>stringPropertyNames()
+获取集合中所有的键
+
+[IMAGE 26]
+1.java
+PropertiesDemo2.java
+Properties作为集合的使用
+Object setProperty
+(Stringkey，Stringvalue）：类似Map集合的put方法
+StringgetProperty
+（Stringkey）：类似Map集合的get方法
+*/
+
+[IMAGE 27]
+Properties本质来说就是一个map集合
+内部键和值都是String 字符串
+这个集合中存在着和10有关的方法，使用方便
+重点掌握的方法：
+setProperty(键,值);
+添加键值对
+getProperty(键);
+根据键获取值
+load（字节流丨字符流)；从流中加载键值对
+store(字节流丨字符流)；将键值对写出到文件

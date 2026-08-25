@@ -1,0 +1,171 @@
+[IMAGE 1]
+ho1.java
+①IntStream.java
+Stream.java
+Consumer.java
+将数据放在流水线的传送带上
+1.集合获取Stream流对象（使用Collection接口中的默认方法）
+default Stream<E>stream()
+*Map集合获取Stream流对象，需要间接获取
+map.entrySet().stream()
+2.数组获取Stream流对象（使用Arrays数组工具类中的静态方法）
+static <T>Stream<T>stream （T[]array)
+3.零散的数据获取
+stream
+流对象（使用Stream类中的静态方法）
+static<T>Stream<T>of（T...values)
+
+[IMAGE 2]
+Stream流的中间操作方法
+操作后返回Stream对象，可以继续操作
+Stream<T>filter（Predicate<?superT>predicate）用于对流中的数据进行过滤
+Stream<T>Limit（LongmaxSize）获取前几个元素
+Stream<T>skip（Longn）跳过前几个元素
+Stream<T>distinct（）去除流中重复的元素依赖
+(hashCode
+和eqbals方法）
+static<T>Stream<T>concat（Streama，Streamb）合并a和b两个流为一个流
+public static void main(String[]args）{
+//需求：将集合中以【张】开头的数据，过滤出来并打印在控制台
+ArrayList<String>list =new ArrayList<~>();
+List.add（"林青霞")；
+list.add（"张曼玉");
+List.add（"王祖贤")；
+list.add("柳岩");
+list.add("张敏")；
+list.add（"张无忌");
+System.out.println("
+//需求1：取前3个数据在控制台输出
+
+[IMAGE 3]
+注意事项：
+流对象已经被消费过（使用过），
+就不允许再次消费了，
+
+[IMAGE 4]
+www.itheima.com
+Stream收集操作
+把Stream流操作后的结果数据转回到集合
+名称
+说明
+R collect(Collectorcollector)
+开始收集Stream流，指定收集器
+Collectors工具类提供了具体的收集方式
+名称
+说明
+publicstatic<T>CollectortoList()
+把元素收集到List集合中
+public static <T>Collector toSet()
+把元素收集到Set集合中
+public staticCollector toMap(Function keyMapper，Function valueMapper)
+把元素收集到Map集合中
+
+[IMAGE 5]
+Stream流的中间方法
+名称
+说明
+Stream<T>filter(Predicate<?super T>predicate)
+过滤
+Stream<T>limit(long maxSize)
+获取前几个元素
+Stream<T> skip(long n)
+跳过前几个元素
+Stream<T>distinct()
+元素去重，依赖(hashCode和equals方法)
+static<T>Stream<T>
+concat
+(Streama,Streamb)
+合并a和b两个流为一个流
+Stream<R> map(Function<T , R> mapper)
+转换流中的数据类型
+
+[IMAGE 6]
+File类介绍：文件或文件夹对象
+构造方法：
+1.pubLicFile（Stringpathname）：根据传入的字符串路径封装File对象
+2.pubLicFile（Stringparent，Stringchild）：根据传入的父级路径和子级路径来封装File对象
+3.pubLicFile（Fileparent，Stringchild）：根据传入的父级路径（File类型）和子级路径来封装File对象
+public static void main(String[] args) throws IoException {
+File f1=newFile（pathname:"D:\\A.txt");
+f1.createNewFile();
+File f2=new File(pathname:"D:\\test");
+System.out.println(f2.exists());
+File f3=new File（parent:"D:\\"，child:“test");
+System.out.println(f3.exists());
+File f4=new File(new File(pathname:“D:\\")，child:"test");
+System.out.println(f4.exists());
+
+[IMAGE 7]
+File对象可以定位文件和文件夹
+File封装的对象仅仅是一个路径名，这个路径可以是存在的，也可以是不存在的
+
+[IMAGE 8]
+File类的常用方法
+方法名称
+说明
+public boolean isDirectory()
+判断此路径名表示的File是否为文件夹
+public boolean isFile()
+判断此路径名表示的File是否为文件
+public boolean exists()
+判断此路径名表示的File是否存在
+public long length()
+返回文件的大小 (字节数量）
+public String getAbsolutePath()
+返回文件的绝对路径
+public String getPath()
+返回定义文件时使用的路径
+public String getName()
+返回文件的名称，带后缀
+public long lastModified()
+返回文件的最后修改时间 (时间毫秒值）
+
+[IMAGE 9]
+File类的创建和删除方法
+方法名称
+说明
+publicboolean createNewFile()
+创建一个新的空的文件
+public boolean mkdir()
+只能创建一级文件夹
+public boolean mkdirs()
+可以创建多级文件夹
+方法名称
+说明
+publicboolean delete()
+删除由此抽象路径名表示的文件或空文件夹
+注意事项
+delete（）方法只能删除空文件夹，且不走回收站
+
+[IMAGE 10]
+public classFileTest2{
+需求：键盘录入一个文件夹路径，找出这个文件夹下所有的.jaVa文件
+public static void main(String[]args）{
+File dir =FileTest1.getDir();
+printJavaFile(dir);
+/**对接收到的文件夹路径进行遍历，找出所有的.java文件*/
+public static void printJavaFile(File dir）{
+//1．获取当前路径下所有的文件和文件夹对象
+File[] files = dir.listFiles();I
+//2．对数组遍历，获取每一个文件或文件夹对象
+for（File file:files）{
+//3．判断是否是.java文件
+if (file.isFile()）{
+if （file.getName().endsWith(".java")）{
+System.out.println(file);
+}else{
+/14．代码执行到这里，说明是文件夹
+//思路：调用方法，进入这个文件夹继续找.java文件
+printJavaFile(file);
+
+[IMAGE 11]
+File类的遍历方法
+方法名称
+说明
+获取当前目录下所有的“一级文件对象”
+public File[] listFiles()
+返回File数组
+当调用者File表示的路径不存在时，返回null
+当调用者File表示的路径是文件时，返回null
+当调用者File表示的路径是一个空文件夹时，返回一个长度为0的数组
+当调用者File表示的路径是需要权限才能访问的文件夹时，返回null

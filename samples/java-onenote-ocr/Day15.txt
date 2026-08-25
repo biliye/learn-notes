@@ -1,0 +1,134 @@
+[IMAGE 1]
+1.IP的作用
+设备在网络中的地址，是唯一的标识
+2.IPv4有什么特点
+目前的主流方案
+最多只有2^32次方个ip，目前已经用完了
+3.IPv6有什么特点
+为了解决IPV4不够用而出现的
+最多有2^128次方个ip
+可以为地球上的每一粒沙子都设定ip
+
+[IMAGE 2]
+1.现在如何解决IPv4不够的问题？
+利用局域网IP解决IP不够的问题
+2.特殊的IP是什么？
+127.0.0.1（永远表示本机）
+3.常见的两个CMD命令？
+ipconfig：查看本机IP地址
+ping：检查网络是否连通
+
+[IMAGE 3]
+InetAddress 对象
+为了方便我们对IP地址的获取和操作，Java提供了一个类InetAddress供我们使用
+InetAddress：此类表示Internet协议（IP）地址。
+方法名
+说明
+确定主机名称的IP地址。
+staticInetAddress getByName(String host)
+主机名称可以是机器名称，也可以是IP地址
+String getHostName()
+获取此IP地址的主机名
+StringgetHostAddress()
+返回文本显示中的IP地址字符串
+
+[IMAGE 4]
+www.itheima.com
+协议
+计算机网络中，连接和通信的规则被称为网络通信协议
+UDP协议
+用户数据报协议(UserDatagramProtocol)
+UDP是面向无连接通信协议。
+速度快，有大小限制一次最多发送64K，数据不安全，易丢失数据
+TCP协议
+传输控制协议TcP(TransmissionControlProtocol)
+TCP协议是面向连接的通信协议。
+速度慢，没有大小限制，数据安全。
+
+[IMAGE 5]
+UDP通信程序（发送数据）
+找快递公司
+创建发送端的DatagramSocket对象
+打包礼物
+数据打包（DatagramPacket)
+快递公司发送包裹
+发送数据
+付钱走人
+释放资源
+
+[IMAGE 6]
+黑马程序员
+多一句没有，少一句不行，用更短时间，教会更实）
+www.itheima.com
+UDP通信程序（接收数据）
+找快递公司
+创建接收端的DatagramSocket对象
+接收箱子
+接收打包好的数据
+从箱子里面获取礼物
+解析数据包
+签收走人
+释放资源
+
+[IMAGE 7]
+public class Send{
+public static void main(String[] args) throws Exception {
+//1.创建DatagramSocket对象
+//DatagramSocketsocket=newDatagramSocket（);随机绑定端口
+DatagramSocket socket =new DatagramSocket(port:8888);
+//2.创建DatagramPacket对象
+byte[]bytes =msg.getBytes();
+DatagramPacket packet = new DatagramPacket(bytes，bytes.length,
+InetAddress.getByName(host:"127.0.0.1").port:9999);
+//3.发送数据
+socket.send(packet);
+//4.释放资源
+socket.close():
+
+[IMAGE 8]
+public class Receive{
+public static void main(String[]args) throws Exception{
+//1.创建DatagramSocket对象
+DatagramSocket socket=new DatagramSocket(port:9999);
+//2.创建DatagramPacket对象
+DatagramPacketpacket=
+hewDatagramPacket（newbyte[1024],length:1024);I
+//3.接收数据
+System.out.println(1);
+socket.receive(packet);
+System.out.println(2);
+//4.拆包裹
+byte[] data =packet.getData();
+String msg =new String（data，offset:θ,packet.getLength（));
+String ip =packet.getAddress().getHostName();
+System.out.println（"接收到"+ip+"发送过来的消息为：”+msg）；
+//5.释放资源
+socket.close();
+
+[IMAGE 9]
+www.itheima.com
+TCP通信程序
+1.创建Socket对象指定ip和端口
+提示：
+这里的流对象不是读写文件中的数据
+Socket(String host，int port)
+输出流：写出数据到服务端
+2.通过socket对象获取传输数据的流对象
+输入流：读取服务端发送过来的数据
+OutputStream getoutputStream()
+InputStream getInputStream()
+3.通过流对象收发数据
+4.释放资源
+客户端
+
+[IMAGE 10]
+1.创建ServerSocket对象指定端口
+ServerSocket(int port)
+2.响应客户端发送的请求
+Socket accept()
+3.通过socket对象获取传输数据的流对象
+OutputStreamgetoutputStream()
+InputStream getInputStream()
+4.通过流对象收发数据
+5.释放资源
+服务端

@@ -1,0 +1,422 @@
+[IMAGE 1]
+进程（Process）：程序的执行过程
+独立性：
+每一个进程都有自己的空间，在没有经过进程本身允许的
+情况下，一个进程不可以直接访问其它的的进程空间
+动态性：进程是动态产生，动态消亡的
+并发性：任何进程都可以同其它进程一起并发执行
+多进程同时工作
+对于一个CPU而言，它是在多个进程间轮换执行的
+
+[IMAGE 2]
+开启线程第一种方式：继承Thread类
+1.编写一个类继承Thread
+2.重写run方法
+3.将线程任务代码写在run方法中
+4.创建线程对象
+5.调用start方法开启线程
+细节：调用start方法开启线程，会自动的调用run方法执行，
+注意：只有调用了start方法，才是开启了新的线程
+
+[IMAGE 3]
+进程（Process）：程序的执行过程
+线程：进程中的任务，多线程就是多个任务
+独立性：
+多线程的意义：
+每一个进程都有自己的空间，在没有经过进程本身允许的
+情况下，一个进程不可以直接访问其它的的进程空间
+提高效率
+动态性：进程是动态产生，动态消亡的
+可以同时处理多个任务
+并发性：任何进程都可以同其它进程一起并发执行
+多进程同时工作
+对于一个CPU而言，它是在多个进程间轮换执行的
+
+[IMAGE 4]
+开启线程的第二种方式：实现Runnable接口
+1.编写一个类实现RunnabLe接口
+2.重写run方法
+3.将线程任务代码写在run方法中
+4.创建线程任务资源
+5．创建线程对象，将资源传入
+6．使用线程对象调用start方法，开启线程
+public static void main(String[] args）{
+7/4.创建线程任务资源
+MyRunnable mr =new MyRunnable();
+//5.创建线程对象，将资源传入
+Thread t=newThread(mr);
+//6．使用线程对象调用start方法，开启线程
+t.start();
+for（inti=1;i<=1000;i++）
+System.out.println（"main线程执行了"）;
+
+[IMAGE 5]
+readDemo4.java
+FutureTask.java
+RunnableFuture.java
+*
+开启线程的第三种方式：实现Callable接口
+1.编写一个类实现Callable接口
+2.重写call方法
+3.将线程任务代码写在call方法中
+*/
+public static void main(String[]args）{
+//创建线程任务资源对象
+MyCallable mc=new MyCallable(）;
+//创建线程任务对象，封装线程资源
+FutureTask<Integer> task=new FutureTask<>(mc);
+//创建线程对象，传入线程任务
+Thread t=new Thread(task);
+//使用线程对象调用start开启线程
+t.start);
+
+[IMAGE 6]
+一
+//1.编写一个类实现Callable接口
+classMyCallable implements
+CallablekInteger>
+//2.重写call方法
+
+[IMAGE 7]
+创建线程任务对象，封装线程资源
+FutureTask<Integer>task1=new FutureTask<>(mc);
+FutureTask<Integer>task2=new FutureTask<>(mc);
+//创建线程对象，传入线程任务
+Thread t1=new Thread（task1);
+Thread t2=new Thread（task2);
+//-使用线程对象调用start开启线程
+t1.start();
+t2.start();
+Integer result1 = task1.get();
+Integerresult2=task1.get();
+
+[IMAGE 8]
+线程相关方法
+方法名称
+说明
+String getName
+返回此线程的名称
+void setName(String name)
+设置线程的名字（构造方法也可以设置名字）
+staticThread currentThread()
+获取当前线程的对象
+
+[IMAGE 9]
+线程相关方法
+方法名称
+说明
+String getName()
+返回此线程的名称
+void setName(String name)
+设置线程的名字 (构造方法也可以设置名字）
+staticThread currentThread()
+获取当前线程的对象
+static void sleep(long time)
+让线程休眠指定的时间，单位为毫秒
+setPriority(int newPriority)
+设置线程的优先级
+final int getPriority()
+获取线程的优先级
+final void setDaemon(boolean on)
+设置为守护线程
+
+[IMAGE 10]
+线程的调度方式
+抢占式调度 (随机)
+非抢占式调度（轮流使用）
+方法名称
+说明
+setPriority(int newPriority)
+设置线程的优先级
+final int getPriority()
+获取线程的优先级
+优先级：1~10
+默认为5
+
+[IMAGE 11]
+线程安全和同步
+安全问题出现的条件
+是多线程环境
+有共享数据
+有多条语句操作共享数据
+同步技术：
+将多条语句操作共享数据的代码给锁起来，让任意时刻只能有一个线程可以执行
+同步代码块
+同步方法
+Lock锁
+
+[IMAGE 12]
+synchronized
+(o)
+
+[IMAGE 13]
+neima.com
+Lock锁
+Lock是接口，无法直接创建对象
+构造方法
+说明
+创建一个 ReentrantLock 的实例
+public ReentrantLock()
+互斥锁
+成员方法
+说明
+void lock()
+加锁
+void unlock();
+释放锁
+
+[IMAGE 14]
+classTicketTask3extendsThread{
+private staticint tickets=2oo0;
+@override
+public void run（）{
+while（true){
+synchronized(TicketTask3.class)
+if （tickets==θ）{
+break;
+tickets--;
+
+[IMAGE 15]
+同步方法
+在方法的返回值类型前面加入synchronized关键字
+public synchronized void method(）{
+
+[IMAGE 16]
+小细节
+方法分为静态和非静态
+静态方法的锁对象是字节码对象，非静态方法的锁对象是this
+
+[IMAGE 17]
+www.itheima.com
+等待唤醒机制
+成员方法
+说明
+void wait()
+使当前线程等待
+void notify();
+随机唤醒单个等待的线程
+注意事项
+这些方法需要使用锁对象调用
+
+[IMAGE 18]
+ReentrantLocklock=new ReentrantLock(;
+Condition c1=lock.newCondition();
+Condition c2=lock.newCondition();
+Condition c3=lock.newCondition();
+一
+
+[IMAGE 19]
+等待唤醒机制
+使用ReentrantLock实现同步，并获取Condition对象
+成员方法
+说明
+void await()
+指定线程等待
+void signal();
+指定唤醒单个等待的线程
+
+[IMAGE 20]
+生产者消费者模式
+生产者消费者模式是一个十分经典的多线程协作的模式
+主包含了两类线程：
+生产者线程，用于生产数据
+消费者线程，用于消费数据
+为了解耦生产者和消费者的关系，通常会采用共享的数据区域(缓冲区)，就像是一个仓库
+生产者生产数据之后直接放置在共享数据区中，并不需要关心消费者的行为
+消费者只需要从共享数据区中去获取数据，并不需要关心生产者的行为
+
+[IMAGE 21]
+线程生命周期
+抢到CPU执行权
+新建
+start();
+就绪
+有执行资格
+运行
+有执行资格
+run();
+死亡
+线程死亡
+创建线程对象
+没有执行权
+有执行权
+变成垃圾
+结束
+其他线程抢走CPU执行权
+到时间了
+sleep(计时)；
+计时
+没有执行资格
+等待
+没有执行权
+wait();
+无限
+没有执行资格
+等待
+没有执行权
+
+[IMAGE 22]
+publicenumState{
+NEW,
+状态
+具体含义
+RUNNABLE,
+NEW (新建）
+创建线程对象
+BLOCKED,
+RUNNABLE
+(就绪)
+start方法被调用，但是还没有抢到cPU执行权
+BLOCKED
+（阻塞）
+线程开始运行，但是没有获取到锁对象
+WAITING,
+WAITING
+（等待）
+wait方法
+TIMED_WAITING,
+TIMEDWAITING
+（计时等待）
+sleep方法
+TERMINATED（结束状态）
+代码全部运行完毕
+TERMINATED;
+
+[IMAGE 23]
+线程池介绍
+将线程对象
+交给线程池维护
+可以降低系统成本
+从而提升程序的性能
+【强制】线程资源必须通过线程池提供，不允许在应用中自行显式创建线程。
+说明：线程池的好处是减少在创建和销毁线程上所消耗的时间以及系统资源的开销，解决资源不足的问题。
+如果不使用线程池，有可能造成系统创建大量同类线程而导致消耗完内存或者“过度切换”的问题。
+
+[IMAGE 24]
+public class ThreadPoolDemo1{
+JDK自带线程池
+Executors中提供静态方法来创建线程池
+staticExecutorService newCachedThreadPool()
+创建一个默认的线程池
+staticnewFixedThreadPool(intnThreads)
+创建一个指定最多线程数量的线程池
+public staticvoidmain(String[]args){
+//1.获取线程池对象
+ExecutorService pool=Executors.newFixedThreadPool(nThreads:10);
+//2.提交线程任务
+for（inti=1;i<=100;i++）{
+pool.submit(new Runnable(）{
+@override
+publicvoidrun(）{
+System.out.printLn（Thread.currentThread（）.getName（）+"提交了线程任务")；
+);
+pool.shutdown();
+
+[IMAGE 25]
+ThreadPoolExecutor（int corePoolSize,int maximumPoolSize，long keepAliveTime，TimeUnit unit，
+BlockingQueue<Runnable> workQueue,ThreadFactory threadFactory,RejectedExecutionHandler handler)
+参数1
+核心线程数量（正式员工）
+参数2
+最大线程数量（正式员工+临时工）
+参数3
+空闲时间
+参数4
+时间单位
+参数5
+任务队列（指定排队人数）
+参数6
+线程对象任务工厂
+参数7
+拒绝策略
+
+[IMAGE 26]
+不能小于0
+不能小于等于0，最大数量>=核心线程数量
+不能小于0
+时间单位
+不能为null
+不能为null
+不能为null
+
+[IMAGE 27]
+自定义线程池对象
+参数5：任务队列
+1）有界队列
+newArrayBLockingQueue<>(10)
+2）无界队列
+new LinkedBLockingDeque<>()
+public static void main(String[]args）{
+ThreadPoolExecutorpool=newThreadPoolExecutor(
+corePoolSize:2,
+maximumPoolSize:5
+keepAliveTime:60,
+TimeUnit.SECONDS,
+new ArrayBlockingQueue<>（capacity:10),
+Executors.defaultThreadFactory(),
+newThreadPooLExecutor.AbortPolicy
+
+[IMAGE 28]
+m
+execute（Runnable command)
+void
+
+[IMAGE 29]
+自定义线程池-拒绝策略
+策略选项
+说明
+丢弃任务并抛出RejectedExecutionException异常
+ThreadPoolExecutor.AbortPolicy
+（默认）
+ThreadPoolExecutor.DiscardPolicy
+丢弃任务，但是不抛出异常这是不推荐的做法
+ThreadPoolExecutor.Discard0ldestPolicy
+抛弃队列中等待最久的任务然后把当前任务加入队列中
+ThreadPoolExecutor.CallerRunsPolicy
+调用任务的run（）方法，绕过线程池直接执行
+
+[IMAGE 30]
+1.临时线程什么时候创建？
+线程任务数>核心线程数+任务队列的数量
+2.什么时候会开启拒绝策略
+线程任务数>最大线程数+任务队列的数量
+
+[IMAGE 31]
+单例设计模式
+单例指单个实例，保证类的对象在内存中只有一份
+使用场景：
+如果创建一个对象需要消耗的资源过多，比如1/0与数据库的连接
+并且这个对象完全是可以复用的，我们就可以考虑将其设计为单例的对象
+
+[IMAGE 32]
+单例设计模式－饿汉式
+classSingle1{
+private Singlei(）{
+public static final Single1 s = new Single1();
+
+[IMAGE 33]
+classSingle1{
+privateSingle1(){
+private staticSinglelIs
+newSinglei(;
+public static Single1 getInstance(）{
+returns;
+
+[IMAGE 34]
+class Single2{
+private Single2(）{}
+private static Single2 s;
+public static Single2 getInstance(）{
+if（s ==null）{
+s=new Single2);I
+returns;
+
+[IMAGE 35]
+public static Single2 getInstance(）{
+//线程2
+//线程1
+if （s==null）{
+synchronized (Single2.class){
+if（s ==nu）{
+s=new Single2(）;
+return s;

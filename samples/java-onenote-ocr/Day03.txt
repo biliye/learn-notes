@@ -1,0 +1,186 @@
+[IMAGE 1]
+JDK8版本接口特性：
+1.允许定义非抽象方法，需要加入default关键字
+作用：解决接口的升级问题
+注意事项：
+1.public可以省略，但是default不能省略
+2.默认方法，实现类是允许重写的，但是需要去掉default关键字
+3.如果实现了多个接口，多个接口中存在相同的默认方法，实现类必须重写默认方法  工
+2.允许定义静态方法
+
+[IMAGE 2]
+2.允许定义静态方法
+·理解：既然接口已经允许方法带有方法体了  干魔也放开静态方法，可以类名调用
+注意事项：
+1.public可以省略，但是static不能省略
+2.接口中的静态方法，只允许接口名进行调用，不允许实现类通过对象调用
+
+[IMAGE 3]
+JDK8接口特性
+允许在接口中定义非抽象方法，但是需要使用关键字default修饰，这些方法就是默认方法
+作用：解决接口升级的问题
+接口中默认方法的定义格式：
+●格式：publicdefault返回值类型方法名（参数列表）{}
+范例：public default void show(）{}
+注意事项
+1．默认方法不是抽象方法，所以不强制被重写(但是可以被重写，重写的时候去掉default关键字)
+2.public可以省略，default不能省略
+3．如果实现了多个接口，多个接口中存在相同的方法声明，子类就必须对该方法进行重写
+
+[IMAGE 4]
+JDK8接口特性
+接口中允许定义static静态方法
+接口中静态方法的定义格式：
+格式：publicstatic返回值类型方法名（参数列表）{}
+范例：public static void show(）{}
+注意事项
+1．静态方法只能通过接口名调用，不能通过实现类名或者对象名调用
+2．public可以省略，static不能省略
+
+[IMAGE 5]
+JDK9接口特性
+接口中允许定义private私有方法
+接口中私有方法的定义格式：
+格式1：private返回值类型方法名（参数列表）{}
+范例1:privatevoidshow（）{}
+格式2：privatestatic返回值类型方法名（参数列表）{}
+范例2:private staticvoid method(）{}
+
+[IMAGE 6]
+代码块
+使用{}括起来的代码被称为代码块
+局部代码块
+位置：方法中定义
+作用：限定变量的生命周期，及早释放，提高内存利用率
+构造代码块
+位置：类中方法外定义
+特点：每次构造方法执行的时候，都会执行该代码块中的代码，并且在构造方法执行前执行
+作用：将多个构造方法中相同的代码，抽取到构造代码块中，提高代码的复用性
+静态代码块
+位置：类中方法外定义
+特点：需要通过static关键字修饰，随着类的加载而加载，并且只执行一次
+作用：在类加载的时候做一些数据初始化的操作
+
+[IMAGE 7]
+内部类就是定义在一个类里面的类
+class Outer  class Test {  Inneri = newInner();
+//内部类  //内部类
+class Inner{  classInner{
+创建对象的格式：
+格式：外部类名.内部类名对象名=new外部类对象（）.new内部类对象（)；
+范例：Outer.Innerin=new Outer().new Inner();
+
+[IMAGE 8]
+publicclassInnerTest{
+/*
+内部类：在类中定义的类
+创建对象格式：外部类名.内部类名对象名=new外部类对象（）.new内部类对象（)；
+成员访问细节：
+1.内部类中，访问外部类成员：直接访问，包括私有
+2.外部类中，访问内部类成员：需要创建对象访问  Y
+
+[IMAGE 9]
+publicclassStaticInnerTest
+/*
+静态内部类：static修饰的成员内部类
+创建对象格式：外部类名.内部类名对象名=new外部类名.内部类对象（）；
+注意事项：静态只能访问静态
+*7
+
+[IMAGE 10]
+public static void main(String[] args) {
+A a = new A();
+a.show();
+class A{
+publicvoidshow(){
+classB{
+publicvoidmethod({
+System.out.println("method...");
+Bb = new B();
+b.method();
+
+[IMAGE 11]
+匿名内部类：
+概述：匿名内部类本质上是一个特殊的局部内部类（定义在方法内部）
+前提：需要存在一个接口或类
+格式：
+new类名\接口名（）{
+new类名（){}：代表继承这个类
+new  接口名（）：代表实现这个接口
+
+[IMAGE 12]
+匿名内部类
+概述：匿名内部类本质上是一个特殊的局部内部类（定义在方法内部）
+前提：需要存在一个接口或类
+格式：
+new类名/接口（）{
+匿名内部类可以使代码更加简洁，定义一个类的同时对其进行实例化
+
+[IMAGE 13]
+www.itheima.com
+Lambda概述
+Lambda表达式是JDk8开始后的一种新语法形式。
+作用：简化匿名内部类的代码写法。
+Lambda表达式的简化格式
+{}<-()  注意：Lambda表达式只能简化函数式接口
+（匿名内部类被重写方法的形参列表）->{  的匿名内部类的写法形式
+被重写方法的方法体代码。
+注：->是语法形式，无实际含义
+什么是函数式接口？
+首先必须是接口、其次接口中有且仅有一个抽象方法的形式
+通常我们会在接口上加上一个@FunctionalInterface注解，标记该接口必须是满足函数式接口。
+
+[IMAGE 14]
+ay03-codesrc）com）itheimalambdatestLambdaTest4.java）  LambdaTest4  m  main  LambdaTest4 
+LambdaTest4.java  Run:  LambdaTest4
+package com.itheima.lambda.test;  ↑  D:\Develop\jdk\bin\java.exe"-javaagent
+个  30
+public class LambdaTest4{
+public static void main(String[] args){  -10
+号
+useCalculator（new Calculator(){  Process finished with exit code 0
+@override  盲
+public int calc(int a，int b）{
+9  return a + b;
+10
+11  }）;
+12
+13  System.out.println("
+14
+15  useCalculator(（a，b)->a-b);
+16
+17  Lambda表达式的省略写法
+18  ●参数类型可以省略不写。
+19  @  public staticvoid useCalculator(Calculator calculator）{
+2日  //Calculatorcalculator=new Calculator(）{  ●如果只有一个参数，参数类型可以省略，同时（）也可以省略。
+21  //  @override  ）如果Lambda表达式的方法体代码只有一行代码
+22  //  public int calc(int a，int b）{  可以省略大括号不写，同时要省略分号
+23  //  returna+b;
+24  //  此时，如果这行代码是return语句，必须省略return不写，同时也必须省略“；”不写
+25  //
+26  int result =calculator.calc（a:10,b:20);
+27  System.out.println（result);
+28
+
+[IMAGE 15]
+import  I
+
+[IMAGE 16]
+publicclassJFrameTest{
+public static void main(String[] args){
+//创建窗体对象
+JFrame  frame  new JFrame(）;
+//设置窗体可见
+frame.setVisible(true);
+//设置窗体大小
+frame.setSize( width: 500, height: 800);
+//修改窗体的关闭模式
+frame.setDefaultCloseOperation(WindowConstants.EXIT_oN_CLoSE);
+I
+
+[IMAGE 17]
+1．窗体对象.setLayout(null)；取消默认布局
+2 。 创建组件对象
+3.组件对象.setBounds(x,y,width,height)； 设置
+摆放位置
+4。窗体对象.getContentPane().add(组件对象);

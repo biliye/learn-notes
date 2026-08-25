@@ -1,0 +1,154 @@
+[IMAGE 1]
+什么是包？
+包本质来说就是文件夹，用来管理类文件的
+建包的语法格式：package公司域名倒写.技术名称。报名建议全部英文小写，且具备意义
+package com.itheima.domain;
+publicclass Student{
+）建包语句必须在第一行，一般IDEA工具会帮助创建
+导包
+）相同包下的类可以直接访问，不同包下的类必须导包，才可以使用！导包格式：import包名.类名；
+假如一个类中需要用到不同类，而这个两个类的名称是一样的，那么默认只能导入一个类，另一个类要带包名访问。
+
+[IMAGE 2]
+黑马程序员  多一句没有，少一句不行，用更短时间，教会更实用的技术！
+www.itheima.com
+抽象方法和抽象类
+抽象方法的定义格式：
+publicabstract返回值类型方法名（参数列表);
+抽象类的定义格式：
+public abstract class 类名{}
+
+[IMAGE 3]
+抽象方法
+抽象方法：将共性的行为（方法）抽取到父类之后，发现该方法的实现逻辑
+无法在父类中给出具体明确，该方法就可以定义为抽象方法。
+抽象类：如果一个类中存在抽象方法，那么该类就必须声明为抽象类
+
+[IMAGE 4]
+actTest2.java
+抽象类的注意事项：
+1.抽象类不能实例化
+－如果抽象类允许创建对象，就可以调用内部没有方法体的，抽象方法了
+2.抽象类存在构造方法
+-交给子类，通过super进行访问
+3.抽象类中可以存在普通方法
+·可以让子类继承到继续使用
+4.抽象类的子类
+1）.要么重写抽象类中的所有抽象方法
+2)．要么是抽象类
+
+[IMAGE 5]
+ww.itheima.com
+abstract关键字的冲突
+final：被abstract修饰的方法，强制要求子类重写，被final修饰的方法子类不能重写
+private：被 abstract 修饰的方法，强制要求子类重写，被 private 修饰的方法子类不能重写
+static：被static修饰的方法可以类名调用，类名调用抽象方法没有意义
+
+[IMAGE 6]
+黑马程序员  多一句没有，少一句不行，用更短时间，孝
+www.itheima.com
+接口介绍
+接口用关键字interface来定义
+publicinterface接口名{}
+接口不能实例化
+接口和类之间是实现关系，通过implements关键字表示
+publicclass类名implements接口名{}
+接口的子类（实现类）
+要么重写接口中的所有抽象方法
+要么是抽象类
+
+[IMAGE 7]
+mportcom.itheima.a.inter;
+publicclassInterfaceTest2{
+/*
+接口的成员特点：
+1.成员变量：只能定义常量，因为系统会默认加入三个关键字
+public static final
+·这三个关键字没有顺序关系
+2.成员方法：只能是抽象方法，因为系统会默认加入两个关键字
+public abstract
+3.构造方法：没有
+
+[IMAGE 8]
+7*
+接口和类之间的各种关系：
+1.类和类之间：继承关系，只支持单继承，不支持多继承，但是可以多层继承
+2.类和接口之间：实现关系，可以单实现，也可以多实现，甚至可以在继承一个类的同时，实现多个接口
+3.接口和接口之间：继承关系，可以单继承，也可以多继承
+
+[IMAGE 9]
+抽象类和接口的对比
+成员变量：
+抽象类：可以定义变量，也可以定义常量
+接口：只能定义常量
+成员方法
+抽象类：可以是定义具体方法，也可以定义抽象方法
+接口：只能定义抽象方法
+构造方法
+抽象类：有
+接口：没有
+
+[IMAGE 10]
+OrderService.java  OrderServicelmpl.java  OverseasServicelmpl.java  Test.java
+import java.util.Scanner;
+public class Test{
+public static void main(String[]args）{
+Scanner sc = new Scanner(System.in);
+System.out.printLn（"请输入：1.国内订单  2.国外订单")；
+9
+10  OrderService orderService = null;
+11
+12  int choice =sc.nextInt();  同一个行为具有多个不同表现形式或形态的能力
+13  switch （choice）{
+14  case 1:
+15  //创建国内订单的业务类
+16  orderService=new OrderServiceImpl(）;
+17  break;
+18  case2:
+19  //创建国外订单的业务类
+20  orderService=new OverseasServiceImpl();
+21  break;
+22
+23
+24  orderService.create();
+25  orderService.findone();
+26  orderService.findList(）;
+27  orderService.cancel();
+28  orderService.finish();
+29  orderService.paid();
+30
+31
+Event Log
+16:55CRLFUTF·84spaces
+0  S
+
+[IMAGE 11]
+黑与桂序页  多一句没有，
+www.itheima.com
+多态前提
+有继承／实现关系
+有方法重写
+有父类引用指向子类对象
+
+[IMAGE 12]
+public class PolymorphismTest2{
+/*
+多态的成员访问特点：
+1.成员变量：编译看左边（父类），运行看左边（父类）
+2.成员方法：编译看左边（父类），运行看右边（子类）
+在编译的时候，会检查父类中有没有这个方法
+没有：编译出错
+有：编译通过，但是运行的时候，一定会执行子类的方法逻辑
+原因：担心你调用的方法，在父类中是一个抽象方法
+多态创建对象，调用静态成员：
+静态的成员，推荐类名进行调用
+细节：静态的成员，可以使用对象名调用，但这是一种假象
+-生成字节码文件后，会自动将对象名调用，改成类名调用
+
+[IMAGE 13]
+多态中的转型问题
+关键字instanceof
+使用格式：
+对象名instanceof类型
+判断一个对象是否是一个类的实例
+通俗的理解：判断关键字左边的对象，是否是右边的类型，返回boolean类型结果
