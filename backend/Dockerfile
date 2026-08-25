@@ -1,6 +1,8 @@
 # ---------- 构建阶段 ----------
 FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /app
+# 阿里云 Maven 镜像（服务器在 cn-hangzhou，直连 Maven Central 会卡死，见 settings.xml）
+COPY settings.xml /root/.m2/settings.xml
 COPY pom.xml .
 # 先拉依赖缓存层
 RUN mvn -q dependency:go-offline || true
