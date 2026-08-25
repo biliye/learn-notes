@@ -55,6 +55,9 @@
           <template #prefix><el-icon><Search /></el-icon></template>
         </el-input>
         <div class="topbar-right">
+          <el-button class="quick-start-btn" @click="quickStartOpen = true">
+            <el-icon><QuestionFilled /></el-icon><span class="qs-label">快速开始</span>
+          </el-button>
           <el-button class="export-btn" @click="downloadExport">
             <el-icon><Download /></el-icon> 导出备份包
           </el-button>
@@ -78,6 +81,48 @@
         <router-view />
       </main>
     </div>
+
+    <!-- 快速开始：项目用法 + Agent 笔记写作指南下载 -->
+    <el-dialog v-model="quickStartOpen" title="快速开始" width="680px"
+               class="quick-start-dialog" :append-to-body="true">
+      <div class="qs-intro">
+        这是你的个人学习笔记网站：内容按 <b>大类 → 小方向 → 文档</b> 三层归置，
+        以 Markdown 呈现（代码与正文差异化渲染），并支持在任意正文块上写可折叠的个人见解。
+      </div>
+      <div class="qs-block">
+        <div class="qs-block-title"><el-icon><Search /></el-icon> 浏览与搜索</div>
+        <ul class="qs-list">
+          <li>左侧目录树选择大类 / 小方向，在「文档库」列表点开任意文档阅读。</li>
+          <li>顶栏搜索框可同时搜标题与正文。</li>
+        </ul>
+      </div>
+      <div class="qs-block">
+        <div class="qs-block-title"><el-icon><EditPen /></el-icon> 写笔记</div>
+        <ul class="qs-list">
+          <li>「文档库」页点「新建文档」：手写 Markdown（源码 / 预览双栏），或点「📦 一键导入压缩包」解析 .zip（md + 图片）。</li>
+          <li>保存后按 front-matter / 文件名自动归入对应的大类与小方向，无需手动归类。</li>
+        </ul>
+      </div>
+      <div class="qs-block">
+        <div class="qs-block-title"><el-icon><ChatDotRound /></el-icon> 个人见解</div>
+        <ul class="qs-list">
+          <li>阅读时可在任意正文块上写可折叠的批注；文档被重写后系统会尽力把见解重新挂回原段落。</li>
+        </ul>
+      </div>
+      <div class="qs-block">
+        <div class="qs-block-title"><el-icon><Tools /></el-icon> 管理</div>
+        <ul class="qs-list">
+          <li>「分类管理」维护大类 / 小方向；「INBOX」存放未归类的文档；顶栏「导出备份包」可一键全量下载。</li>
+        </ul>
+      </div>
+      <div class="qs-block qs-agent">
+        <div class="qs-block-title"><el-icon><MagicStick /></el-icon> 让 AI 帮你写笔记</div>
+        <p class="qs-note">下载下面的写作指南，把这份 .md 文件交给负责写笔记的 agent：agent 按指南的格式编写笔记（front-matter + 正文），通过接口上传后系统自动归类入库。</p>
+        <a class="qs-download" href="/learn-notes-agent-guide.md" download="learn-notes-agent-guide.md">
+          <el-icon><Download /></el-icon> 下载 Agent 笔记写作指南（.md）
+        </a>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -96,6 +141,7 @@ const catalog = useCatalogStore()
 
 const q = ref('')
 const sidebarOpen = ref(false)
+const quickStartOpen = ref(false)
 
 const initial = computed(() => {
   const name = auth.user?.nickname || auth.user?.username || '?'
@@ -345,6 +391,96 @@ function onCommand(cmd) {
 .export-btn {
   :deep(.el-icon) { margin-right: 4px; }
 }
+.quick-start-btn {
+  :deep(.el-icon) { margin-right: 4px; }
+}
+/* 快速开始弹窗 */
+.quick-start-dialog {
+  :deep(.el-dialog) {
+    background: var(--ak-bg-2);
+    border: 1px solid var(--ak-border-2);
+    border-radius: 2px;
+    color: var(--ak-text);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  }
+  :deep(.el-dialog__title) {
+    color: var(--ak-text);
+    font-family: var(--ak-font-display);
+    letter-spacing: 1px;
+  }
+  :deep(.el-dialog__header) {
+    border-bottom: 1px solid var(--ak-border);
+  }
+  :deep(.el-dialog__body) {
+    padding: 18px 20px 20px;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+  .qs-intro {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--ak-text-2);
+    padding: 4px 2px 12px;
+    border-bottom: 1px dashed var(--ak-border);
+    b {
+      color: var(--ak-gold);
+      font-weight: 600;
+    }
+  }
+  .qs-block {
+    margin-top: 14px;
+    .qs-block-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--ak-font-display);
+      font-size: 14px;
+      letter-spacing: 0.5px;
+      color: var(--ak-gold);
+      .el-icon {
+        font-size: 15px;
+      }
+    }
+    .qs-list {
+      margin: 8px 0 0;
+      padding-left: 18px;
+      font-size: 13px;
+      line-height: 1.75;
+      color: var(--ak-text-2);
+    }
+    .qs-note {
+      margin: 8px 0 12px;
+      font-size: 13px;
+      line-height: 1.75;
+      color: var(--ak-text-2);
+    }
+  }
+  .qs-agent {
+    margin-top: 16px;
+    padding: 12px 14px;
+    background: var(--ak-bg-3);
+    border: 1px solid var(--ak-border);
+    border-left: 2px solid var(--ak-gold);
+  }
+  .qs-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    font-size: 13px;
+    color: var(--ak-bg-0);
+    background: linear-gradient(135deg, var(--ak-gold-bright), var(--ak-gold-dim));
+    border-radius: 2px;
+    text-decoration: none;
+    transition: filter 0.2s;
+    &:hover {
+      filter: brightness(1.1);
+    }
+    .el-icon {
+      font-size: 14px;
+    }
+  }
+}
 .user-chip {
   display: inline-flex;
   align-items: center;
@@ -442,6 +578,11 @@ function onCommand(cmd) {
   }
   .export-btn {
     display: none;
+  }
+  .quick-start-btn {
+    .qs-label {
+      display: none;
+    }
   }
   .topbar {
     padding: 0 10px;
