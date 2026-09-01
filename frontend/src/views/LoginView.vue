@@ -26,16 +26,20 @@
           </el-input>
         </el-form-item>
         <el-form-item>
-          <el-input v-model="username" placeholder="用户名 / USERNAME" size="large" autofocus>
+          <el-input v-model="username" placeholder="用户名 / USERNAME" size="large" autofocus @input="errorMsg = ''">
             <template #prefix><el-icon><User /></el-icon></template>
           </el-input>
         </el-form-item>
         <el-form-item>
           <el-input v-model="password" type="password" :placeholder="mode === 'register' ? '密码（至少 6 位）' : '密码 / PASSWORD'" size="large"
-                    show-password @keyup.enter="onSubmit">
+                    show-password @keyup.enter="onSubmit" @input="errorMsg = ''">
             <template #prefix><el-icon><Lock /></el-icon></template>
           </el-input>
         </el-form-item>
+        <div v-if="errorMsg" class="login-error" role="alert">
+          <span class="login-error-mark" aria-hidden="true">!</span>
+          <span>{{ errorMsg }}</span>
+        </div>
         <el-button type="primary" size="large" class="login-btn ak-btn-slant" :loading="loading"
                    @click="onSubmit">{{ mode === 'register' ? '注 册' : '登 录' }}</el-button>
         <div class="mode-switch">
@@ -72,16 +76,19 @@ const username = ref('')
 const password = ref('')
 const nickname = ref('')
 const loading = ref(false)
+const errorMsg = ref('')
 
 function switchMode(next) {
   mode.value = next
   nickname.value = ''
   password.value = ''
+  errorMsg.value = ''
 }
 
 async function onSubmit() {
   if (!username.value || !password.value) return
   if (mode.value === 'register' && password.value.length < 6) return
+  errorMsg.value = ''
   loading.value = true
   try {
     if (mode.value === 'register') {
@@ -92,7 +99,8 @@ async function onSubmit() {
     const redirect = route.query.redirect || '/docs'
     router.push(redirect)
   } catch (e) {
-    // 错误提示由 http 拦截器统一处理
+    // 后端错误信息（含剩余可尝试次数）由拦截器弹出 toast，这里同步内联展示
+    errorMsg.value = e.response?.data?.msg || e.message || '登录失败，请重试'
   } finally {
     loading.value = false
   }
@@ -233,6 +241,34 @@ async function onSubmit() {
   font-weight: 600;
   letter-spacing: 4px;
   font-size: 16px;
+}
+.login-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 8px 12px;
+  border: 1px solid var(--ak-red);
+  border-radius: 2px;
+  background: rgba(166, 58, 65, 0.14);
+  color: #e0848c;
+  font-size: 12px;
+  line-height: 1.6;
+  .login-error-mark {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    margin-top: 1px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--ak-red);
+    color: var(--ak-bg-0);
+    font-family: var(--ak-font-display);
+    font-weight: 700;
+    font-size: 11px;
+    border-radius: 2px;
+  }
 }
 .mode-switch {
   margin-top: 14px;

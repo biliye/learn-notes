@@ -57,7 +57,7 @@ public class AuthService {
                     state.failCount = 0;
                     throw BizException.locked("连续登录失败 " + MAX_FAIL + " 次，账号已锁定 10 分钟");
                 }
-                throw BizException.unauthorized("用户名或密码错误");
+                throw BizException.unauthorized("用户名或密码错误，还可尝试 " + (MAX_FAIL - state.failCount) + " 次");
             }
             state.failCount = 0;
             state.lockUntil = 0;

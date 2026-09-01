@@ -41,7 +41,10 @@ http.interceptors.response.use(
   (error) => {
     const status = error.response?.status
     const msg = error.response?.data?.msg || error.message || '网络错误'
-    if (status === 401) {
+    // 登录接口的 401/423 是“密码错误/账号锁定”，直接提示，不走失效登出
+    if (status === 401 && error.config?.url === '/auth/login') {
+      ElMessage.error(msg)
+    } else if (status === 401) {
       const auth = useAuthStore()
       auth.logout()
       const current = router.currentRoute.value.fullPath
