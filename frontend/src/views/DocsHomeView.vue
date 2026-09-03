@@ -40,6 +40,7 @@ import { useRoute, useRouter } from 'vue-router'
 import DocList from '../components/DocList.vue'
 import { search as apiSearch } from '../api/doc'
 import { useCatalogStore } from '../stores/catalog'
+import { findRec } from '../utils/catalogTree'
 
 const route = useRoute()
 const router = useRouter()
@@ -53,11 +54,7 @@ const docList = ref(null)
 
 const currentTopic = computed(() => {
   if (!topicId.value) return null
-  for (const c of catalog.tree) {
-    const found = (c.children || []).find((t) => t.id === Number(topicId.value))
-    if (found) return found
-  }
-  return null
+  return findRec(catalog.tree, topicId.value)?.node || null
 })
 
 watch(() => route.query, async (q) => {

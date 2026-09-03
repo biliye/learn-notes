@@ -86,21 +86,22 @@
     <el-dialog v-model="quickStartOpen" title="快速开始" width="680px"
                class="quick-start-dialog" :append-to-body="true">
       <div class="qs-intro">
-        这是你的个人学习笔记网站：内容按 <b>大类 → 小方向 → 文档</b> 三层归置，
+        这是你的个人学习笔记网站：内容按 <b>大类 →（多级目录）→ 文档</b> 归置——
+        新建大类时可指定该大类下允许几层子目录（默认两层），文档放在"没有子目录"的目录里；
         以 Markdown 呈现（代码与正文差异化渲染），并支持在任意正文块上写可折叠的个人见解。
       </div>
       <div class="qs-block">
         <div class="qs-block-title"><el-icon><Search /></el-icon> 浏览与搜索</div>
         <ul class="qs-list">
-          <li>左侧目录树选择大类 / 小方向，在「文档库」列表点开任意文档阅读。</li>
+          <li>左侧目录树可展开任意深度的目录，点开"存放文档的目录"即在「文档库」阅读该目录下的文档。</li>
           <li>顶栏搜索框可同时搜标题与正文。</li>
         </ul>
       </div>
       <div class="qs-block">
         <div class="qs-block-title"><el-icon><EditPen /></el-icon> 写笔记</div>
         <ul class="qs-list">
-          <li>「文档库」页点「新建文档」：手写 Markdown（源码 / 预览双栏），或点「📦 一键导入压缩包」解析 .zip（md + 图片）。</li>
-          <li>保存后按 front-matter / 文件名自动归入对应的大类与小方向，无需手动归类。</li>
+          <li>「文档库」页点「新建文档」：手写 Markdown（源码 / 预览双栏），或点「一键导入压缩包」解析 .zip（md + 图片）。</li>
+          <li>保存后按 front-matter 的 <code>path</code>（目录链）或文件名自动归入对应目录，无需手动归类。</li>
         </ul>
       </div>
       <div class="qs-block">
@@ -112,7 +113,7 @@
       <div class="qs-block">
         <div class="qs-block-title"><el-icon><Tools /></el-icon> 管理</div>
         <ul class="qs-list">
-          <li>「分类管理」维护大类 / 小方向；「INBOX」存放未归类的文档；顶栏「导出备份包」可一键全量下载。</li>
+          <li>「分类管理」维护多级目录（新建大类时选目录层级，可随时整体移动某个目录）；「INBOX」存放未归类的文档；顶栏「导出备份包」可一键全量下载。</li>
         </ul>
       </div>
       <div class="qs-block qs-agent">

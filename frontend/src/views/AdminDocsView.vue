@@ -39,9 +39,11 @@
           </div>
         </template>
       </el-table-column>
-      <el-table-column label="分类" min-width="140">
+      <el-table-column label="分类" min-width="180">
         <template #default="{ row }">
-          <span class="crumb">{{ row.categoryName }}<i class="sep">◆</i>{{ row.topicName }}</span>
+          <span class="crumb">
+            <template v-if="row.categoryName">{{ row.categoryName }}<i class="sep">/</i></template>{{ row.topicName }}
+          </span>
         </template>
       </el-table-column>
       <el-table-column label="字数" width="80" align="right">
@@ -190,8 +192,8 @@ onMounted(() => {
     font-size: 12px;
     .sep {
       color: var(--ak-gold-dim);
-      font-size: 8px;
-      margin: 0 6px;
+      font-size: 11px;
+      margin: 0 5px;
       vertical-align: middle;
     }
   }

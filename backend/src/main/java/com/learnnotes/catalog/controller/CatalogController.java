@@ -44,7 +44,8 @@ public class CatalogController {
                 (String) body.get("slug"),
                 (String) body.get("remark"),
                 (String) body.get("icon"),
-                asInteger(body.get("sortOrder"))));
+                asInteger(body.get("sortOrder")),
+                asInteger(body.get("maxLevel"))));
     }
 
     @PutMapping("/{id}")
@@ -53,7 +54,8 @@ public class CatalogController {
                 (String) body.get("name"),
                 (String) body.get("remark"),
                 (String) body.get("icon"),
-                asInteger(body.get("sortOrder")));
+                asInteger(body.get("sortOrder")),
+                asInteger(body.get("maxLevel")));
         return R.ok();
     }
 

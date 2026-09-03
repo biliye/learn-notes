@@ -106,10 +106,11 @@ class ExportRoundTripTest {
 
     @Test
     void roundTrip() throws Exception {
-        // ============ 1. 造数据：2 大类 / 3 小方向 / 4 文档 / 6 见解（含 1 ORPHAN） ============
-        CatalogNodeDto javaCat = catalogService.create(admin, 0L, "Java", "java", "后端主语言", null, 10);
+        // ============ 1. 造数据：2 大类(含三级目录) / 4 目录 / 4 文档 / 6 见解（含 1 ORPHAN） ============
+        CatalogNodeDto javaCat = catalogService.create(admin, 0L, "Java", "java", "后端主语言", null, 10, 3);
         CatalogNodeDto func = catalogService.create(admin, javaCat.getId(), "函数", "function", null, null, null);
-        CatalogNodeDto cls = catalogService.create(admin, javaCat.getId(), "类", "class", "内部类相关", null, null);
+        CatalogNodeDto coll = catalogService.create(admin, javaCat.getId(), "集合", "collections", "容器相关", null, null);
+        CatalogNodeDto cls = catalogService.create(admin, coll.getId(), "类", "class", "内部类相关", null, null);
         CatalogNodeDto vue = catalogService.create(admin, 0L, "Vue", "vue", "前端框架", null, 20);
         CatalogNodeDto comp = catalogService.create(admin, vue.getId(), "组件", "component", null, null, null);
 
@@ -154,12 +155,14 @@ class ExportRoundTripTest {
         exportService.writeZip(baos, admin);
         byte[] zipBytes = baos.toByteArray();
 
-        // 校验 zip 结构与 manifest
+        // 校验 zip 结构与 manifest（V4：目录为任意深度完整 slug 链）
         Map<String, byte[]> entries = unzipAll(zipBytes);
         assertTrue(entries.containsKey("manifest.json"));
         assertTrue(entries.containsKey("java/function/lambda-basics.md"));
         assertTrue(entries.containsKey("java/function/lambda-basics.insights.json"));
-        assertTrue(entries.containsKey("java/class/inner-class.insights.json"));
+        assertTrue(entries.containsKey("java/collections/class/inner-class.md"));
+        assertTrue(entries.containsKey("java/collections/class/inner-class.insights.json"));
+        assertTrue(entries.containsKey("java/collections/class/b-plus-tree.md"));
         assertTrue(entries.containsKey("vue/component/props-basics.md"));
         assertTrue(entries.containsKey("uploads/2026/08/abcdef1234567890.png"),
                 "被引用的图片必须打进导出包");
@@ -168,7 +171,7 @@ class ExportRoundTripTest {
         Map<?, ?> manifest = om.readValue(entries.get("manifest.json"), Map.class);
         Map<?, ?> counts = (Map<?, ?>) manifest.get("counts");
         assertEquals(2, ((Number) counts.get("categories")).intValue());
-        assertEquals(3, ((Number) counts.get("topics")).intValue());
+        assertEquals(4, ((Number) counts.get("dirs")).intValue());
         assertEquals(4, ((Number) counts.get("docs")).intValue());
         assertEquals(6, ((Number) counts.get("annotations")).intValue());
         assertEquals(1, ((Number) counts.get("images")).intValue());
@@ -179,38 +182,32 @@ class ExportRoundTripTest {
         catalogMapperDeleteExceptSeed();
 
         // ============ 4. 用导出物还原 ============
-        // 4.1 先按 manifest 重建分类与 remark
+        // 4.1 先按 manifest（任意深度递归）重建目录树与 remark
         List<Map<String, Object>> categories = (List<Map<String, Object>>) manifest.get("categories");
         for (Map<String, Object> c : categories) {
-            CatalogNodeDto created = catalogService.create(admin, 0L, (String) c.get("name"), (String) c.get("slug"),
-                    null, null, (Integer) c.get("sortOrder"));
-            List<Map<String, Object>> topics = (List<Map<String, Object>>) c.get("topics");
-            for (Map<String, Object> t : topics) {
-                catalogService.create(admin, created.getId(), (String) t.get("name"), (String) t.get("slug"),
-                        null, null, (Integer) t.get("sortOrder"));
-            }
-            // 恢复 remark
-            catalogService.update(admin, created.getId(), null, (String) c.get("remark"), null, null);
+            restoreNode(c, 0L);
         }
 
-        // 4.2 逐篇导入文档（从导出的 md）
-        for (String key : List.of("java/function/lambda-basics.md", "java/class/inner-class.md",
-                "vue/component/props-basics.md", "java/class/b-plus-tree.md")) {
+        // 4.2 逐篇导入文档（从导出的 md，front-matter 带 path/slugs）
+        for (String key : List.of("java/function/lambda-basics.md", "java/collections/class/inner-class.md",
+                "vue/component/props-basics.md", "java/collections/class/b-plus-tree.md")) {
             String md = new String(entries.get(key), StandardCharsets.UTF_8);
             var result = importService.importDoc(admin, key.substring(key.lastIndexOf('/') + 1), md, null, null,
                     ImportService.ON_CONFLICT_NEW_VERSION);
             assertFalse(result.getError() != null && !result.getError().isEmpty());
         }
 
-        // 4.3 回灌见解
-        String[] insightsFiles = {"java/function/lambda-basics.insights.json", "java/class/inner-class.insights.json"};
+        // 4.3 回灌见解（按完整目录 slug 链定位）
+        String[] insightsFiles = {"java/function/lambda-basics.insights.json",
+                "java/collections/class/inner-class.insights.json"};
         for (String key : insightsFiles) {
             List<Map<String, Object>> insights = om.readValue(entries.get(key),
                     new com.fasterxml.jackson.core.type.TypeReference<List<Map<String, Object>>>() {
                     });
             String[] parts = key.split("/");
-            Map<String, Object> r = insightImportService.importInsights(admin, parts[0], parts[1],
-                    parts[2].replace(".insights.json", ""), insights);
+            Map<String, Object> r = insightImportService.importInsights(admin,
+                    List.of(parts).subList(0, parts.length - 2),
+                    parts[parts.length - 1].replace(".insights.json", ""), insights);
             if (key.contains("lambda-basics")) {
                 assertEquals(3, (int) r.get("created"), "3 条 ACTIVE 原位重建");
                 assertEquals(1, (int) r.get("orphan"), "1 条 ORPHAN 保持游离不丢失");
@@ -223,10 +220,20 @@ class ExportRoundTripTest {
         List<CatalogNodeDto> tree = catalogService.tree(admin);
         List<CatalogNodeDto> userCategories = tree.stream().filter(t -> !t.getSlug().equals("inbox")).toList();
         assertEquals(2, userCategories.size(), "大类数一致");
-        assertEquals(3, userCategories.stream().mapToInt(c -> c.getChildren().size()).sum(), "小方向数一致");
         // remark 已恢复
         CatalogNodeDto javaAfter = userCategories.stream().filter(t -> t.getSlug().equals("java")).findFirst().orElseThrow();
         assertEquals("后端主语言", javaAfter.getRemark());
+        assertEquals(3, javaAfter.getMaxLevel(), "Java 大类层级(3 级)还原");
+        // 深链还原：Java > 集合 > 类（level 3）
+        CatalogNodeDto collAfter = javaAfter.getChildren().stream().filter(c -> c.getSlug().equals("collections"))
+                .findFirst().orElseThrow();
+        assertEquals("容器相关", collAfter.getRemark());
+        CatalogNodeDto clsAfter = collAfter.getChildren().stream().filter(c -> c.getSlug().equals("class"))
+                .findFirst().orElseThrow();
+        assertEquals(3, clsAfter.getNodeLevel(), "类 位于第 3 级");
+        assertEquals(2, javaAfter.getChildren().size());
+        assertEquals(1, userCategories.stream().filter(t -> t.getSlug().equals("vue")).findFirst()
+                .orElseThrow().getChildren().size());
 
         // 文档与见解计数
         assertEquals(4, countDocs());
@@ -247,11 +254,28 @@ class ExportRoundTripTest {
         assertTrue(anns2.stream().anyMatch(a -> a.getContentMd().equals("内部类记忆口诀")));
 
         // 幂等：再回灌一遍，全部 skipped
-        Map<String, Object> r2 = insightImportService.importInsights(admin, "java", "function", "lambda-basics",
+        Map<String, Object> r2 = insightImportService.importInsights(admin,
+                List.of("java", "function"), "lambda-basics",
                 om.readValue(entries.get("java/function/lambda-basics.insights.json"),
                         new com.fasterxml.jackson.core.type.TypeReference<List<Map<String, Object>>>() {
                         }));
         assertEquals(4, (int) r2.get("skipped"));
+    }
+
+    /** 按 manifest 节点（任意深度）递归重建目录 */
+    private void restoreNode(Map<String, Object> meta, Long parentId) {
+        CatalogNodeDto created = catalogService.create(admin, parentId,
+                (String) meta.get("name"), (String) meta.get("slug"),
+                null, null,
+                meta.get("sortOrder") instanceof Number n ? n.intValue() : null,
+                parentId == 0 && meta.get("maxLevel") instanceof Number m ? m.intValue() : null);
+        if (meta.get("remark") != null) {
+            catalogService.update(admin, created.getId(), null, (String) meta.get("remark"), null, null);
+        }
+        List<Map<String, Object>> children = (List<Map<String, Object>>) meta.getOrDefault("children", List.of());
+        for (Map<String, Object> child : children) {
+            restoreNode(child, created.getId());
+        }
     }
 
     private Long docIdBySlug(String slug) {

@@ -56,15 +56,15 @@ done < <(find "$EXPORT" -name "*.md" | sort)
 echo "[3/4] 回灌见解..."
 while IFS= read -r jsonf; do
   rel="${jsonf#$EXPORT/}"
-  cat_slug="$(dirname "$rel" | cut -d/ -f1)"
-  topic_slug="$(dirname "$rel" | cut -d/ -f2)"
   doc_slug="$(basename "$rel" .insights.json)"
   [ -f "${jsonf%.insights.json}.md" ] || continue
-  payload="$(python3 - "$jsonf" "$cat_slug" "$topic_slug" "$doc_slug" <<'PY'
+  # slugPath = insights.json 所在目录链的全部 slug（大类 → … → 叶目录），docSlug 单独传
+  payload="$(python3 - "$jsonf" "$rel" "$doc_slug" <<'PY'
 import json, sys
-path, cat, topic, slug = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+path, rel, slug = sys.argv[1], sys.argv[2], sys.argv[3]
 insights = json.load(open(path, encoding="utf-8"))
-print(json.dumps({"categorySlug": cat, "topicSlug": topic, "docSlug": slug, "insights": insights}, ensure_ascii=False))
+dirs = rel.split("/")[:-1]
+print(json.dumps({"slugPath": dirs, "docSlug": slug, "insights": insights}, ensure_ascii=False))
 PY
 )"
   resp="$(api POST /api/import/insights "$payload")" || { echo "  回灌失败: $rel"; FAIL=1; continue; }

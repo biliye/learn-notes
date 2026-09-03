@@ -10,12 +10,18 @@
         <el-button link size="small" type="primary" @click.stop="openMove(doc)">移动到…</el-button>
       </template>
     </DocList>
-    <el-dialog v-model="moveDialog.visible" title="移动到小方向" width="min(400px, 92vw)">
-      <el-select v-model="moveDialog.topicId" placeholder="选择目标小方向" style="width: 100%" filterable>
-        <el-option-group v-for="c in catalog.tree" :key="c.id" :label="c.name">
-          <el-option v-for="t in c.children" :key="t.id" :label="t.name" :value="t.id" />
-        </el-option-group>
-      </el-select>
+    <el-dialog v-model="moveDialog.visible" title="移动到目录" width="min(440px, 92vw)">
+      <el-tree-select
+        v-model="moveDialog.topicId"
+        :data="docTargetTree"
+        node-key="id"
+        :props="{ label: 'name', children: 'children', disabled: 'disabled' }"
+        check-strictly
+        filterable
+        default-expand-all
+        placeholder="选择目标目录（只能选大类下没有子目录的目录）"
+        style="width: 100%"
+      />
       <template #footer>
         <el-button @click="moveDialog.visible = false">取消</el-button>
         <el-button type="primary" @click="doMove">移动</el-button>
@@ -30,6 +36,7 @@ import { ElMessage } from 'element-plus'
 import DocList from '../components/DocList.vue'
 import { moveDoc } from '../api/doc'
 import { useCatalogStore } from '../stores/catalog'
+import { isDocTarget, disabledTree } from '../utils/catalogTree'
 
 const catalog = useCatalogStore()
 const docList = ref(null)
@@ -40,6 +47,10 @@ const inboxId = computed(() => {
   return inbox?.id
 })
 
+/** 目标只允许"可放文档的叶目录" */
+const docTargetTree = computed(() =>
+  disabledTree(catalog.tree, (n) => !isDocTarget(n)))
+
 function openMove(doc) {
   moveDialog.value = { visible: true, docId: doc.id, topicId: null }
 }
@@ -48,7 +59,7 @@ onMounted(() => catalog.load())
 
 async function doMove() {
   if (!moveDialog.value.topicId) {
-    ElMessage.warning('请选择目标小方向')
+    ElMessage.warning('请选择目标目录')
     return
   }
   await moveDoc(moveDialog.value.docId, moveDialog.value.topicId)

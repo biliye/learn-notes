@@ -68,8 +68,21 @@ public class DocService {
         if (keyword != null && !keyword.isBlank()) {
             kw = "%" + SearchUtil.escapeLike(keyword.trim()) + "%";
         }
-        long total = docMapper.countList(user.userId(), topicId, categoryId, kw);
-        List<DocListItem> items = docMapper.selectList(user.userId(), topicId, categoryId, kw, (page - 1) * size, size).stream()
+        // categoryId 语义：该目录整棵子树（含根），把子树节点展开后交给 mapper 过滤
+        List<Long> categoryIds = null;
+        if (categoryId != null) {
+            categoryIds = catalogService.subtreeIds(user.userId(), categoryId);
+            if (categoryIds.isEmpty()) {
+                DocPageDto empty = new DocPageDto();
+                empty.setTotal(0);
+                empty.setPage(page);
+                empty.setSize(size);
+                empty.setItems(new ArrayList<>());
+                return empty;
+            }
+        }
+        long total = docMapper.countList(user.userId(), topicId, categoryIds, kw);
+        List<DocListItem> items = docMapper.selectList(user.userId(), topicId, categoryIds, kw, (page - 1) * size, size).stream()
                 .map(this::toListItem)
                 .collect(Collectors.toList());
         DocPageDto dto = new DocPageDto();
@@ -98,9 +111,8 @@ public class DocService {
 
     public DocDetailDto detail(Long id, CurrentUser user) {
         Doc doc = requireById(id, user);
-        CatalogNode topic = catalogService.requireById(doc.getTopicId(), user);
-        CatalogNode category = topic.getParentId() == null || topic.getParentId() == 0
-                ? null : catalogService.requireById(topic.getParentId(), user);
+        // 面包屑输出 根→…→本目录 完整链（doc 归属已在 requireById 校验）
+        List<CatalogNode> chain = catalogService.pathFromRoot(doc.getTopicId());
 
         DocDetailDto dto = new DocDetailDto();
         dto.setId(doc.getId());
@@ -111,18 +123,13 @@ public class DocService {
         dto.setCurrentVersion(doc.getCurrentVersion());
         dto.setUpdatedAt(doc.getUpdatedAt());
 
-        if (category != null) {
-            DocDetailDto.BreadcrumbItem c = new DocDetailDto.BreadcrumbItem();
-            c.setId(category.getId());
-            c.setName(category.getName());
-            c.setSlug(category.getSlug());
-            dto.getBreadcrumb().add(c);
+        for (CatalogNode n : chain) {
+            DocDetailDto.BreadcrumbItem b = new DocDetailDto.BreadcrumbItem();
+            b.setId(n.getId());
+            b.setName(n.getName());
+            b.setSlug(n.getSlug());
+            dto.getBreadcrumb().add(b);
         }
-        DocDetailDto.BreadcrumbItem t = new DocDetailDto.BreadcrumbItem();
-        t.setId(topic.getId());
-        t.setName(topic.getName());
-        t.setSlug(topic.getSlug());
-        dto.getBreadcrumb().add(t);
 
         dto.setBlocks(MarkdownBlockParser.parse(doc.getContentMd()).getBlocks());
         dto.setAnnotations(annotationAccess.listForDoc(doc.getId()));
@@ -164,7 +171,7 @@ public class DocService {
     @Transactional
     public Doc create(CurrentUser user, Long topicId, String title, String slug, String summary, List<String> tags,
                       String contentMd, String sourceFilename) {
-        requireTopic(topicId, user);
+        requireDocFolder(topicId, user);
         if (title == null || title.isBlank()) {
             throw BizException.badRequest("标题不能为空");
         }
@@ -173,7 +180,7 @@ public class DocService {
         }
         String finalSlug = slug == null || slug.isBlank() ? SlugUtil.slugify(title) : slug;
         if (docMapper.selectByTopicAndSlug(user.userId(), topicId, finalSlug) != null) {
-            throw BizException.conflict("该小方向下已存在 slug 为 " + finalSlug + " 的文档");
+            throw BizException.conflict("该目录下已存在 slug 为 " + finalSlug + " 的文档");
         }
         Doc doc = buildDoc(user.userId(), topicId, finalSlug, title, summary, tags, contentMd, sourceFilename, 1, 100);
         docMapper.insert(doc);
@@ -226,7 +233,7 @@ public class DocService {
     @Transactional
     public void move(CurrentUser user, Long id, Long topicId) {
         Doc doc = requireById(id, user);
-        requireTopic(topicId, user);
+        requireDocFolder(topicId, user);
         if (Objects.equals(doc.getTopicId(), topicId)) {
             return;
         }
@@ -283,10 +290,14 @@ public class DocService {
         versionMapper.insert(v);
     }
 
-    private CatalogNode requireTopic(Long topicId, CurrentUser user) {
+    /** 文档目标目录校验（V4 多级目录）：非顶层大类、且当前没有子目录（叶目录）。 */
+    private CatalogNode requireDocFolder(Long topicId, CurrentUser user) {
         CatalogNode node = catalogService.requireById(topicId, user);
-        if (node.getNodeLevel() != CatalogNode.LEVEL_TOPIC) {
-            throw BizException.badRequest("文档只能挂在某个小方向（node_level=2）下");
+        if (node.getParentId() == null || node.getParentId() == 0) {
+            throw BizException.badRequest("顶层大类不能直接放文档，请先在其下新建目录");
+        }
+        if (catalogService.hasChildren(node)) {
+            throw BizException.badRequest("该目录下还有子目录，文档只能放在没有子目录的目录里");
         }
         return node;
     }

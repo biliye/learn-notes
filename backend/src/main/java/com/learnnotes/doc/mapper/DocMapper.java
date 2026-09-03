@@ -12,14 +12,14 @@ public interface DocMapper {
 
     List<DocListRow> selectList(@Param("ownerId") Long ownerId,
                                 @Param("topicId") Long topicId,
-                                @Param("categoryId") Long categoryId,
+                                @Param("categoryIds") List<Long> categoryIds,
                                 @Param("keyword") String keyword,
                                 @Param("offset") int offset,
                                 @Param("size") int size);
 
     long countList(@Param("ownerId") Long ownerId,
                    @Param("topicId") Long topicId,
-                   @Param("categoryId") Long categoryId,
+                   @Param("categoryIds") List<Long> categoryIds,
                    @Param("keyword") String keyword);
 
     /** 详情：含正文 */

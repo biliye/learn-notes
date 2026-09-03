@@ -17,7 +17,11 @@
         <where>
             AND d.owner_id = #{ownerId}
             <if test="topicId != null">AND d.topic_id = #{topicId}</if>
-            <if test="categoryId != null">AND d.topic_id IN (SELECT id FROM catalog_node WHERE owner_id = #{ownerId} AND parent_id = #{categoryId})</if>
+            <!-- categoryIds 为该目录整棵子树（含根）的节点 id，由 DocService 展开 -->
+            <if test="categoryIds != null and categoryIds.size() > 0">
+                AND d.topic_id IN
+                <foreach collection="categoryIds" item="cid" open="(" separator="," close=")">#{cid}</foreach>
+            </if>
             <if test="keyword != null and keyword != ''">AND (d.title LIKE #{keyword} ESCAPE '\\' OR d.content_md LIKE #{keyword} ESCAPE '\\')</if>
         </where>
     </sql>
@@ -108,11 +112,11 @@
         LIMIT #{limit}
     </select>
 
-    <!-- 管理员跨用户列表：只带摘要列，不带正文 -->
+    <!-- 管理员跨用户列表：只带摘要列，不带正文；分类完整路径由 AdminService 按 topic 链补全 -->
     <sql id="adminPageCols">
         d.id, d.title, d.topic_id, d.owner_id, d.word_count, d.updated_at,
         u.username AS owner_username, u.nickname AS owner_nickname,
-        t.name AS topic_name, c.name AS category_name
+        t.name AS topic_name
     </sql>
 
     <select id="selectAdminPage" resultType="com.learnnotes.admin.dto.AdminDocRow">
@@ -121,7 +125,6 @@
         FROM doc d
         JOIN sys_user u ON u.id = d.owner_id
         LEFT JOIN catalog_node t ON t.id = d.topic_id
-        LEFT JOIN catalog_node c ON c.id = t.parent_id
         <where>
             <if test="keyword != null and keyword != ''">
                 AND (d.title LIKE #{keyword} ESCAPE '\\' OR d.content_md LIKE #{keyword} ESCAPE '\\')

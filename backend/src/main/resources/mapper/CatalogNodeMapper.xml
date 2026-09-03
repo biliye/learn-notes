@@ -3,7 +3,7 @@
 <mapper namespace="com.learnnotes.catalog.mapper.CatalogNodeMapper">
 
     <sql id="cols">
-        id, owner_id, parent_id, node_level, name, slug, remark, icon, sort_order, auto_created, doc_count, created_at, updated_at
+        id, owner_id, parent_id, node_level, max_level, name, slug, remark, icon, sort_order, auto_created, doc_count, created_at, updated_at
     </sql>
 
     <resultMap id="nodeMap" type="com.learnnotes.catalog.entity.CatalogNode">
@@ -11,6 +11,7 @@
         <result column="owner_id" property="ownerId"/>
         <result column="parent_id" property="parentId"/>
         <result column="node_level" property="nodeLevel"/>
+        <result column="max_level" property="maxLevel"/>
         <result column="name" property="name"/>
         <result column="slug" property="slug"/>
         <result column="remark" property="remark"/>
@@ -51,8 +52,8 @@
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO catalog_node (owner_id, parent_id, node_level, name, slug, remark, icon, sort_order, auto_created, doc_count)
-        VALUES (#{ownerId}, #{parentId}, #{nodeLevel}, #{name}, #{slug}, #{remark}, #{icon}, #{sortOrder}, #{autoCreated}, 0)
+        INSERT INTO catalog_node (owner_id, parent_id, node_level, max_level, name, slug, remark, icon, sort_order, auto_created, doc_count)
+        VALUES (#{ownerId}, #{parentId}, #{nodeLevel}, #{maxLevel}, #{name}, #{slug}, #{remark}, #{icon}, #{sortOrder}, #{autoCreated}, 0)
     </insert>
 
     <update id="update">
@@ -60,9 +61,11 @@
         <set>
             <if test="name != null">name = #{name},</if>
             <if test="slug != null">slug = #{slug},</if>
+            <if test="nodeLevel != null">node_level = #{nodeLevel},</if>
             <if test="remark != null">remark = #{remark},</if>
             <if test="icon != null">icon = #{icon},</if>
             <if test="sortOrder != null">sort_order = #{sortOrder},</if>
+            <if test="maxLevel != null">max_level = #{maxLevel},</if>
         </set>
         WHERE id = #{id}
     </update>

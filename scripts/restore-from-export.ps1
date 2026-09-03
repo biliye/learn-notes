@@ -1,6 +1,7 @@
-﻿# ============================================================
+# ============================================================
 # learn-notes 从 notes-export/ 重建（Windows PowerShell 版）
 # 只用 notes-export/（md + insights.json + uploads + manifest.json），不用 dump。
+# V4 起 manifest 为任意深度递归目录树，文档 md front-matter 带 path/slugs。
 # 用法：powershell -File scripts/restore-from-export.ps1 -ServerUrl http://127.0.0.1:8088 -ApiToken <token>
 # ============================================================
 
@@ -52,22 +53,47 @@ function Invoke-Api($method, $path, $body = $null) {
     return $resp.data
 }
 
-Write-Host "[1/4] 按 manifest 重建分类..."
+Write-Host "[1/4] 按 manifest 重建目录树（任意深度）..."
 $manifest = [string](Get-Content (Join-Path $export "manifest.json") -Raw -Encoding UTF8) | ConvertFrom-Json
 $tree = Invoke-Api "GET" "/api/catalog/tree"
-foreach ($cat in $manifest.categories) {
-    $node = $tree | Where-Object { $_.slug -eq $cat.slug } | Select-Object -First 1
-    if (-not $node) {
-        $node = Invoke-Api "POST" "/api/catalog" @{ parentId = 0; name = $cat.name; slug = $cat.slug; remark = $cat.remark; sortOrder = $cat.sortOrder }
-    } elseif ($cat.remark) {
-        Invoke-Api "PUT" "/api/catalog/$($node.id)" @{ remark = $cat.remark }
+
+# 把现有树拍平成 {id,parentId,slug} 便于按父目录幂等查重
+$nodesIndex = New-Object System.Collections.ArrayList
+function Index-Nodes($nodes, $parentId) {
+    foreach ($n in $nodes) {
+        [void]$nodesIndex.Add(@{ id = $n.id; parentId = $parentId; slug = $n.slug })
+        Index-Nodes $n.children $n.id
     }
-    foreach ($topic in $cat.topics) {
-        $exists = $node.children | Where-Object { $_.slug -eq $topic.slug }
-        if (-not $exists) {
-            Invoke-Api "POST" "/api/catalog" @{ parentId = $node.id; name = $topic.name; slug = $topic.slug; remark = $topic.remark; sortOrder = $topic.sortOrder }
+}
+Index-Nodes $tree 0
+
+function Find-NodeId($slug, $parentId) {
+    $hit = $nodesIndex | Where-Object { $_.slug -eq $slug -and $_.parentId -eq $parentId } | Select-Object -First 1
+    if ($hit) { return $hit.id }
+    return $null
+}
+
+function Restore-Catalog($meta, $parentId) {
+    $id = Find-NodeId $meta.slug $parentId
+    if (-not $id) {
+        $createBody = @{ parentId = $parentId; name = $meta.name; slug = $meta.slug; remark = $meta.remark; sortOrder = $meta.sortOrder }
+        if ($parentId -eq 0 -and $meta.maxLevel) { $createBody.maxLevel = $meta.maxLevel }
+        $created = Invoke-Api "POST" "/api/catalog" $createBody
+        $id = $created.id
+        [void]$nodesIndex.Add(@{ id = $id; parentId = $parentId; slug = $meta.slug })
+    } elseif ($meta.remark) {
+        Invoke-Api "PUT" "/api/catalog/$id" @{ remark = $meta.remark }
+    }
+    if ($meta.children) {
+        foreach ($child in $meta.children) {
+            Restore-Catalog $child $id
         }
     }
+    return $id
+}
+
+foreach ($cat in $manifest.categories) {
+    Restore-Catalog $cat 0
     Write-Host "  ✓ 分类 $($cat.name)"
 }
 
@@ -86,8 +112,11 @@ $jsonFiles = Get-ChildItem $export -Recurse -Filter "*.insights.json"
 foreach ($f in $jsonFiles) {
     $rel = $f.FullName.Substring($export.Length + 1).Replace("\", "/")
     $parts = $rel.Split("/")
+    # slugPath = 除文件名外整条目录链 slug（大类 → … → 叶目录）
+    $dirs = $parts[0..($parts.Length - 2)]
+    $docSlug = $parts[$parts.Length - 1].Replace(".insights.json", "")
     $insights = [string](Get-Content $f.FullName -Raw -Encoding UTF8) | ConvertFrom-Json
-    $body = @{ categorySlug = $parts[0]; topicSlug = $parts[1]; docSlug = $parts[2].Replace(".insights.json", ""); insights = @($insights) }
+    $body = @{ slugPath = @($dirs); docSlug = $docSlug; insights = @($insights) }
     $r = Invoke-Api "POST" "/api/import/insights" $body
     Write-Host "  ✓ $rel -> created=$($r.created) skipped=$($r.skipped) stale=$($r.stale) orphan=$($r.orphan)"
 }
@@ -105,16 +134,34 @@ Write-Host ""
 Write-Host "==== 期望 vs 实际 ===="
 $actualTree = Invoke-Api "GET" "/api/catalog/tree"
 $userCats = @($actualTree | Where-Object { $_.slug -ne "inbox" })
-$userTopics = 0; foreach ($c in $userCats) { $userTopics += @($c.children).Count }
-$page = Invoke-Api "GET" "/api/docs?size=100"
+
+function Count-Subtree($node) {
+    $count = 0
+    if ($node.children) {
+        foreach ($c in $node.children) { $count += 1 + (Count-Subtree $c) }
+    }
+    return $count
+}
+$actualDirs = 0
+foreach ($c in $userCats) { $actualDirs += Count-Subtree $c }
+
+$allDocs = @()
+$pageNo = 1
+while ($true) {
+    $page = Invoke-Api "GET" "/api/docs?size=100&page=$pageNo"
+    if (@($page.items).Count -eq 0) { break }
+    $allDocs += @($page.items)
+    if ($allDocs.Count -ge $page.total) { break }
+    $pageNo++
+}
 $annCount = 0
-foreach ($d in $page.items) {
+foreach ($d in $allDocs) {
     $detail = Invoke-Api "GET" "/api/docs/$($d.id)"
     $annCount += @($detail.annotations).Count
 }
-$actual = @{ categories = $userCats.Count; topics = $userTopics; docs = @($page.items).Count; annotations = $annCount }
+$actual = @{ categories = $userCats.Count; dirs = $actualDirs; docs = @($allDocs).Count; annotations = $annCount }
 $ok = $true
-foreach ($k in @("categories", "topics", "docs", "annotations")) {
+foreach ($k in @("categories", "dirs", "docs", "annotations")) {
     $m = $actual[$k] -eq $manifest.counts.$k
     $ok = $ok -and $m
     Write-Host ("{0,-14} 期望 {1,5} 实际 {2,5} {3}" -f $k, $manifest.counts.$k, $actual[$k], $(if ($m) { "✓" } else { "✗ 不一致!" }))

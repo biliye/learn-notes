@@ -1,6 +1,6 @@
 <template>
   <div class="doc-list">
-    <el-empty v-if="!items.length" description="该方向下还没有文档" />
+    <el-empty v-if="!items.length" description="该目录下还没有文档" />
     <div v-for="doc in items" :key="doc.id" class="doc-card" @click="$router.push(`/docs/${doc.id}`)">
       <div class="doc-ribbon" aria-hidden="true"></div>
       <div class="doc-title">{{ doc.title }}</div>
@@ -61,6 +61,7 @@ function formatTime(s) {
 }
 
 watch(() => props.topicId, () => { page.value = 1; load() })
+watch(() => props.categoryId, () => { page.value = 1; load() })
 onMounted(load)
 
 defineExpose({ load })

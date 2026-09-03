@@ -24,6 +24,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useCatalogStore } from '../stores/catalog'
+import { isDocTarget } from '../utils/catalogTree'
 
 const emit = defineEmits(['select-topic'])
 const catalog = useCatalogStore()
@@ -31,11 +32,9 @@ const catalog = useCatalogStore()
 const tree = computed(() => catalog.tree)
 
 function onNodeClick(data) {
-  // 只响应小方向（有 children 的是大类）
-  if (data.children && data.children.length === 0 && data.parentId !== 0) {
+  // V4 多级目录：只有"可放文档的叶目录"（非顶层且无子目录）才进入文档列表
+  if (isDocTarget(data)) {
     emit('select-topic', data)
-  } else if (data.parentId === 0 && data.slug === 'inbox') {
-    emit('select-topic', data.children?.[0])
   }
 }
 </script>

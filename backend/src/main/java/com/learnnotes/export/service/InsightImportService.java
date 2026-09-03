@@ -23,7 +23,7 @@ import java.util.Map;
 
 /**
  * 见解回灌（R33、§5.7）：按 anchor 重建见解，未命中走 D6 重挂，重复 (anchor, contentMd) 跳过（幂等）。
- * V3 起只在当前用户自己的分类树内定位文档。
+ * V3 起只在当前用户自己的分类树内定位文档；V4 起按任意深度 slug 链（大类 → … → 叶目录）定位。
  */
 @Service
 public class InsightImportService {
@@ -40,11 +40,11 @@ public class InsightImportService {
     }
 
     @Transactional
-    public Map<String, Object> importInsights(CurrentUser user, String categorySlug, String topicSlug,
+    public Map<String, Object> importInsights(CurrentUser user, List<String> slugPath,
                                               String docSlug, List<Map<String, Object>> insights) {
-        Doc doc = locateDoc(user, categorySlug, topicSlug, docSlug);
+        Doc doc = locateDoc(user, slugPath, docSlug);
         if (doc == null) {
-            throw BizException.notFound("目标文档不存在，请先导入文档：" + categorySlug + "/" + topicSlug + "/" + docSlug);
+            throw BizException.notFound("目标文档不存在，请先导入文档：" + String.join("/", slugPath) + "/" + docSlug);
         }
         List<Block> currentBlocks = MarkdownBlockParser.parse(doc.getContentMd()).getBlocks();
         int currentVersion = doc.getCurrentVersion();
@@ -113,19 +113,24 @@ public class InsightImportService {
         return result;
     }
 
-    private Doc locateDoc(CurrentUser user, String categorySlug, String topicSlug, String docSlug) {
-        if (docSlug == null || topicSlug == null || categorySlug == null) {
+    /** 按 slug 链（大类 → … → 叶目录）+ 文档 slug 定位文档 */
+    private Doc locateDoc(CurrentUser user, List<String> slugPath, String docSlug) {
+        if (slugPath == null || slugPath.isEmpty() || docSlug == null) {
             return null;
         }
-        CatalogNode category = catalogMapper.selectByParentAndSlug(user.userId(), 0, categorySlug);
-        if (category == null) {
-            return null;
+        long parentId = 0;
+        CatalogNode current = null;
+        for (String slug : slugPath) {
+            if (slug == null || slug.isBlank()) {
+                return null;
+            }
+            current = catalogMapper.selectByParentAndSlug(user.userId(), parentId, slug);
+            if (current == null) {
+                return null;
+            }
+            parentId = current.getId();
         }
-        CatalogNode topic = catalogMapper.selectByParentAndSlug(user.userId(), category.getId(), topicSlug);
-        if (topic == null) {
-            return null;
-        }
-        return docMapper.selectByTopicAndSlug(user.userId(), topic.getId(), docSlug);
+        return current == null ? null : docMapper.selectByTopicAndSlug(user.userId(), current.getId(), docSlug);
     }
 
     private int anchorIndex(String anchor, Object fallback) {

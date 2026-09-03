@@ -113,6 +113,28 @@ class MetaResolverTest {
         assertEquals("props-basics", meta.getDocSlug());
     }
 
+    /** 9. 文件名四段及以上：目录链（大类 → … → 叶目录）+ 文档 slug */
+    @Test
+    void filenameDeepChain() {
+        var meta = resolve("java__集合__类__inner-class.md", "# 正文", null, null);
+        assertEquals(MetaResolver.Source.FILENAME, meta.getSource());
+        assertEquals(java.util.List.of("java", "集合", "类"), meta.getPathNames());
+        assertEquals("java", meta.getCategoryName());
+        assertEquals("类", meta.getTopicName());
+        assertEquals("inner-class", meta.getDocSlug());
+    }
+
+    /** 10. front-matter 用 path/slugs 表达多级目录（path 优先于旧 category/topic） */
+    @Test
+    void frontMatterPathOverridesLegacy() {
+        String content = "---\ncategory: 旧大类\ntopic: 旧目录\npath: [Java, 集合, 类]\nslugs: [java, collections, class]\ntitle: 内部类\nslug: inner-class\n---\n\n正文";
+        var meta = resolve("whatever.md", content, null, null);
+        assertEquals(MetaResolver.Source.FRONT_MATTER, meta.getSource());
+        assertEquals(java.util.List.of("Java", "集合", "类"), meta.getPathNames());
+        assertEquals(java.util.List.of("java", "collections", "class"), meta.getPathSlugs());
+        assertEquals("inner-class", meta.getDocSlug());
+    }
+
     /** tags 数组解析 */
     @Test
     void tagsParsed() {

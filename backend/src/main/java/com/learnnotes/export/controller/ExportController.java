@@ -51,9 +51,27 @@ public class ExportController {
         List<Map<String, Object>> insights = (List<Map<String, Object>>) body.get("insights");
         return R.ok(insightImportService.importInsights(
                 CurrentUser.from(request),
-                (String) body.get("categorySlug"),
-                (String) body.get("topicSlug"),
+                slugPath(body),
                 (String) body.get("docSlug"),
                 insights));
+    }
+
+    /** slugPath（数组：大类 → … → 叶目录）优先；旧 categorySlug/topicSlug 两参兼容 */
+    @SuppressWarnings("unchecked")
+    private static List<String> slugPath(Map<String, Object> body) {
+        Object p = body.get("slugPath");
+        if (p instanceof List<?> list && !list.isEmpty()) {
+            return (List<String>) (List<?>) list;
+        }
+        List<String> legacy = new java.util.ArrayList<>();
+        String category = (String) body.get("categorySlug");
+        String topic = (String) body.get("topicSlug");
+        if (category != null && !category.isBlank()) {
+            legacy.add(category);
+        }
+        if (topic != null && !topic.isBlank()) {
+            legacy.add(topic);
+        }
+        return legacy;
     }
 }

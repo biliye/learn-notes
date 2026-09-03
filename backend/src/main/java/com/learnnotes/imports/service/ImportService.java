@@ -29,7 +29,9 @@ import java.util.Locale;
 
 /**
  * 文档导入与自动归类（R12–R17、D8）—— agent 的主入口。
- * 原文一字不改入库。V3 起数据归到当前登录用户（X-Api-Token 通道归到管理员）。
+ * 原文一字不改入库。V4 起支持多级目录：按 MetaResolver 解析出的目录路径
+ * （大类 → … → 叶目录）逐级 find-or-create，文档落在链末叶目录。
+ * V3 起数据归到当前登录用户（X-Api-Token 通道归到管理员）。
  */
 @Slf4j
 @Service
@@ -39,18 +41,15 @@ public class ImportService {
     public static final String ON_CONFLICT_SKIP = "SKIP";
     public static final String ON_CONFLICT_FAIL = "FAIL";
 
-    private final CatalogService catalogService;
     private final CatalogNodeMapper catalogMapper;
     private final DocService docService;
     private final DocMapper docMapper;
     private final DocStorage docStorage;
 
-    public ImportService(CatalogService catalogService,
-                         CatalogNodeMapper catalogMapper,
+    public ImportService(CatalogNodeMapper catalogMapper,
                          DocService docService,
                          DocMapper docMapper,
                          DocStorage docStorage) {
-        this.catalogService = catalogService;
         this.catalogMapper = catalogMapper;
         this.docService = docService;
         this.docMapper = docMapper;
@@ -77,9 +76,10 @@ public class ImportService {
         result.setWarnings(new ArrayList<>(parsedBody.getWarnings()));
         result.getWarnings().addAll(meta.getWarnings());
 
-        // 1. 归类节点（不存在自动创建并标记 auto_created=1，R14；按当前用户隔离）
-        CatalogNode category = ensureNode(user.userId(), 0L, CatalogNode.LEVEL_CATEGORY, meta.getCategoryName(), meta.getCategorySlug());
-        CatalogNode topic = ensureNode(user.userId(), category.getId(), CatalogNode.LEVEL_TOPIC, meta.getTopicName(), meta.getTopicSlug());
+        // 1. 归类节点链（不存在逐级自动创建并标记 auto_created=1，R14；按当前用户隔离）
+        List<CatalogNode> chain = ensureChain(user.userId(), meta.getPathNames(), meta.getPathSlugs());
+        CatalogNode category = chain.get(0);
+        CatalogNode topic = chain.get(chain.size() - 1);
         result.setCategory(nodeInfo(category));
         result.setTopic(nodeInfo(topic));
 
@@ -132,14 +132,15 @@ public class ImportService {
         result.setSlug(docSlug);
 
         // 4. 原文落盘（R17，备份 L3）——事务提交后执行，失败只记 warning 不回滚
-        String storedPath = docStorage.pathFor(user.username(), category.getSlug(), topic.getSlug(), docSlug);
+        List<String> slugPath = chain.stream().map(CatalogNode::getSlug).toList();
+        String storedPath = docStorage.pathFor(user.username(), slugPath, docSlug);
         result.setStoredPath(storedPath);
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
                     try {
-                        docStorage.write(user.username(), category.getSlug(), topic.getSlug(), docSlug, content);
+                        docStorage.write(user.username(), slugPath, docSlug, content);
                     } catch (Exception e) {
                         log.warn("原文落盘失败（不影响入库）：{}", e.getMessage());
                     }
@@ -147,7 +148,7 @@ public class ImportService {
             });
         } else {
             try {
-                docStorage.write(user.username(), category.getSlug(), topic.getSlug(), docSlug, content);
+                docStorage.write(user.username(), slugPath, docSlug, content);
             } catch (Exception e) {
                 log.warn("原文落盘失败（不影响入库）：{}", e.getMessage());
             }
@@ -178,7 +179,60 @@ public class ImportService {
 
     // ---------- 内部 ----------
 
-    private CatalogNode ensureNode(Long ownerId, Long parentId, int level, String name, String slugHint) {
+    /**
+     * 沿目录路径（大类 → … → 叶目录）逐级 find-or-create。
+     * 单层路径自动追加"未归类"叶目录；顶层大类的层级不足时：自动创建的大类自动上调，
+     * 手动配置的大类报错（提示到分类管理调大层级）。
+     *
+     * @return 完整目录链（根→叶目录，至少有 1 个节点）
+     */
+    private List<CatalogNode> ensureChain(Long ownerId, List<String> names, List<String> slugs) {
+        if (names == null || names.isEmpty()) {
+            throw BizException.badRequest("无法确定归类目录：front-matter/文件名没有可解析的目录路径");
+        }
+        List<String> dirNames = new ArrayList<>(names);
+        List<String> dirSlugs = new ArrayList<>(slugs == null ? new ArrayList<>() : slugs);
+        if (dirNames.size() == 1) {
+            // 只给了大类：落到其下"未归类"叶目录（旧语义）
+            dirNames.add(MetaResolver.UNCATEGORIZED_NAME);
+            dirSlugs.add(MetaResolver.UNCATEGORIZED_SLUG);
+        }
+        while (dirSlugs.size() < dirNames.size()) {
+            dirSlugs.add(null);
+        }
+
+        List<CatalogNode> chain = new ArrayList<>();
+        long parentId = 0;
+        for (int i = 0; i < dirNames.size(); i++) {
+            int level = i + 1;
+            CatalogNode parent = chain.isEmpty() ? null : chain.get(chain.size() - 1);
+            CatalogNode node = ensureNode(ownerId, parentId, level, dirNames.get(i), dirSlugs.get(i), parent);
+            chain.add(node);
+            parentId = node.getId();
+        }
+
+        // 顶层大类层级核对：需要 dirNames.size() 层，允许则可能自动上调 auto_created 大类
+        CatalogNode top = chain.get(0);
+        int needDepth = dirNames.size();
+        int currentMax = top.getMaxLevel() == null ? CatalogNode.DEFAULT_MAX_LEVEL : top.getMaxLevel();
+        if (needDepth > currentMax) {
+            if (Boolean.TRUE.equals(top.getAutoCreated())) {
+                CatalogNode upd = new CatalogNode();
+                upd.setId(top.getId());
+                upd.setMaxLevel(needDepth);
+                catalogMapper.update(upd);
+                top.setMaxLevel(needDepth);
+            } else {
+                throw BizException.conflict("分类「" + top.getName() + "」只允许 " + currentMax
+                        + " 级目录，本次导入需要 " + needDepth + " 级：请先在分类管理里调大该大类的目录层级，或精简目录路径");
+            }
+        }
+        return chain;
+    }
+
+    /** find-or-create：slug 精确（忽略大小写）→ name 精确 → name 去空格小写；不存在则创建。 */
+    private CatalogNode ensureNode(Long ownerId, long parentId, int level, String name, String slugHint,
+                                   CatalogNode parent) {
         if (name == null || name.isBlank()) {
             throw BizException.badRequest("分类名称缺失");
         }
@@ -199,6 +253,11 @@ public class ImportService {
                 return node;
             }
         }
+        // 需要新建子目录：父目录若已含文档则不能再细分（文档只放叶目录）
+        if (parent != null && parent.getDocCount() != null && parent.getDocCount() > 0) {
+            throw BizException.badRequest("目录「" + parent.getName() + "」下已有 " + parent.getDocCount()
+                    + " 篇文档，不能再往下建目录（请先在分类管理里把文档移出再细分）");
+        }
         String slug = slugHint != null && !slugHint.isBlank() ? slugHint : SlugUtil.slugify(name, "node");
         // slug 冲突时追加 -2（与手动创建一致）
         if (catalogMapper.selectByParentAndSlug(ownerId, parentId, slug) != null) {
@@ -208,6 +267,7 @@ public class ImportService {
         node.setOwnerId(ownerId);
         node.setParentId(parentId);
         node.setNodeLevel(level);
+        node.setMaxLevel(parentId == 0 ? Math.max(CatalogNode.DEFAULT_MAX_LEVEL, level) : null);
         node.setName(name.trim());
         node.setSlug(slug);
         node.setSortOrder(100);

@@ -50,18 +50,21 @@ public class SearchService {
         return results;
     }
 
+    /** 完整目录链：根→…→本目录（任意深度） */
     private List<Map<String, Object>> breadcrumb(Long topicId) {
         List<Map<String, Object>> breadcrumb = new ArrayList<>();
-        CatalogNode topic = catalogMapper.selectById(topicId);
-        if (topic == null) {
-            return breadcrumb;
-        }
-        breadcrumb.add(nodeMap(topic));
-        if (topic.getParentId() != null && topic.getParentId() != 0) {
-            CatalogNode category = catalogMapper.selectById(topic.getParentId());
-            if (category != null) {
-                breadcrumb.add(0, nodeMap(category));
+        List<CatalogNode> chain = new ArrayList<>();
+        CatalogNode cur = topicId == null ? null : catalogMapper.selectById(topicId);
+        java.util.Set<Long> seen = new java.util.HashSet<>();
+        while (cur != null && seen.add(cur.getId())) {
+            chain.add(0, cur);
+            if (cur.getParentId() == null || cur.getParentId() == 0) {
+                break;
             }
+            cur = catalogMapper.selectById(cur.getParentId());
+        }
+        for (CatalogNode n : chain) {
+            breadcrumb.add(nodeMap(n));
         }
         return breadcrumb;
     }

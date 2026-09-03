@@ -9,19 +9,22 @@
     </div>
     <div class="edit-head">
       <template v-if="!isEdit">
-        <el-select v-model="form.categoryId" placeholder="选择大类" class="category-select" filterable clearable @change="onCategoryChange">
-          <el-option v-for="c in catalog.tree" :key="c.id" :label="c.name" :value="c.id" />
-        </el-select>
-        <el-select v-model="form.topicId" placeholder="选择小方向" class="topic-select" filterable clearable :disabled="!form.categoryId">
-          <el-option v-for="t in topicsOfCategory" :key="t.id" :label="t.name" :value="t.id" />
-        </el-select>
-        <template v-if="form.categoryId && !topicsOfCategory.length">
-          <span class="empty-topic-hint">该大类下暂无小方向</span>
-          <el-input v-model="newTopicName" placeholder="新小方向名称" class="new-topic-input" maxlength="80" @keyup.enter="quickCreateTopic" />
-          <el-button :loading="creatingTopic" size="small" @click="quickCreateTopic">
-            <el-icon><Plus /></el-icon> 新建小方向
-          </el-button>
-        </template>
+        <el-tree-select
+          v-model="form.topicId"
+          :data="docTargetTree"
+          node-key="id"
+          :props="{ label: 'name', children: 'children', disabled: 'disabled' }"
+          check-strictly
+          clearable
+          filterable
+          default-expand-all
+          class="dir-select"
+          placeholder="文档存放目录（选择无子目录的目录）"
+        />
+        <el-button size="small" :loading="creatingDir" @click="openDirDialog">
+          <el-icon><Plus /></el-icon> 建子目录
+        </el-button>
+        <span v-if="targetPath" class="dir-path" :title="targetPath">{{ targetPath }}</span>
         <el-upload :show-file-list="false" accept=".zip" :auto-upload="false" :on-change="onPickZip">
           <el-button :loading="importing">
             <el-icon><Box /></el-icon> 一键导入压缩包
@@ -42,6 +45,34 @@
       </el-upload>
     </div>
     <MarkdownEditor ref="editor" v-model="form.contentMd" @save="save" />
+
+    <!-- 快捷建子目录：用于当前没有更深目录可放文档时继续细分 -->
+    <el-dialog v-model="dirDialog.visible" title="新建子目录（继续细分）" width="min(440px, 92vw)">
+      <el-form label-width="88px" @submit.prevent>
+        <el-form-item label="上级目录">
+          <el-tree-select
+            v-model="dirDialog.parentId"
+            :data="expandableTree"
+            node-key="id"
+            :props="{ label: 'name', children: 'children', disabled: 'disabled' }"
+            check-strictly
+            clearable
+            filterable
+            default-expand-all
+            class="full-width"
+            placeholder="选择要在哪个目录下新建"
+          />
+        </el-form-item>
+        <el-form-item label="目录名称">
+          <el-input v-model="dirDialog.name" maxlength="80" placeholder="新子目录名称" @keyup.enter="confirmCreateDir" />
+        </el-form-item>
+      </el-form>
+      <div v-if="!dirDialog.parentId" class="dir-dialog-hint">先在左侧选一个还能继续细分的上级目录（含文档的目录不能细分）。</div>
+      <template #footer>
+        <el-button @click="dirDialog.visible = false">取消</el-button>
+        <el-button type="primary" :loading="creatingDir" @click="confirmCreateDir">创建并作为文档目录</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -54,6 +85,7 @@ import { getDoc, createDoc, updateDoc, downloadRaw } from '../api/doc'
 import { importZip } from '../api/import'
 import { createNode } from '../api/catalog'
 import { useCatalogStore } from '../stores/catalog'
+import { findRec, isDocTarget, canAddChild, pathLabel, disabledTree, indexTree } from '../utils/catalogTree'
 
 const route = useRoute()
 const router = useRouter()
@@ -69,35 +101,36 @@ const form = ref({
 const changeNote = ref('')
 const saving = ref(false)
 const editor = ref(null)
-const newTopicName = ref('')
-const creatingTopic = ref(false)
+const creatingDir = ref(false)
 const importing = ref(false)
+const dirDialog = ref({ visible: false, parentId: null, name: '' })
 
-/** 所选大类下的小方向列表（未选大类时为空） */
-const topicsOfCategory = computed(() => {
-  if (!form.value.categoryId) return []
-  const cat = catalog.tree.find((c) => c.id === form.value.categoryId)
-  return cat?.children || []
+/** 只能选"可放文档的叶目录"（非顶层、无子目录） */
+const docTargetTree = computed(() =>
+  disabledTree(catalog.tree, (n) => !isDocTarget(n)))
+
+const targetRec = computed(() => findRec(catalog.tree, form.value.topicId))
+const targetPath = computed(() => (targetRec.value ? pathLabel(targetRec.value) : ''))
+
+/** 还能新建子目录的节点（供"建子目录"弹窗选上级） */
+const recIndex = computed(() => {
+  const map = new Map()
+  for (const rec of indexTree(catalog.tree)) map.set(Number(rec.node.id), rec)
+  return map
 })
+const expandableTree = computed(() =>
+  disabledTree(catalog.tree, (n) => !canAddChild(recIndex.value.get(Number(n.id)))))
 
 onMounted(async () => {
   if (!catalog.loaded) await catalog.load()
   if (isEdit.value) {
     const doc = await getDoc(route.params.id)
+    const leaf = doc.breadcrumb?.[doc.breadcrumb.length - 1]
     form.value = {
-      topicId: doc.breadcrumb[1]?.id,
+      topicId: leaf?.id ?? null,
       title: doc.title,
       slug: doc.slug,
       contentMd: await rawFor(doc.id)
-    }
-  } else if (form.value.topicId) {
-    // 从左侧树带 topicId 进入：反查其父大类并回填，保证大类/小类分开选中
-    for (const c of catalog.tree) {
-      const found = (c.children || []).find((t) => t.id === Number(form.value.topicId))
-      if (found) {
-        form.value.categoryId = c.id
-        break
-      }
     }
   }
 })
@@ -105,13 +138,14 @@ onMounted(async () => {
 async function rawFor(id) {
   return downloadRaw(id)
 }
+
 async function save() {
   if (!form.value.title.trim()) {
     ElMessage.warning('请填写标题')
     return
   }
   if (!isEdit.value && !form.value.topicId) {
-    ElMessage.warning(form.value.categoryId ? '请选择小方向（该大类下暂无小方向时可点击「＋ 新建小方向」）' : '请先选择大类与小方向')
+    ElMessage.warning('请选择文档存放目录（需是大类下没有子目录的目录）；目录不够深时可点「建子目录」继续细分')
     return
   }
   saving.value = true
@@ -148,31 +182,39 @@ function cancel() {
   else router.push('/docs')
 }
 
-function onCategoryChange() {
-  // 切换大类后清空已选小方向，避免小方向与大类不匹配
-  form.value.topicId = null
+function openDirDialog() {
+  // 默认在已选的叶目录下再细分（如果它还没放文档且未到最大层级）
+  const rec = targetRec.value
+  dirDialog.value = {
+    visible: true,
+    parentId: rec && canAddChild(rec) ? rec.node.id : null,
+    name: ''
+  }
 }
 
-/** 空大类下的内联快捷新建小方向（复用 POST /api/catalog，规格 §5.2） */
-async function quickCreateTopic() {
-  const name = newTopicName.value.trim()
+/** 创建子目录并把新建的目录作为文档存放位置（可反复细分） */
+async function confirmCreateDir() {
+  const name = dirDialog.value.name.trim()
   if (!name) {
-    ElMessage.warning('请输入小方向名称')
+    ElMessage.warning('请输入目录名称')
     return
   }
-  creatingTopic.value = true
+  if (!dirDialog.value.parentId) {
+    ElMessage.warning('请选择上级目录')
+    return
+  }
+  creatingDir.value = true
   try {
-    await createNode({ parentId: form.value.categoryId, name })
+    const created = await createNode({ parentId: dirDialog.value.parentId, name })
     await catalog.refresh()
-    const cat = catalog.tree.find((c) => c.id === form.value.categoryId)
-    const created = (cat?.children || []).find((t) => t.name === name)
-    if (created) form.value.topicId = created.id
-    newTopicName.value = ''
-    ElMessage.success('小方向已创建')
+    if (created?.id) form.value.topicId = created.id
+    dirDialog.value.visible = false
+    dirDialog.value.name = ''
+    ElMessage.success('子目录已创建，已选为文档存放目录')
   } catch (e) {
     // 拦截器已提示
   } finally {
-    creatingTopic.value = false
+    creatingDir.value = false
   }
 }
 
@@ -272,12 +314,14 @@ function onPickImage(uploadFile) {
   border: 1px solid var(--ak-border);
   border-radius: 2px;
   padding: 10px 12px;
-  .category-select { width: 150px; }
-  .topic-select { width: 200px; }
-  .new-topic-input { width: 160px; }
-  .empty-topic-hint {
-    color: var(--ak-muted);
+  .dir-select { width: 300px; }
+  .dir-path {
+    color: var(--ak-faint);
     font-size: 12px;
+    max-width: 280px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .title-input { width: 280px; }
   .slug-input { width: 200px; }
@@ -288,6 +332,15 @@ function onPickImage(uploadFile) {
   .save-btn {
     :deep(.el-icon) { margin-right: 4px; }
   }
+}
+.dir-dialog-hint {
+  color: var(--ak-faint);
+  font-size: 12px;
+  margin-top: -8px;
+  margin-bottom: 8px;
+}
+.full-width {
+  width: 100%;
 }
 
 /* ---------- 移动端：工具栏控件整行排布 ---------- */
@@ -300,16 +353,15 @@ function onPickImage(uploadFile) {
   }
   .edit-head {
     padding: 10px 8px;
-    .category-select,
-    .topic-select,
-    .new-topic-input,
+    .dir-select,
     .title-input,
     .slug-input,
     .note-input {
       width: 100%;
     }
-    .empty-topic-hint {
+    .dir-path {
       width: 100%;
+      max-width: none;
     }
     .save-btn {
       flex: 1;
