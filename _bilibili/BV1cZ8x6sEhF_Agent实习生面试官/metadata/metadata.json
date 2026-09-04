@@ -1,0 +1,1627 @@
+{
+  "code": 0,
+  "message": "OK",
+  "ttl": 1,
+  "data": {
+    "bvid": "BV1cZ8x6sEhF",
+    "aid": 117144075439179,
+    "videos": 1,
+    "tid": 231,
+    "tid_v2": 2093,
+    "tname": "",
+    "tname_v2": "",
+    "copyright": 1,
+    "pic": "http://i1.hdslb.com/bfs/archive/662b876cd735d0189304ca13f6c17593a7ba779c.jpg",
+    "title": "作为Agent实习生的面试官，你们的简历和回答确实该挂！",
+    "pubdate": 1787476849,
+    "ctime": 1787476849,
+    "desc": "",
+    "desc_v2": null,
+    "state": 0,
+    "duration": 1873,
+    "rights": {
+      "bp": 0,
+      "elec": 0,
+      "download": 1,
+      "movie": 0,
+      "pay": 0,
+      "hd5": 0,
+      "no_reprint": 1,
+      "autoplay": 1,
+      "ugc_pay": 0,
+      "is_cooperation": 0,
+      "ugc_pay_preview": 0,
+      "no_background": 0,
+      "clean_mode": 0,
+      "is_stein_gate": 0,
+      "is_360": 0,
+      "no_share": 0,
+      "arc_pay": 0,
+      "free_watch": 0
+    },
+    "owner": {
+      "mid": 152686439,
+      "name": "xhyovo",
+      "face": "https://i2.hdslb.com/bfs/face/cea90ad18bfd1ac05da709f2439601dbcbe504ec.jpg"
+    },
+    "stat": {
+      "aid": 117144075439179,
+      "view": 22483,
+      "danmaku": 15,
+      "reply": 203,
+      "favorite": 1840,
+      "coin": 200,
+      "share": 128,
+      "now_rank": 0,
+      "his_rank": 0,
+      "like": 630,
+      "dislike": 0,
+      "evaluation": "",
+      "vt": 0
+    },
+    "argue_info": {
+      "argue_msg": "",
+      "argue_type": 0,
+      "argue_link": ""
+    },
+    "dynamic": "",
+    "cid": 41187150555,
+    "dimension": {
+      "width": 1920,
+      "height": 1080,
+      "rotate": 0
+    },
+    "season_id": 7729305,
+    "premiere": null,
+    "teenage_mode": 1,
+    "is_chargeable_season": false,
+    "is_story": false,
+    "is_upower_exclusive": false,
+    "is_upower_play": false,
+    "is_upower_preview": false,
+    "enable_vt": 0,
+    "vt_display": "",
+    "is_upower_exclusive_with_qa": false,
+    "is_hua_sheng": false,
+    "no_cache": false,
+    "pages": [
+      {
+        "cid": 41187150555,
+        "page": 1,
+        "from": "vupload",
+        "part": "作为Agent实习生的面试官，你们的简历和回答确实该挂！",
+        "duration": 1873,
+        "vid": "",
+        "weblink": "",
+        "dimension": {
+          "width": 1920,
+          "height": 1080,
+          "rotate": 0
+        },
+        "first_frame": "http://i0.hdslb.com/bfs/storyff/_00002a4fwa54q6fvw22ad11k68pjtzb_firsti.jpg",
+        "ctime": 1787476849
+      }
+    ],
+    "subtitle": {
+      "allow_submit": false,
+      "list": []
+    },
+    "ugc_season": {
+      "id": 7729305,
+      "title": "AI 经验分享",
+      "cover": "https://s1.hdslb.com/bfs/templar/york-static/viedeo_material_default.png",
+      "mid": 152686439,
+      "intro": "",
+      "sign_state": 0,
+      "attribute": 140,
+      "sections": [
+        {
+          "season_id": 7729305,
+          "id": 8583049,
+          "title": "正片",
+          "type": 1,
+          "episodes": [
+            {
+              "season_id": 7729305,
+              "section_id": 8583049,
+              "id": 184033827,
+              "aid": 116245118584348,
+              "cid": 36772252327,
+              "title": "AI 时代真别逮着技术死学了！大学生须知",
+              "attribute": 0,
+              "arc": {
+                "aid": 116245118584348,
+                "videos": 0,
+                "type_id": 0,
+                "type_name": "",
+                "copyright": 0,
+                "pic": "http://i0.hdslb.com/bfs/archive/ccabcf9e8bd385986a5a6a85a6a7fdc9bff7871e.jpg",
+                "title": "AI 时代真别逮着技术死学了！大学生须知",
+                "pubdate": 1773759805,
+                "ctime": 1773759805,
+                "desc": "",
+                "state": 0,
+                "duration": 763,
+                "rights": {
+                  "bp": 0,
+                  "elec": 0,
+                  "download": 0,
+                  "movie": 0,
+                  "pay": 0,
+                  "hd5": 0,
+                  "no_reprint": 0,
+                  "autoplay": 0,
+                  "ugc_pay": 0,
+                  "is_cooperation": 0,
+                  "ugc_pay_preview": 0,
+                  "arc_pay": 0,
+                  "free_watch": 0
+                },
+                "author": {
+                  "mid": 152686439,
+                  "name": "xhyovo",
+                  "face": "https://i2.hdslb.com/bfs/face/cea90ad18bfd1ac05da709f2439601dbcbe504ec.jpg"
+                },
+                "stat": {
+                  "aid": 116245118584348,
+                  "view": 6939,
+                  "danmaku": 3,
+                  "reply": 45,
+                  "fav": 443,
+                  "coin": 83,
+                  "share": 33,
+                  "now_rank": 0,
+                  "his_rank": 0,
+                  "like": 239,
+                  "dislike": 0,
+                  "evaluation": "",
+                  "argue_msg": "",
+                  "vt": 0,
+                  "vv": 6939
+                },
+                "dynamic": "",
+                "dimension": {
+                  "width": 0,
+                  "height": 0,
+                  "rotate": 0
+                },
+                "desc_v2": null,
+                "is_chargeable_season": false,
+                "is_blooper": false,
+                "enable_vt": 0,
+                "vt_display": "",
+                "type_id_v2": 0,
+                "type_name_v2": "",
+                "is_lesson_video": 0
+              },
+              "page": {
+                "cid": 36772252327,
+                "page": 1,
+                "from": "vupload",
+                "part": "AI 时代真别逮着技术死学了！大学生须知",
+                "duration": 763,
+                "vid": "",
+                "weblink": "",
+                "dimension": {
+                  "width": 1920,
+                  "height": 1080,
+                  "rotate": 0
+                }
+              },
+              "bvid": "BV1zWwRzGEkR",
+              "pages": [
+                {
+                  "cid": 36772252327,
+                  "page": 1,
+                  "from": "vupload",
+                  "part": "AI 时代真别逮着技术死学了！大学生须知",
+                  "duration": 763,
+                  "vid": "",
+                  "weblink": "",
+                  "dimension": {
+                    "width": 1920,
+                    "height": 1080,
+                    "rotate": 0
+                  }
+                }
+              ]
+            },
+            {
+              "season_id": 7729305,
+              "section_id": 8583049,
+              "id": 184033828,
+              "aid": 116204232574354,
+              "cid": 36599171857,
+              "title": "AI Agent / AI 应用的岗位学习指南/扫盲",
+              "attribute": 0,
+              "arc": {
+                "aid": 116204232574354,
+                "videos": 0,
+                "type_id": 0,
+                "type_name": "",
+                "copyright": 0,
+                "pic": "http://i1.hdslb.com/bfs/archive/cc6d8396db26952e1eb6f95331bd706c5b943e4e.jpg",
+                "title": "AI Agent / AI 应用的岗位学习指南/扫盲",
+                "pubdate": 1773136171,
+                "ctime": 1773136171,
+                "desc": "",
+                "state": 0,
+                "duration": 887,
+                "rights": {
+                  "bp": 0,
+                  "elec": 0,
+                  "download": 0,
+                  "movie": 0,
+                  "pay": 0,
+                  "hd5": 0,
+                  "no_reprint": 0,
+                  "autoplay": 0,
+                  "ugc_pay": 0,
+                  "is_cooperation": 0,
+                  "ugc_pay_preview": 0,
+                  "arc_pay": 0,
+                  "free_watch": 0
+                },
+                "author": {
+                  "mid": 152686439,
+                  "name": "xhyovo",
+                  "face": "https://i2.hdslb.com/bfs/face/cea90ad18bfd1ac05da709f2439601dbcbe504ec.jpg"
+                },
+                "stat": {
+                  "aid": 116204232574354,
+                  "view": 17817,
+                  "danmaku": 1,
+                  "reply": 83,
+                  "fav": 1483,
+                  "coin": 191,
+                  "share": 82,
+                  "now_rank": 0,
+                  "his_rank": 0,
+                  "like": 530,
+                  "dislike": 0,
+                  "evaluation": "",
+                  "argue_msg": "",
+                  "vt": 0,
+                  "vv": 17817
+                },
+                "dynamic": "",
+                "dimension": {
+                  "width": 0,
+                  "height": 0,
+                  "rotate": 0
+                },
+                "desc_v2": null,
+                "is_chargeable_season": false,
+                "is_blooper": false,
+                "enable_vt": 0,
+                "vt_display": "",
+                "type_id_v2": 0,
+                "type_name_v2": "",
+                "is_lesson_video": 0
+              },
+              "page": {
+                "cid": 36599171857,
+                "page": 1,
+                "from": "vupload",
+                "part": "AI Ageng / AI 应用的岗位学习指南/扫盲",
+                "duration": 887,
+                "vid": "",
+                "weblink": "",
+                "dimension": {
+                  "width": 3840,
+                  "height": 2160,
+                  "rotate": 0
+                }
+              },
+              "bvid": "BV17eNFzZEMN",
+              "pages": [
+                {
+                  "cid": 36599171857,
+                  "page": 1,
+                  "from": "vupload",
+                  "part": "AI Ageng / AI 应用的岗位学习指南/扫盲",
+                  "duration": 887,
+                  "vid": "",
+                  "weblink": "",
+                  "dimension": {
+                    "width": 3840,
+                    "height": 2160,
+                    "rotate": 0
+                  }
+                }
+              ]
+            },
+            {
+              "season_id": 7729305,
+              "section_id": 8583049,
+              "id": 184033829,
+              "aid": 116182724116745,
+              "cid": 36504734704,
+              "title": "社招Agent面试岗位经验分享 - 纯聊天？",
+              "attribute": 0,
+              "arc": {
+                "aid": 116182724116745,
+                "videos": 0,
+                "type_id": 0,
+                "type_name": "",
+                "copyright": 0,
+                "pic": "http://i2.hdslb.com/bfs/archive/587c26fa5a04add417e5b6fa0e59056f28c34fd7.jpg",
+                "title": "社招Agent面试岗位经验分享 - 纯聊天？",
+                "pubdate": 1772807738,
+                "ctime": 1772807738,
+                "desc": "",
+                "state": 0,
+                "duration": 1005,
+                "rights": {
+                  "bp": 0,
+                  "elec": 0,
+                  "download": 0,
+                  "movie": 0,
+                  "pay": 0,
+                  "hd5": 0,
+                  "no_reprint": 0,
+                  "autoplay": 0,
+                  "ugc_pay": 0,
+                  "is_cooperation": 0,
+                  "ugc_pay_preview": 0,
+                  "arc_pay": 0,
+                  "free_watch": 0
+                },
+                "author": {
+                  "mid": 152686439,
+                  "name": "xhyovo",
+                  "face": "https://i2.hdslb.com/bfs/face/cea90ad18bfd1ac05da709f2439601dbcbe504ec.jpg"
+                },
+                "stat": {
+                  "aid": 116182724116745,
+                  "view": 68418,
+                  "danmaku": 34,
+                  "reply": 388,
+                  "fav": 3500,
+                  "coin": 471,
+                  "share": 289,
+                  "now_rank": 0,
+                  "his_rank": 0,
+                  "like": 1219,
+                  "dislike": 0,
+                  "evaluation": "",
+                  "argue_msg": "",
+                  "vt": 0,
+                  "vv": 68418
+                },
+                "dynamic": "",
+                "dimension": {
+                  "width": 0,
+                  "height": 0,
+                  "rotate": 0
+                },
+                "desc_v2": null,
+                "is_chargeable_season": false,
+                "is_blooper": false,
+                "enable_vt": 0,
+                "vt_display": "",
+                "type_id_v2": 0,
+                "type_name_v2": "",
+                "is_lesson_video": 0
+              },
+              "page": {
+                "cid": 36504734704,
+                "page": 1,
+                "from": "vupload",
+                "part": "社招Agent面试岗位经验分享 - 纯聊天！",
+                "duration": 1005,
+                "vid": "",
+                "weblink": "",
+                "dimension": {
+                  "width": 1920,
+                  "height": 1080,
+                  "rotate": 0
+                }
+              },
+              "bvid": "BV1diPxztEtn",
+              "pages": [
+                {
+                  "cid": 36504734704,
+                  "page": 1,
+                  "from": "vupload",
+                  "part": "社招Agent面试岗位经验分享 - 纯聊天！",
+                  "duration": 1005,
+                  "vid": "",
+                  "weblink": "",
+                  "dimension": {
+                    "width": 1920,
+                    "height": 1080,
+                    "rotate": 0
+                  }
+                }
+              ]
+            },
+            {
+              "season_id": 7729305,
+              "section_id": 8583049,
+              "id": 184050457,
+              "aid": 116272549400514,
+              "cid": 36889627658,
+              "title": "到底TMD什么是Agent工程师？10 分钟你讲的明明白白！",
+              "attribute": 0,
+              "arc": {
+                "aid": 116272549400514,
+                "videos": 0,
+                "type_id": 0,
+                "type_name": "",
+                "copyright": 0,
+                "pic": "http://i2.hdslb.com/bfs/archive/a9cde06596de0f0c61b1e2f82360aec999b62701.jpg",
+                "title": "到底TMD什么是Agent工程师？10 分钟你讲的明明白白！",
+                "pubdate": 1774178736,
+                "ctime": 1774178736,
+                "desc": "",
+                "state": 0,
+                "duration": 847,
+                "rights": {
+                  "bp": 0,
+                  "elec": 0,
+                  "download": 0,
+                  "movie": 0,
+                  "pay": 0,
+                  "hd5": 0,
+                  "no_reprint": 0,
+                  "autoplay": 0,
+                  "ugc_pay": 0,
+                  "is_cooperation": 0,
+                  "ugc_pay_preview": 0,
+                  "arc_pay": 0,
+                  "free_watch": 0
+                },
+                "author": {
+                  "mid": 152686439,
+                  "name": "xhyovo",
+                  "face": "https://i2.hdslb.com/bfs/face/cea90ad18bfd1ac05da709f2439601dbcbe504ec.jpg"
+                },
+                "stat": {
+                  "aid": 116272549400514,
+                  "view": 33861,
+                  "danmaku": 58,
+                  "reply": 126,
+                  "fav": 917,
+                  "coin": 123,
+                  "share": 97,
+                  "now_rank": 0,
+                  "his_rank": 0,
+                  "like": 475,
+                  "dislike": 0,
+                  "evaluation": "",
+                  "argue_msg": "",
+                  "vt": 0,
+                  "vv": 33861
+                },
+                "dynamic": "",
+                "dimension": {
+                  "width": 0,
+                  "height": 0,
+                  "rotate": 0
+                },
+                "desc_v2": null,
+                "is_chargeable_season": false,
+                "is_blooper": false,
+                "enable_vt": 0,
+                "vt_display": "",
+                "type_id_v2": 0,
+                "type_name_v2": "",
+                "is_lesson_video": 0
+              },
+              "page": {
+                "cid": 36889627658,
+                "page": 1,
+                "from": "vupload",
+                "part": "到底TMD什么是Agent工程师？",
+                "duration": 847,
+                "vid": "",
+                "weblink": "",
+                "dimension": {
+                  "width": 3024,
+                  "height": 1964,
+                  "rotate": 0
+                }
+              },
+              "bvid": "BV19NAGzEEBT",
+              "pages": [
+                {
+                  "cid": 36889627658,
+                  "page": 1,
+                  "from": "vupload",
+                  "part": "到底TMD什么是Agent工程师？",
+                  "duration": 847,
+                  "vid": "",
+                  "weblink": "",
+                  "dimension": {
+                    "width": 3024,
+                    "height": 1964,
+                    "rotate": 0
+                  }
+                }
+              ]
+            },
+            {
+              "season_id": 7729305,
+              "section_id": 8583049,
+              "id": 184766520,
+              "aid": 116291658583718,
+              "cid": 36981899962,
+              "title": "深度思考Agent开发学习路线！原来普通开发也要学习啊？",
+              "attribute": 0,
+              "arc": {
+                "aid": 116291658583718,
+                "videos": 0,
+                "type_id": 0,
+                "type_name": "",
+                "copyright": 0,
+                "pic": "http://i1.hdslb.com/bfs/archive/28b1b80391ccc5589182d10167e536eaa7f89ef0.jpg",
+                "title": "深度思考Agent开发学习路线！原来普通开发也要学习啊？",
+                "pubdate": 1774494000,
+                "ctime": 1774494000,
+                "desc": "",
+                "state": 0,
+                "duration": 1971,
+                "rights": {
+                  "bp": 0,
+                  "elec": 0,
+                  "download": 0,
+                  "movie": 0,
+                  "pay": 0,
+                  "hd5": 0,
+                  "no_reprint": 0,
+                  "autoplay": 0,
+                  "ugc_pay": 0,
+                  "is_cooperation": 0,
+                  "ugc_pay_preview": 0,
+                  "arc_pay": 0,
+                  "free_watch": 0
+                },
+                "author": {
+                  "mid": 152686439,
+                  "name": "xhyovo",
+                  "face": "https://i2.hdslb.com/bfs/face/cea90ad18bfd1ac05da709f2439601dbcbe504ec.jpg"
+                },
+                "stat": {
+                  "aid": 116291658583718,
+                  "view": 9669,
+                  "danmaku": 9,
+                  "reply": 61,
+                  "fav": 557,
+                  "coin": 145,
+                  "share": 58,
+                  "now_rank": 0,
+                  "his_rank": 0,
+                  "like": 257,
+                  "dislike": 0,
+                  "evaluation": "",
+                  "argue_msg": "",
+                  "vt": 0,
+                  "vv": 9669
+                },
+                "dynamic": "",
+                "dimension": {
+                  "width": 0,
+                  "height": 0,
+                  "rotate": 0
+                },
+                "desc_v2": null,
+                "is_chargeable_season": false,
+                "is_blooper": false,
+                "enable_vt": 0,
+                "vt_display": "",
+                "type_id_v2": 0,
+                "type_name_v2": "",
+                "is_lesson_video": 0
+              },
+              "page": {
+                "cid": 36981899962,
+                "page": 1,
+                "from": "vupload",
+                "part": "深度思考Agent开发学习路线！原来普通开发也要学习啊？",
+                "duration": 1971,
+                "vid": "",
+                "weblink": "",
+                "dimension": {
+                  "width": 1920,
+                  "height": 1080,
+                  "rotate": 0
+                }
+              },
+              "bvid": "BV1CoXJB8EsV",
+              "pages": [
+                {
+                  "cid": 36981899962,
+                  "page": 1,
+                  "from": "vupload",
+                  "part": "深度思考Agent开发学习路线！原来普通开发也要学习啊？",
+                  "duration": 1971,
+                  "vid": "",
+                  "weblink": "",
+                  "dimension": {
+                    "width": 1920,
+                    "height": 1080,
+                    "rotate": 0
+                  }
+                }
+              ]
+            },
+            {
+              "season_id": 7729305,
+              "section_id": 8583049,
+              "id": 192306282,
+              "aid": 116491508845307,
+              "cid": 37963892784,
+              "title": "Skills很牛逼，但是你可能一直在用错误的方式管理Skills",
+              "attribute": 0,
+              "arc": {
+                "aid": 116491508845307,
+                "videos": 0,
+                "type_id": 0,
+                "type_name": "",
+                "copyright": 0,
+                "pic": "http://i2.hdslb.com/bfs/archive/9880103e9bb6c765382d6b8c645234d9de46274c.jpg",
+                "title": "Skills很牛逼，但是你可能一直在用错误的方式管理Skills",
+                "pubdate": 1777519917,
+                "ctime": 1777519917,
+                "desc": "",
+                "state": 0,
+                "duration": 711,
+                "rights": {
+                  "bp": 0,
+                  "elec": 0,
+                  "download": 0,
+                  "movie": 0,
+                  "pay": 0,
+                  "hd5": 0,
+                  "no_reprint": 0,
+                  "autoplay": 0,
+                  "ugc_pay": 0,
+                  "is_cooperation": 0,
+                  "ugc_pay_preview": 0,
+                  "arc_pay": 0,
+                  "free_watch": 0
+                },
+                "author": {
+                  "mid": 152686439,
+                  "name": "xhyovo",
+                  "face": "https://i2.hdslb.com/bfs/face/cea90ad18bfd1ac05da709f2439601dbcbe504ec.jpg"
+                },
+                "stat": {
+                  "aid": 116491508845307,
+                  "view": 2882,
+                  "danmaku": 0,
+                  "reply": 11,
+                  "fav": 93,
+                  "coin": 13,
+                  "share": 6,
+                  "now_rank": 0,
+                  "his_rank": 0,
+                  "like": 44,
+                  "dislike": 0,
+                  "evaluation": "",
+                  "argue_msg": "",
+                  "vt": 0,
+                  "vv": 2882
+                },
+                "dynamic": "",
+                "dimension": {
+                  "width": 0,
+                  "height": 0,
+                  "rotate": 0
+                },
+                "desc_v2": null,
+                "is_chargeable_season": false,
+                "is_blooper": false,
+                "enable_vt": 0,
+                "vt_display": "",
+                "type_id_v2": 0,
+                "type_name_v2": "",
+                "is_lesson_video": 0
+              },
+              "page": {
+                "cid": 37963892784,
+                "page": 1,
+                "from": "vupload",
+                "part": "Skills很牛逼，但是你可能一直在用错误的方式管理Skills",
+                "duration": 711,
+                "vid": "",
+                "weblink": "",
+                "dimension": {
+                  "width": 1920,
+                  "height": 1080,
+                  "rotate": 0
+                }
+              },
+              "bvid": "BV16Q9hB4ERQ",
+              "pages": [
+                {
+                  "cid": 37963892784,
+                  "page": 1,
+                  "from": "vupload",
+                  "part": "Skills很牛逼，但是你可能一直在用错误的方式管理Skills",
+                  "duration": 711,
+                  "vid": "",
+                  "weblink": "",
+                  "dimension": {
+                    "width": 1920,
+                    "height": 1080,
+                    "rotate": 0
+                  }
+                }
+              ]
+            },
+            {
+              "season_id": 7729305,
+              "section_id": 8583049,
+              "id": 193524804,
+              "aid": 116522580249505,
+              "cid": 38113710054,
+              "title": "我做了一个Codex号池管理工具：自动切号+自动恢复会话+自动继续，嘎嘎好用",
+              "attribute": 0,
+              "arc": {
+                "aid": 116522580249505,
+                "videos": 0,
+                "type_id": 0,
+                "type_name": "",
+                "copyright": 0,
+                "pic": "http://i1.hdslb.com/bfs/archive/98c00def689bba478377c11bd0557dbf36185b83.jpg",
+                "title": "我做了一个Codex号池管理工具：自动切号+自动恢复会话+自动继续，嘎嘎好用",
+                "pubdate": 1777993654,
+                "ctime": 1777993654,
+                "desc": "",
+                "state": 0,
+                "duration": 575,
+                "rights": {
+                  "bp": 0,
+                  "elec": 0,
+                  "download": 0,
+                  "movie": 0,
+                  "pay": 0,
+                  "hd5": 0,
+                  "no_reprint": 0,
+                  "autoplay": 0,
+                  "ugc_pay": 0,
+                  "is_cooperation": 0,
+                  "ugc_pay_preview": 0,
+                  "arc_pay": 0,
+                  "free_watch": 0
+                },
+                "author": {
+                  "mid": 152686439,
+                  "name": "xhyovo",
+                  "face": "https://i2.hdslb.com/bfs/face/cea90ad18bfd1ac05da709f2439601dbcbe504ec.jpg"
+                },
+                "stat": {
+                  "aid": 116522580249505,
+                  "view": 9517,
+                  "danmaku": 1,
+                  "reply": 111,
+                  "fav": 354,
+                  "coin": 33,
+                  "share": 44,
+                  "now_rank": 0,
+                  "his_rank": 0,
+                  "like": 102,
+                  "dislike": 0,
+                  "evaluation": "",
+                  "argue_msg": "",
+                  "vt": 0,
+                  "vv": 9517
+                },
+                "dynamic": "",
+                "dimension": {
+                  "width": 0,
+                  "height": 0,
+                  "rotate": 0
+                },
+                "desc_v2": null,
+                "is_chargeable_season": false,
+                "is_blooper": false,
+                "enable_vt": 0,
+                "vt_display": "",
+                "type_id_v2": 0,
+                "type_name_v2": "",
+                "is_lesson_video": 0
+              },
+              "page": {
+                "cid": 38113710054,
+                "page": 1,
+                "from": "vupload",
+                "part": "我做了一个Codex号池管理工具：自动切号+自动恢复会话+自动继续，嘎嘎好用",
+                "duration": 575,
+                "vid": "",
+                "weblink": "",
+                "dimension": {
+                  "width": 1920,
+                  "height": 1080,
+                  "rotate": 0
+                }
+              },
+              "bvid": "BV1DFRnBLE6r",
+              "pages": [
+                {
+                  "cid": 38113710054,
+                  "page": 1,
+                  "from": "vupload",
+                  "part": "我做了一个Codex号池管理工具：自动切号+自动恢复会话+自动继续，嘎嘎好用",
+                  "duration": 575,
+                  "vid": "",
+                  "weblink": "",
+                  "dimension": {
+                    "width": 1920,
+                    "height": 1080,
+                    "rotate": 0
+                  }
+                }
+              ]
+            },
+            {
+              "season_id": 7729305,
+              "section_id": 8583049,
+              "id": 193524805,
+              "aid": 116515600993153,
+              "cid": 38081791742,
+              "title": "Open Design：开源版 Claude Design",
+              "attribute": 0,
+              "arc": {
+                "aid": 116515600993153,
+                "videos": 0,
+                "type_id": 0,
+                "type_name": "",
+                "copyright": 0,
+                "pic": "http://i2.hdslb.com/bfs/archive/6d1993d4008503a897466b61e68b8a876811fe95.jpg",
+                "title": "Open Design：开源版 Claude Design",
+                "pubdate": 1777887120,
+                "ctime": 1777887120,
+                "desc": "",
+                "state": 0,
+                "duration": 580,
+                "rights": {
+                  "bp": 0,
+                  "elec": 0,
+                  "download": 0,
+                  "movie": 0,
+                  "pay": 0,
+                  "hd5": 0,
+                  "no_reprint": 0,
+                  "autoplay": 0,
+                  "ugc_pay": 0,
+                  "is_cooperation": 0,
+                  "ugc_pay_preview": 0,
+                  "arc_pay": 0,
+                  "free_watch": 0
+                },
+                "author": {
+                  "mid": 152686439,
+                  "name": "xhyovo",
+                  "face": "https://i2.hdslb.com/bfs/face/cea90ad18bfd1ac05da709f2439601dbcbe504ec.jpg"
+                },
+                "stat": {
+                  "aid": 116515600993153,
+                  "view": 3342,
+                  "danmaku": 0,
+                  "reply": 17,
+                  "fav": 97,
+                  "coin": 8,
+                  "share": 8,
+                  "now_rank": 0,
+                  "his_rank": 0,
+                  "like": 52,
+                  "dislike": 0,
+                  "evaluation": "",
+                  "argue_msg": "",
+                  "vt": 0,
+                  "vv": 3342
+                },
+                "dynamic": "",
+                "dimension": {
+                  "width": 0,
+                  "height": 0,
+                  "rotate": 0
+                },
+                "desc_v2": null,
+                "is_chargeable_season": false,
+                "is_blooper": false,
+                "enable_vt": 0,
+                "vt_display": "",
+                "type_id_v2": 0,
+                "type_name_v2": "",
+                "is_lesson_video": 0
+              },
+              "page": {
+                "cid": 38081791742,
+                "page": 1,
+                "from": "vupload",
+                "part": "Open Design：开源版 Claude Design",
+                "duration": 580,
+                "vid": "",
+                "weblink": "",
+                "dimension": {
+                  "width": 3840,
+                  "height": 2160,
+                  "rotate": 0
+                }
+              },
+              "bvid": "BV149ReB2E4z",
+              "pages": [
+                {
+                  "cid": 38081791742,
+                  "page": 1,
+                  "from": "vupload",
+                  "part": "Open Design：开源版 Claude Design",
+                  "duration": 580,
+                  "vid": "",
+                  "weblink": "",
+                  "dimension": {
+                    "width": 3840,
+                    "height": 2160,
+                    "rotate": 0
+                  }
+                }
+              ]
+            },
+            {
+              "season_id": 7729305,
+              "section_id": 8583049,
+              "id": 208305295,
+              "aid": 116907634068008,
+              "cid": 39888290779,
+              "title": "把你的Superpowers skills给我下了！",
+              "attribute": 0,
+              "arc": {
+                "aid": 116907634068008,
+                "videos": 0,
+                "type_id": 0,
+                "type_name": "",
+                "copyright": 0,
+                "pic": "http://i1.hdslb.com/bfs/archive/9dbf9a426af374761868c06ed92c812ece69eada.jpg",
+                "title": "把你的Superpowers skills给我下了！",
+                "pubdate": 1783869006,
+                "ctime": 1783869006,
+                "desc": "",
+                "state": 0,
+                "duration": 682,
+                "rights": {
+                  "bp": 0,
+                  "elec": 0,
+                  "download": 0,
+                  "movie": 0,
+                  "pay": 0,
+                  "hd5": 0,
+                  "no_reprint": 0,
+                  "autoplay": 0,
+                  "ugc_pay": 0,
+                  "is_cooperation": 0,
+                  "ugc_pay_preview": 0,
+                  "arc_pay": 0,
+                  "free_watch": 0
+                },
+                "author": {
+                  "mid": 152686439,
+                  "name": "xhyovo",
+                  "face": "https://i2.hdslb.com/bfs/face/cea90ad18bfd1ac05da709f2439601dbcbe504ec.jpg"
+                },
+                "stat": {
+                  "aid": 116907634068008,
+                  "view": 14533,
+                  "danmaku": 2,
+                  "reply": 107,
+                  "fav": 262,
+                  "coin": 53,
+                  "share": 62,
+                  "now_rank": 0,
+                  "his_rank": 0,
+                  "like": 229,
+                  "dislike": 0,
+                  "evaluation": "",
+                  "argue_msg": "",
+                  "vt": 0,
+                  "vv": 14533
+                },
+                "dynamic": "",
+                "dimension": {
+                  "width": 0,
+                  "height": 0,
+                  "rotate": 0
+                },
+                "desc_v2": null,
+                "is_chargeable_season": false,
+                "is_blooper": false,
+                "enable_vt": 0,
+                "vt_display": "",
+                "type_id_v2": 0,
+                "type_name_v2": "",
+                "is_lesson_video": 0
+              },
+              "page": {
+                "cid": 39888290779,
+                "page": 1,
+                "from": "vupload",
+                "part": "把你的Superpowers skills给我下了！",
+                "duration": 682,
+                "vid": "",
+                "weblink": "",
+                "dimension": {
+                  "width": 3840,
+                  "height": 2160,
+                  "rotate": 0
+                }
+              },
+              "bvid": "BV1PsN36WE8x",
+              "pages": [
+                {
+                  "cid": 39888290779,
+                  "page": 1,
+                  "from": "vupload",
+                  "part": "把你的Superpowers skills给我下了！",
+                  "duration": 682,
+                  "vid": "",
+                  "weblink": "",
+                  "dimension": {
+                    "width": 3840,
+                    "height": 2160,
+                    "rotate": 0
+                  }
+                }
+              ]
+            },
+            {
+              "season_id": 7729305,
+              "section_id": 8583049,
+              "id": 212133928,
+              "aid": 116998231099131,
+              "cid": 40383942253,
+              "title": "你充的GPT中转站，掺水了吗？3个硬指标一查一个准！",
+              "attribute": 0,
+              "arc": {
+                "aid": 116998231099131,
+                "videos": 0,
+                "type_id": 0,
+                "type_name": "",
+                "copyright": 0,
+                "pic": "http://i1.hdslb.com/bfs/archive/ecf387a48b197d5447cf19dd706ad6475fc39ada.jpg",
+                "title": "你充的GPT中转站，掺水了吗？3个硬指标一查一个准！",
+                "pubdate": 1785251673,
+                "ctime": 1785251673,
+                "desc": "",
+                "state": 0,
+                "duration": 518,
+                "rights": {
+                  "bp": 0,
+                  "elec": 0,
+                  "download": 0,
+                  "movie": 0,
+                  "pay": 0,
+                  "hd5": 0,
+                  "no_reprint": 0,
+                  "autoplay": 0,
+                  "ugc_pay": 0,
+                  "is_cooperation": 0,
+                  "ugc_pay_preview": 0,
+                  "arc_pay": 0,
+                  "free_watch": 0
+                },
+                "author": {
+                  "mid": 152686439,
+                  "name": "xhyovo",
+                  "face": "https://i2.hdslb.com/bfs/face/cea90ad18bfd1ac05da709f2439601dbcbe504ec.jpg"
+                },
+                "stat": {
+                  "aid": 116998231099131,
+                  "view": 6154,
+                  "danmaku": 2,
+                  "reply": 104,
+                  "fav": 148,
+                  "coin": 11,
+                  "share": 16,
+                  "now_rank": 0,
+                  "his_rank": 0,
+                  "like": 63,
+                  "dislike": 0,
+                  "evaluation": "",
+                  "argue_msg": "",
+                  "vt": 0,
+                  "vv": 6154
+                },
+                "dynamic": "",
+                "dimension": {
+                  "width": 0,
+                  "height": 0,
+                  "rotate": 0
+                },
+                "desc_v2": null,
+                "is_chargeable_season": false,
+                "is_blooper": false,
+                "enable_vt": 0,
+                "vt_display": "",
+                "type_id_v2": 0,
+                "type_name_v2": "",
+                "is_lesson_video": 0
+              },
+              "page": {
+                "cid": 40383942253,
+                "page": 1,
+                "from": "vupload",
+                "part": "你充的GPT中转站，掺水了吗？3个硬指标一查一个准！",
+                "duration": 518,
+                "vid": "",
+                "weblink": "",
+                "dimension": {
+                  "width": 1920,
+                  "height": 1080,
+                  "rotate": 0
+                }
+              },
+              "bvid": "BV1Bz3z6uEu4",
+              "pages": [
+                {
+                  "cid": 40383942253,
+                  "page": 1,
+                  "from": "vupload",
+                  "part": "你充的GPT中转站，掺水了吗？3个硬指标一查一个准！",
+                  "duration": 518,
+                  "vid": "",
+                  "weblink": "",
+                  "dimension": {
+                    "width": 1920,
+                    "height": 1080,
+                    "rotate": 0
+                  }
+                }
+              ]
+            },
+            {
+              "season_id": 7729305,
+              "section_id": 8583049,
+              "id": 213520954,
+              "aid": 117031433208334,
+              "cid": 40562527673,
+              "title": "AI设计页面太丑了，我尝试了6种方法，终于让我找到了正解",
+              "attribute": 0,
+              "arc": {
+                "aid": 117031433208334,
+                "videos": 0,
+                "type_id": 0,
+                "type_name": "",
+                "copyright": 0,
+                "pic": "http://i1.hdslb.com/bfs/archive/2d472049706f69fcdc84367159fcdcb2c6e13a48.jpg",
+                "title": "AI设计页面太丑了，我尝试了6种方法，终于让我找到了正解",
+                "pubdate": 1785757990,
+                "ctime": 1785757990,
+                "desc": "",
+                "state": 0,
+                "duration": 1336,
+                "rights": {
+                  "bp": 0,
+                  "elec": 0,
+                  "download": 0,
+                  "movie": 0,
+                  "pay": 0,
+                  "hd5": 0,
+                  "no_reprint": 0,
+                  "autoplay": 0,
+                  "ugc_pay": 0,
+                  "is_cooperation": 0,
+                  "ugc_pay_preview": 0,
+                  "arc_pay": 0,
+                  "free_watch": 0
+                },
+                "author": {
+                  "mid": 152686439,
+                  "name": "xhyovo",
+                  "face": "https://i2.hdslb.com/bfs/face/cea90ad18bfd1ac05da709f2439601dbcbe504ec.jpg"
+                },
+                "stat": {
+                  "aid": 117031433208334,
+                  "view": 5075,
+                  "danmaku": 1,
+                  "reply": 18,
+                  "fav": 165,
+                  "coin": 38,
+                  "share": 14,
+                  "now_rank": 0,
+                  "his_rank": 0,
+                  "like": 74,
+                  "dislike": 0,
+                  "evaluation": "",
+                  "argue_msg": "",
+                  "vt": 0,
+                  "vv": 5075
+                },
+                "dynamic": "",
+                "dimension": {
+                  "width": 0,
+                  "height": 0,
+                  "rotate": 0
+                },
+                "desc_v2": null,
+                "is_chargeable_season": false,
+                "is_blooper": false,
+                "enable_vt": 0,
+                "vt_display": "",
+                "type_id_v2": 0,
+                "type_name_v2": "",
+                "is_lesson_video": 0
+              },
+              "page": {
+                "cid": 40562527673,
+                "page": 1,
+                "from": "vupload",
+                "part": "AI设计页面太丑了，我尝试了6种方法，终于让我找到了正解",
+                "duration": 1336,
+                "vid": "",
+                "weblink": "",
+                "dimension": {
+                  "width": 1920,
+                  "height": 1080,
+                  "rotate": 0
+                }
+              },
+              "bvid": "BV18FMd6FEJX",
+              "pages": [
+                {
+                  "cid": 40562527673,
+                  "page": 1,
+                  "from": "vupload",
+                  "part": "AI设计页面太丑了，我尝试了6种方法，终于让我找到了正解",
+                  "duration": 1336,
+                  "vid": "",
+                  "weblink": "",
+                  "dimension": {
+                    "width": 1920,
+                    "height": 1080,
+                    "rotate": 0
+                  }
+                }
+              ]
+            },
+            {
+              "season_id": 7729305,
+              "section_id": 8583049,
+              "id": 214621507,
+              "aid": 117058058585688,
+              "cid": 40707886935,
+              "title": "从做一个视频，到搭建一个自媒体工作台：我的AI内容生产流程",
+              "attribute": 0,
+              "arc": {
+                "aid": 117058058585688,
+                "videos": 0,
+                "type_id": 0,
+                "type_name": "",
+                "copyright": 0,
+                "pic": "http://i1.hdslb.com/bfs/archive/0327ed7f23f33ecd5be850913bee307f381bf4b4.jpg",
+                "title": "从做一个视频，到搭建一个自媒体工作台：我的AI内容生产流程",
+                "pubdate": 1786164736,
+                "ctime": 1786164736,
+                "desc": "",
+                "state": 0,
+                "duration": 1587,
+                "rights": {
+                  "bp": 0,
+                  "elec": 0,
+                  "download": 0,
+                  "movie": 0,
+                  "pay": 0,
+                  "hd5": 0,
+                  "no_reprint": 0,
+                  "autoplay": 0,
+                  "ugc_pay": 0,
+                  "is_cooperation": 0,
+                  "ugc_pay_preview": 0,
+                  "arc_pay": 0,
+                  "free_watch": 0
+                },
+                "author": {
+                  "mid": 152686439,
+                  "name": "xhyovo",
+                  "face": "https://i2.hdslb.com/bfs/face/cea90ad18bfd1ac05da709f2439601dbcbe504ec.jpg"
+                },
+                "stat": {
+                  "aid": 117058058585688,
+                  "view": 1986,
+                  "danmaku": 0,
+                  "reply": 7,
+                  "fav": 95,
+                  "coin": 7,
+                  "share": 9,
+                  "now_rank": 0,
+                  "his_rank": 0,
+                  "like": 31,
+                  "dislike": 0,
+                  "evaluation": "",
+                  "argue_msg": "",
+                  "vt": 0,
+                  "vv": 1986
+                },
+                "dynamic": "",
+                "dimension": {
+                  "width": 0,
+                  "height": 0,
+                  "rotate": 0
+                },
+                "desc_v2": null,
+                "is_chargeable_season": false,
+                "is_blooper": false,
+                "enable_vt": 0,
+                "vt_display": "",
+                "type_id_v2": 0,
+                "type_name_v2": "",
+                "is_lesson_video": 0
+              },
+              "page": {
+                "cid": 40707886935,
+                "page": 1,
+                "from": "vupload",
+                "part": "从做一个视频，到搭建一个自媒体工作台：我的AI内容生产流程",
+                "duration": 1587,
+                "vid": "",
+                "weblink": "",
+                "dimension": {
+                  "width": 1920,
+                  "height": 1080,
+                  "rotate": 0
+                }
+              },
+              "bvid": "BV142uT64ExD",
+              "pages": [
+                {
+                  "cid": 40707886935,
+                  "page": 1,
+                  "from": "vupload",
+                  "part": "从做一个视频，到搭建一个自媒体工作台：我的AI内容生产流程",
+                  "duration": 1587,
+                  "vid": "",
+                  "weblink": "",
+                  "dimension": {
+                    "width": 1920,
+                    "height": 1080,
+                    "rotate": 0
+                  }
+                }
+              ]
+            },
+            {
+              "season_id": 7729305,
+              "section_id": 8583049,
+              "id": 218244699,
+              "aid": 117144075439179,
+              "cid": 41187150555,
+              "title": "作为Agent实习生的面试官，你们的简历和回答确实该挂！",
+              "attribute": 0,
+              "arc": {
+                "aid": 117144075439179,
+                "videos": 0,
+                "type_id": 0,
+                "type_name": "",
+                "copyright": 0,
+                "pic": "http://i1.hdslb.com/bfs/archive/662b876cd735d0189304ca13f6c17593a7ba779c.jpg",
+                "title": "作为Agent实习生的面试官，你们的简历和回答确实该挂！",
+                "pubdate": 1787476849,
+                "ctime": 1787476849,
+                "desc": "",
+                "state": 0,
+                "duration": 1873,
+                "rights": {
+                  "bp": 0,
+                  "elec": 0,
+                  "download": 0,
+                  "movie": 0,
+                  "pay": 0,
+                  "hd5": 0,
+                  "no_reprint": 0,
+                  "autoplay": 0,
+                  "ugc_pay": 0,
+                  "is_cooperation": 0,
+                  "ugc_pay_preview": 0,
+                  "arc_pay": 0,
+                  "free_watch": 0
+                },
+                "author": {
+                  "mid": 152686439,
+                  "name": "xhyovo",
+                  "face": "https://i2.hdslb.com/bfs/face/cea90ad18bfd1ac05da709f2439601dbcbe504ec.jpg"
+                },
+                "stat": {
+                  "aid": 117144075439179,
+                  "view": 22483,
+                  "danmaku": 15,
+                  "reply": 203,
+                  "fav": 1840,
+                  "coin": 200,
+                  "share": 128,
+                  "now_rank": 0,
+                  "his_rank": 0,
+                  "like": 630,
+                  "dislike": 0,
+                  "evaluation": "",
+                  "argue_msg": "",
+                  "vt": 0,
+                  "vv": 22483
+                },
+                "dynamic": "",
+                "dimension": {
+                  "width": 0,
+                  "height": 0,
+                  "rotate": 0
+                },
+                "desc_v2": null,
+                "is_chargeable_season": false,
+                "is_blooper": false,
+                "enable_vt": 0,
+                "vt_display": "",
+                "type_id_v2": 0,
+                "type_name_v2": "",
+                "is_lesson_video": 0
+              },
+              "page": {
+                "cid": 41187150555,
+                "page": 1,
+                "from": "vupload",
+                "part": "作为Agent实习生的面试官，你们的简历和回答确实该挂！",
+                "duration": 1873,
+                "vid": "",
+                "weblink": "",
+                "dimension": {
+                  "width": 1920,
+                  "height": 1080,
+                  "rotate": 0
+                }
+              },
+              "bvid": "BV1cZ8x6sEhF",
+              "pages": [
+                {
+                  "cid": 41187150555,
+                  "page": 1,
+                  "from": "vupload",
+                  "part": "作为Agent实习生的面试官，你们的简历和回答确实该挂！",
+                  "duration": 1873,
+                  "vid": "",
+                  "weblink": "",
+                  "dimension": {
+                    "width": 1920,
+                    "height": 1080,
+                    "rotate": 0
+                  }
+                }
+              ]
+            },
+            {
+              "season_id": 7729305,
+              "section_id": 8583049,
+              "id": 220412880,
+              "aid": 117207694705976,
+              "cid": 41556706024,
+              "title": "Agent Skills 正在让一系列产品消失 ：Skills 本身就是产品！",
+              "attribute": 0,
+              "arc": {
+                "aid": 117207694705976,
+                "videos": 0,
+                "type_id": 0,
+                "type_name": "",
+                "copyright": 0,
+                "pic": "http://i0.hdslb.com/bfs/archive/3bb6582ec2348e8c671d996818c89c7e7c1871ef.jpg",
+                "title": "Agent Skills 正在让一系列产品消失 ：Skills 本身就是产品！",
+                "pubdate": 1788447558,
+                "ctime": 1788447558,
+                "desc": "",
+                "state": 0,
+                "duration": 863,
+                "rights": {
+                  "bp": 0,
+                  "elec": 0,
+                  "download": 0,
+                  "movie": 0,
+                  "pay": 0,
+                  "hd5": 0,
+                  "no_reprint": 0,
+                  "autoplay": 0,
+                  "ugc_pay": 0,
+                  "is_cooperation": 0,
+                  "ugc_pay_preview": 0,
+                  "arc_pay": 0,
+                  "free_watch": 0
+                },
+                "author": {
+                  "mid": 152686439,
+                  "name": "xhyovo",
+                  "face": "https://i2.hdslb.com/bfs/face/cea90ad18bfd1ac05da709f2439601dbcbe504ec.jpg"
+                },
+                "stat": {
+                  "aid": 117207694705976,
+                  "view": 936,
+                  "danmaku": 0,
+                  "reply": 2,
+                  "fav": 14,
+                  "coin": 0,
+                  "share": 0,
+                  "now_rank": 0,
+                  "his_rank": 0,
+                  "like": 14,
+                  "dislike": 0,
+                  "evaluation": "",
+                  "argue_msg": "",
+                  "vt": 0,
+                  "vv": 936
+                },
+                "dynamic": "",
+                "dimension": {
+                  "width": 0,
+                  "height": 0,
+                  "rotate": 0
+                },
+                "desc_v2": null,
+                "is_chargeable_season": false,
+                "is_blooper": false,
+                "enable_vt": 0,
+                "vt_display": "",
+                "type_id_v2": 0,
+                "type_name_v2": "",
+                "is_lesson_video": 0
+              },
+              "page": {
+                "cid": 41556706024,
+                "page": 1,
+                "from": "vupload",
+                "part": "Agent Skills 正在让一系列产品消失 ：Skills 本身就是产品！",
+                "duration": 863,
+                "vid": "",
+                "weblink": "",
+                "dimension": {
+                  "width": 3840,
+                  "height": 2160,
+                  "rotate": 0
+                }
+              },
+              "bvid": "BV1fTbF6zEpA",
+              "pages": [
+                {
+                  "cid": 41556706024,
+                  "page": 1,
+                  "from": "vupload",
+                  "part": "Agent Skills 正在让一系列产品消失 ：Skills 本身就是产品！",
+                  "duration": 863,
+                  "vid": "",
+                  "weblink": "",
+                  "dimension": {
+                    "width": 3840,
+                    "height": 2160,
+                    "rotate": 0
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "stat": {
+        "season_id": 7729305,
+        "view": 203612,
+        "danmaku": 126,
+        "reply": 1283,
+        "fav": 9968,
+        "coin": 1376,
+        "share": 846,
+        "now_rank": 0,
+        "his_rank": 0,
+        "like": 3959,
+        "vt": 0,
+        "vv": 0
+      },
+      "ep_count": 14,
+      "season_type": 1,
+      "is_pay_season": false,
+      "enable_vt": 0
+    },
+    "is_season_display": true,
+    "user_garb": {
+      "url_image_ani_cut": ""
+    },
+    "honor_reply": {},
+    "like_icon": "",
+    "need_jump_bv": false,
+    "disable_show_up_info": false,
+    "is_story_play": 1,
+    "is_view_self": false
+  }
+}
