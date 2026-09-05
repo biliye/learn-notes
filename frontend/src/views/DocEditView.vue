@@ -32,7 +32,8 @@
         </el-upload>
       </template>
       <el-input v-model="form.title" placeholder="文档标题" class="title-input" maxlength="200" />
-      <el-input v-model="form.slug" placeholder="slug（留空自动生成）" class="slug-input" maxlength="120" />
+      <!-- 编辑模式下后端更新接口不接收 slug（改动会破坏已有链接/导出路径），故只读展示 -->
+      <el-input v-model="form.slug" placeholder="slug（留空自动生成）" class="slug-input" maxlength="120" :disabled="isEdit" />
       <el-input v-model="changeNote" placeholder="本次更新说明（可选）" class="note-input" maxlength="200" />
       <el-button type="primary" class="save-btn ak-btn-slant" :loading="saving" @click="save">
         <el-icon><Check /></el-icon> 保存 (Ctrl+S)

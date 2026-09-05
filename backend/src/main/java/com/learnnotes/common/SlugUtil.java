@@ -59,6 +59,20 @@ public final class SlugUtil {
     }
 
     /**
+     * 校验用户输入的 slug 可安全用作 URL 段与导出 zip 条目路径：
+     * 拒绝 ..、路径分隔符、前导点、盘符（防目录穿越 / zip-slip）。null/空白放行（由调用方决定生成策略）。
+     */
+    public static void validateSafeSlug(String slug) {
+        if (slug == null || slug.isBlank()) {
+            return;
+        }
+        if (slug.contains("..") || slug.contains("/") || slug.contains("\\")
+                || slug.startsWith(".") || slug.matches("^[a-zA-Z]:.*")) {
+            throw BizException.badRequest("slug 含非法字符，已拒绝：" + slug);
+        }
+    }
+
+    /**
      * sha1 hex 小写。
      */
     public static String sha1Hex(String text) {

@@ -179,6 +179,8 @@ public class DocService {
             throw BizException.badRequest("正文不能为空");
         }
         String finalSlug = slug == null || slug.isBlank() ? SlugUtil.slugify(title) : slug;
+        // slug 会拼进导出 zip 条目路径，必须拒绝 ..、分隔符等（与导入链路同规则）
+        SlugUtil.validateSafeSlug(finalSlug);
         if (docMapper.selectByTopicAndSlug(user.userId(), topicId, finalSlug) != null) {
             throw BizException.conflict("该目录下已存在 slug 为 " + finalSlug + " 的文档");
         }
@@ -190,8 +192,8 @@ public class DocService {
     }
 
     /**
-     * 更新文档。content_hash 相同则不产生新版本（避免重复导入刷版本号）；
-     * 正文变化则版本 +1、写 doc_version（存新正文）、触发 D6 重挂。
+     * 更新文档。元数据（标题/摘要/标签等）始终落库；content_hash 相同则不产生新版本
+     * （避免重复导入刷版本号）；正文变化则版本 +1、写 doc_version（存新正文）、触发 D6 重挂。
      */
     @Transactional
     public UpdateResult update(CurrentUser user, Long id, String title, String summary, List<String> tags,
@@ -201,19 +203,9 @@ public class DocService {
             throw BizException.badRequest("正文不能为空");
         }
         String newHash = SlugUtil.sha1Hex(contentMd);
-        UpdateResult result = new UpdateResult();
-        result.doc = doc;
-        result.version = doc.getCurrentVersion();
-        if (newHash.equals(doc.getContentHash())) {
-            result.changed = false;
-            result.reanchor = AnnotationAccess.ReanchorCount.zero();
-            return result;
-        }
+        boolean contentChanged = !newHash.equals(doc.getContentHash());
 
-        int newVersion = doc.getCurrentVersion() + 1;
-        List<Block> oldBlocks = MarkdownBlockParser.parse(doc.getContentMd()).getBlocks();
-        List<Block> newBlocks = MarkdownBlockParser.parse(contentMd).getBlocks();
-
+        int newVersion = contentChanged ? doc.getCurrentVersion() + 1 : doc.getCurrentVersion();
         Doc updated = buildDoc(doc.getOwnerId(), doc.getTopicId(), doc.getSlug(),
                 title != null ? title : doc.getTitle(),
                 summary != null ? summary : doc.getSummary(),
@@ -222,11 +214,19 @@ public class DocService {
                 newVersion, doc.getSortOrder());
         updated.setId(doc.getId());
         docMapper.update(updated);
-        writeVersion(updated, newVersion, changeNote);
 
-        result.changed = true;
+        UpdateResult result = new UpdateResult();
+        result.doc = updated;
+        result.changed = contentChanged;
         result.version = newVersion;
-        result.reanchor = annotationAccess.reanchor(doc.getId(), oldBlocks, newBlocks);
+        if (contentChanged) {
+            writeVersion(updated, newVersion, changeNote);
+            List<Block> oldBlocks = MarkdownBlockParser.parse(doc.getContentMd()).getBlocks();
+            List<Block> newBlocks = MarkdownBlockParser.parse(contentMd).getBlocks();
+            result.reanchor = annotationAccess.reanchor(doc.getId(), oldBlocks, newBlocks);
+        } else {
+            result.reanchor = AnnotationAccess.ReanchorCount.zero();
+        }
         return result;
     }
 

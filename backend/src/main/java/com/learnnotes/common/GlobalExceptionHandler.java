@@ -53,7 +53,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<R<Void>> handleOther(Exception e) {
+        // 完整堆栈只进日志，不回显客户端（e.getMessage() 可能含 SQL/路径/类名等内部信息）
         log.error("未捕获异常", e);
-        return ResponseEntity.status(500).body(R.fail(ErrorCode.INTERNAL_ERROR, "服务端错误：" + e.getMessage()));
+        return ResponseEntity.status(500).body(R.fail(ErrorCode.INTERNAL_ERROR, "服务端错误，请稍后再试"));
     }
 }

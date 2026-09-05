@@ -52,5 +52,5 @@ if ($changed) {
 }
 
 Write-Host "[5/5] 本次快照计数："
-Write-Host "    分类 $(($manifest.counts.categories)) / 小方向 $(($manifest.counts.topics)) / 文档 $(($manifest.counts.docs)) / 见解 $(($manifest.counts.annotations)) / 图片 $(($manifest.counts.images))"
+Write-Host "    分类 $(($manifest.counts.categories)) / 目录 $(($manifest.counts.dirs)) / 文档 $(($manifest.counts.docs)) / 见解 $(($manifest.counts.annotations)) / 图片 $(($manifest.counts.images))"
 Write-Host "完成。"

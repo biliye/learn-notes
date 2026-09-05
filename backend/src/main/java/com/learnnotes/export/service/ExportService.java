@@ -150,9 +150,11 @@ public class ExportService {
             }
 
             // 图片（只打包被正文引用到的；孤儿图只报数）
+            // 安全：正文里的 /uploads/ 引用是用户可写内容，必须归一化后校验仍在 uploadDir 内，否则 ../ 可逃出上传目录读取任意文件
+            Path uploadRoot = Paths.get(props.getUploadDir()).toAbsolutePath().normalize();
             for (String rel : referencedImages) {
-                Path src = Paths.get(props.getUploadDir()).resolve(rel);
-                if (Files.exists(src)) {
+                Path src = resolveWithinUpload(uploadRoot, rel);
+                if (src != null && Files.exists(src)) {
                     writeEntry(zos, "uploads/" + rel, Files.readAllBytes(src));
                 }
             }
@@ -290,6 +292,19 @@ public class ExportService {
             cur = catalogMapper.selectById(cur.getParentId());
         }
         return chain;
+    }
+
+    /**
+     * 把正文里的 /uploads/ 相对引用解析为 uploadDir 内的绝对路径；不合法或越界返回 null。
+     * 防任意文件读取：拒绝 ..、绝对路径、反斜杠、盘符，resolve+normalize 后必须仍在 uploadRoot 内。
+     */
+    private Path resolveWithinUpload(Path uploadRoot, String rel) {
+        if (rel == null || rel.isEmpty() || rel.contains("..") || rel.contains("\\")
+                || rel.startsWith("/") || rel.contains(":")) {
+            return null;
+        }
+        Path p = uploadRoot.resolve(rel).normalize();
+        return p.startsWith(uploadRoot) ? p : null;
     }
 
     private void writeEntry(ZipOutputStream zos, String name, String content) throws IOException {

@@ -60,9 +60,15 @@ public class AuthInterceptor implements HandlerInterceptor {
 
         String auth = request.getHeader("Authorization");
         if (auth != null && auth.startsWith("Bearer ")) {
-            CurrentUser user = jwtService.parse(auth.substring(7));
-            if (user != null) {
-                setUser(request, user);
+            CurrentUser tokenUser = jwtService.parse(auth.substring(7));
+            if (tokenUser != null) {
+                // 以 DB 为准校验用户仍存在、角色未变：封号/降级后旧 token 立即失效（个人站请求量可承受每次一查）
+                SysUser dbUser = userMapper.findByUsername(tokenUser.username());
+                if (dbUser == null || !dbUser.getId().equals(tokenUser.userId())) {
+                    writeUnauthorized(response);
+                    return false;
+                }
+                setUser(request, new CurrentUser(dbUser.getId(), dbUser.getUsername(), dbUser.getRole()));
                 return true;
             }
         }

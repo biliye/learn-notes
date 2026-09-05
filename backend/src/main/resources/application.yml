@@ -32,7 +32,8 @@ app:
     username: ${APP_ADMIN_USERNAME:}
     password: ${APP_ADMIN_PASSWORD:}
   register:
-    enabled: ${APP_REGISTER_ENABLED:true}
+    # 安全默认关闭：公网开放注册可被批量建号、刷 BCrypt、填满库与上传目录；需要时设 APP_REGISTER_ENABLED=true
+    enabled: ${APP_REGISTER_ENABLED:false}
   api-token: ${APP_API_TOKEN:}
   storage-dir: ${APP_STORAGE_DIR:storage/docs}
   upload-dir: ${APP_UPLOAD_DIR:storage/uploads}

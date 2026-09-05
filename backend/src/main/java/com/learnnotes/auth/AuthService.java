@@ -8,12 +8,15 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 /**
  * 登录/注册服务：BCrypt 校验 + JWT 签发 + 登录失败锁定（连续 5 次锁 10 分钟，P1，内存计数）。
+ * 安全：锁定按「用户名+IP」记，攻击者无法仅凭用户名把站主锁在门外；不存在的用户名不记状态（防内存涨爆）；
+ * 状态表带过期清扫。
  * 注册：V3 起开放，创建 USER 角色账号并建默认 INBOX 分类树。
  */
 @Service
@@ -21,6 +24,8 @@ public class AuthService {
 
     private static final int MAX_FAIL = 5;
     private static final long LOCK_MILLIS = 10 * 60_000L;
+    /** loginStates 超过该容量时触发一次过期清扫（防随机用户名刷内存） */
+    private static final int STATE_SWEEP_THRESHOLD = 10_000;
     private static final Pattern USERNAME = Pattern.compile("[A-Za-z0-9_-]{3,32}");
 
     private final SysUserMapper userMapper;
@@ -29,7 +34,7 @@ public class AuthService {
     private final AppProperties props;
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
-    /** username → {failCount, lockUntil} */
+    /** 「用户名|IP」→ {failCount, lockUntil} */
     private final Map<String, LoginState> loginStates = new ConcurrentHashMap<>();
 
     public AuthService(SysUserMapper userMapper, JwtService jwtService,
@@ -40,17 +45,25 @@ public class AuthService {
         this.props = props;
     }
 
-    public Map<String, Object> login(String username, String password) {
+    public Map<String, Object> login(String username, String password, String ip) {
         if (username == null || password == null) {
             throw BizException.badRequest("用户名或密码不能为空");
         }
-        LoginState state = loginStates.computeIfAbsent(username, k -> new LoginState());
+        SysUser user = userMapper.findByUsername(username);
+        if (user == null) {
+            // 用户不存在不记锁定状态：随机用户名刷不涨内存，也不暴露用户名是否存在
+            throw BizException.unauthorized("用户名或密码错误");
+        }
+        String key = username.toLowerCase(Locale.ROOT) + "|" + (ip == null ? "-" : ip);
+        if (loginStates.size() > STATE_SWEEP_THRESHOLD) {
+            sweepExpiredStates();
+        }
+        LoginState state = loginStates.computeIfAbsent(key, k -> new LoginState());
         synchronized (state) {
             if (state.lockUntil > System.currentTimeMillis()) {
                 throw BizException.locked("账号已锁定，请 " + ((state.lockUntil - System.currentTimeMillis()) / 1000 / 60 + 1) + " 分钟后再试");
             }
-            SysUser user = userMapper.findByUsername(username);
-            if (user == null || !encoder.matches(password, user.getPasswordHash())) {
+            if (!encoder.matches(password, user.getPasswordHash())) {
                 state.failCount++;
                 if (state.failCount >= MAX_FAIL) {
                     state.lockUntil = System.currentTimeMillis() + LOCK_MILLIS;
@@ -61,8 +74,20 @@ public class AuthService {
             }
             state.failCount = 0;
             state.lockUntil = 0;
+            loginStates.remove(key);
             return userInfo(user);
         }
+    }
+
+    /** 清掉已过期且无失败计数的锁定状态，防 map 无限增长 */
+    private void sweepExpiredStates() {
+        long now = System.currentTimeMillis();
+        loginStates.entrySet().removeIf(e -> {
+            LoginState s = e.getValue();
+            synchronized (s) {
+                return s.lockUntil <= now && s.failCount == 0;
+            }
+        });
     }
 
     @Transactional

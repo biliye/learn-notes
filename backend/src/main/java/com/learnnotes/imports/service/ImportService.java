@@ -277,10 +277,7 @@ public class ImportService {
     }
 
     private void validateDocSlug(String slug) {
-        if (slug.contains("..") || slug.contains("/") || slug.contains("\\")
-                || slug.startsWith(".") || slug.matches("^[a-zA-Z]:.*")) {
-            throw BizException.badRequest("slug 含非法字符，已拒绝：" + slug);
-        }
+        SlugUtil.validateSafeSlug(slug);
     }
 
     private String firstH1(List<Block> blocks) {
