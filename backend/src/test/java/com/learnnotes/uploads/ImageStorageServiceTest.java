@@ -13,6 +13,8 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -52,7 +54,7 @@ class ImageStorageServiceTest {
         assertEquals(128, png.getWidth());
         assertEquals(72, png.getHeight());
         assertFalse(png.isDedup());
-        assertTrue(Files.exists(tempDir.resolve("uploads").resolve("2026/08")));
+        assertTrue(Files.exists(tempDir.resolve("uploads").resolve(LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM")))));
 
         UploadResult jpg = service.save(image("jpg", "photo.jpg"));
         assertTrue(jpg.getUrl().endsWith(".jpg"));
@@ -67,7 +69,7 @@ class ImageStorageServiceTest {
         assertTrue(second.isDedup());
         assertEquals(first.getUrl(), second.getUrl());
         long count;
-        try (Stream<Path> files = Files.walk(tempDir.resolve("uploads").resolve("2026/08"))) {
+        try (Stream<Path> files = Files.walk(tempDir.resolve("uploads").resolve(LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM"))))) {
             count = files.filter(p -> p.toString().endsWith(".png")).count();
         }
         assertEquals(1, count);
@@ -107,7 +109,7 @@ class ImageStorageServiceTest {
         assertFalse(result.getUrl().contains("evil"));
         assertFalse(result.getUrl().contains(".."));
         // 目录穿越未发生
-        assertFalse(Files.exists(tempDir.resolve("uploads").resolve("2026/08").resolve("evil.png")));
+        assertFalse(Files.exists(tempDir.resolve("uploads").resolve(LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy/MM"))).resolve("evil.png")));
         assertTrue(Files.exists(tempDir.resolve("uploads")));
     }
 }

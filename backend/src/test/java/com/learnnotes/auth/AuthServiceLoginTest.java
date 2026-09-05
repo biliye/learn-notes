@@ -45,32 +45,32 @@ class AuthServiceLoginTest {
 
     @Test
     void wrongPasswordReportsRemainingAttempts() {
-        BizException first = assertThrows(BizException.class, () -> authService.login("admin", "wrong"));
+        BizException first = assertThrows(BizException.class, () -> authService.login("admin", "wrong", "127.0.0.1"));
         assertEquals("用户名或密码错误，还可尝试 4 次", first.getMessage());
 
-        BizException second = assertThrows(BizException.class, () -> authService.login("admin", "wrong"));
+        BizException second = assertThrows(BizException.class, () -> authService.login("admin", "wrong", "127.0.0.1"));
         assertEquals("用户名或密码错误，还可尝试 3 次", second.getMessage());
     }
 
     @Test
     void fiveFailuresLocksAndBlocksEvenCorrectPassword() {
         for (int i = 0; i < 4; i++) {
-            assertThrows(BizException.class, () -> authService.login("admin", "wrong"));
+            assertThrows(BizException.class, () -> authService.login("admin", "wrong", "127.0.0.1"));
         }
-        BizException locked = assertThrows(BizException.class, () -> authService.login("admin", "wrong"));
+        BizException locked = assertThrows(BizException.class, () -> authService.login("admin", "wrong", "127.0.0.1"));
         assertEquals("连续登录失败 5 次，账号已锁定 10 分钟", locked.getMessage());
 
-        BizException stillLocked = assertThrows(BizException.class, () -> authService.login("admin", "right-password"));
+        BizException stillLocked = assertThrows(BizException.class, () -> authService.login("admin", "right-password", "127.0.0.1"));
         assertTrue(stillLocked.getMessage().startsWith("账号已锁定"));
     }
 
     @Test
     void successfulLoginResetsFailCount() {
-        assertThrows(BizException.class, () -> authService.login("admin", "wrong"));
-        Map<String, Object> result = authService.login("admin", "right-password");
+        assertThrows(BizException.class, () -> authService.login("admin", "wrong", "127.0.0.1"));
+        Map<String, Object> result = authService.login("admin", "right-password", "127.0.0.1");
         assertNotNull(result.get("token"));
 
-        BizException again = assertThrows(BizException.class, () -> authService.login("admin", "wrong"));
+        BizException again = assertThrows(BizException.class, () -> authService.login("admin", "wrong", "127.0.0.1"));
         assertEquals("用户名或密码错误，还可尝试 4 次", again.getMessage());
     }
 }
