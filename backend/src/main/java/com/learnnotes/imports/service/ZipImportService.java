@@ -42,6 +42,7 @@ public class ZipImportService {
 
     private static final long MAX_ZIP_BYTES = 50L * 1024 * 1024;        // 压缩包 ≤ 50MB
     private static final long MAX_UNCOMPRESSED_TOTAL = 100L * 1024 * 1024; // 解压总量 ≤ 100MB（防 zip bomb）
+    private static final long MAX_ENTRY_BYTES = 20L * 1024 * 1024;      // 单条目解压 ≤ 20MB（防单条 zip bomb）
     private static final int MAX_ENTRIES = 500;
     private static final long MAX_MD_BYTES = 2L * 1024 * 1024;          // 单 md ≤ 2MB
     private static final Set<String> IMAGE_EXT = Set.of("png", "jpg", "jpeg", "gif", "webp");
@@ -85,10 +86,8 @@ public class ZipImportService {
                     warnings.add("跳过非法路径条目：" + name);
                     continue;
                 }
-                byte[] bytes = readEntryFully(zis);
-                if (bytes.length > 0 && totalUncompressed + bytes.length > MAX_UNCOMPRESSED_TOTAL) {
-                    throw BizException.badRequest("压缩包解压后内容过大");
-                }
+                // 边读边计数，单条目与解压总量超限立即中断，杜绝先整条读入内存的 OOM 窗口
+                byte[] bytes = readEntryFully(zis, Math.min(MAX_ENTRY_BYTES, MAX_UNCOMPRESSED_TOTAL - totalUncompressed));
                 totalUncompressed += bytes.length;
                 String lower = path.toLowerCase(Locale.ROOT);
                 if (lower.endsWith(".md") || lower.endsWith(".markdown")) {
@@ -217,11 +216,15 @@ public class ZipImportService {
 
     // ---------- 小工具 ----------
 
-    private static byte[] readEntryFully(InputStream in) throws IOException {
+    /** 读完整条目；解压后大小超过 maxBytes（防 zip bomb）立即拒绝，不在内存里无限累积 */
+    private static byte[] readEntryFully(InputStream in, long maxBytes) throws IOException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         byte[] buf = new byte[8192];
         int n;
         while ((n = in.read(buf)) > 0) {
+            if (out.size() + n > maxBytes) {
+                throw BizException.badRequest("压缩包解压后内容过大");
+            }
             out.write(buf, 0, n);
         }
         return out.toByteArray();

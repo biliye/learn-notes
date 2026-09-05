@@ -31,5 +31,10 @@ public interface DocAnnotationMapper {
 
     int countByDoc(@Param("docId") Long docId);
 
+    int countByDocIds(@Param("docIds") List<Long> docIds);
+
+    /** 除 excludeDocId 外还有多少见解快照引用了指定内容（清孤儿图片用） */
+    int countOtherRefs(@Param("excludeDocId") long excludeDocId, @Param("pattern") String pattern);
+
     int deleteAll();
 }

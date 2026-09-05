@@ -9,8 +9,9 @@
 #   ./scripts/update-server.sh --check       # 只查服务器当前状态，不更新
 #   ./scripts/update-server.sh --timeout 600 # 自定义构建等待上限（秒）
 #
-# 可覆盖的环境变量：INSTANCE_ID / REGION / REMOTE_DIR / WEB_PORT
+# 必须通过环境变量提供实例 ID（不再入库）：
 #   INSTANCE_ID=i-xxx ./scripts/update-server.sh
+# 可覆盖的环境变量：INSTANCE_ID（必填）/ REGION / REMOTE_DIR / WEB_PORT / DEPLOY_LOG
 #
 # 注意：exec 必须带 --output json —— v1.0.0 在 Windows 上 text 模式
 #       走命名管道 exec-stream 会报 missing port in address（见记忆/README）
@@ -18,14 +19,16 @@
 set -euo pipefail
 
 # ---------- 配置 ----------
-INSTANCE_ID="${INSTANCE_ID:-[REDACTED]}"
+INSTANCE_ID="${INSTANCE_ID:?请通过环境变量设置 INSTANCE_ID（不再入库，见脚本头注释）}"
 REGION="${REGION:-cn-hangzhou}"
 REMOTE_DIR="${REMOTE_DIR:-/opt/learn-notes}"
 WEB_PORT="${WEB_PORT:-8088}"
 BUILD_TIMEOUT=600            # 容器重建等待上限（秒）
 POLL_INTERVAL=15             # 构建轮询间隔（秒）
 CHECK_ONLY=0
-DEPLOY_LOG=/tmp/ln-deploy.log
+# 固定 /tmp 路径可被低权用户预置符号链接攻击（root 重定向截断任意文件），
+# 默认放 root 家目录，也可用环境变量覆盖
+DEPLOY_LOG="${DEPLOY_LOG:-/root/ln-deploy.log}"
 
 # ---------- 工具函数 ----------
 info()  { echo "[INFO] $(date '+%F %T') $*"; }
@@ -74,11 +77,12 @@ preflight() {
   workbench list ecs --region "$REGION" --output json 2>/dev/null \
     | python3 -c "
 import json, sys
+want = sys.argv[1]
 for i in json.load(sys.stdin).get('instances', []):
-    if i['instance_id'] == '$INSTANCE_ID':
+    if i['instance_id'] == want:
         sys.exit(0 if i['status'] == 'Running' else 1)
 sys.exit(1)
-" || fail "实例 $INSTANCE_ID 不存在或未运行（region=$REGION）"
+" "$INSTANCE_ID" || fail "实例 $INSTANCE_ID 不存在或未运行（region=$REGION）"
   info "实例 $INSTANCE_ID 运行中"
 }
 
@@ -141,9 +145,13 @@ for arg in "$@"; do
   case "$arg" in
     --check)      CHECK_ONLY=1 ;;
     --timeout=*)  BUILD_TIMEOUT="${arg#*=}" ;;
-    *) warn "忽略未知参数：$arg" ;;
+    --timeout)    TIMEOUT_NEXT=1 ;;
+    *) if [ "${TIMEOUT_NEXT:-0}" = "1" ]; then BUILD_TIMEOUT="$arg"; TIMEOUT_NEXT=0; else warn "忽略未知参数：$arg"; fi ;;
   esac
 done
+if [ "${TIMEOUT_NEXT:-0}" = "1" ]; then
+  fail "--timeout 缺少参数值（用法：--timeout 600 或 --timeout=600）"
+fi
 
 preflight
 if [ "$CHECK_ONLY" = "1" ]; then

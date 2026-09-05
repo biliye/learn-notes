@@ -1,11 +1,13 @@
 package com.learnnotes.doc.service;
 
 import com.learnnotes.auth.CurrentUser;
+import com.learnnotes.annotation.dto.AnnotationDto;
 import com.learnnotes.catalog.entity.CatalogNode;
 import com.learnnotes.catalog.service.CatalogService;
 import com.learnnotes.common.BizException;
 import com.learnnotes.common.SearchUtil;
 import com.learnnotes.common.SlugUtil;
+import com.learnnotes.config.AppProperties;
 import com.learnnotes.doc.AnnotationAccess;
 import com.learnnotes.doc.dto.DocDetailDto;
 import com.learnnotes.doc.dto.DocListItem;
@@ -15,18 +17,28 @@ import com.learnnotes.doc.entity.Doc;
 import com.learnnotes.doc.entity.DocVersion;
 import com.learnnotes.doc.mapper.DocMapper;
 import com.learnnotes.doc.mapper.DocVersionMapper;
+import com.learnnotes.imports.DocStorage;
 import com.learnnotes.markdown.Block;
 import com.learnnotes.markdown.MarkdownBlockParser;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -40,19 +52,34 @@ public class DocService {
     /** 英文单词/数字串 */
     private static final Pattern WORD = Pattern.compile("[A-Za-z0-9_]+");
 
+    /** 正文里站内图片引用（与 ExportService 同款） */
+    private static final Pattern IMAGE_REF = Pattern.compile("/uploads/[0-9a-zA-Z/._-]+");
+
     private final DocMapper docMapper;
     private final DocVersionMapper versionMapper;
     private final CatalogService catalogService;
     private final AnnotationAccess annotationAccess;
+    private final DocStorage docStorage;
+    private final AppProperties props;
+    private final com.learnnotes.auth.mapper.SysUserMapper userMapper;
+    private final com.learnnotes.annotation.mapper.DocAnnotationMapper annotationMapper;
 
     public DocService(DocMapper docMapper,
                       DocVersionMapper versionMapper,
                       CatalogService catalogService,
-                      AnnotationAccess annotationAccess) {
+                      AnnotationAccess annotationAccess,
+                      DocStorage docStorage,
+                      AppProperties props,
+                      com.learnnotes.auth.mapper.SysUserMapper userMapper,
+                      com.learnnotes.annotation.mapper.DocAnnotationMapper annotationMapper) {
         this.docMapper = docMapper;
         this.versionMapper = versionMapper;
         this.catalogService = catalogService;
         this.annotationAccess = annotationAccess;
+        this.docStorage = docStorage;
+        this.props = props;
+        this.userMapper = userMapper;
+        this.annotationMapper = annotationMapper;
     }
 
     // ---------- 读 ----------
@@ -181,11 +208,17 @@ public class DocService {
         String finalSlug = slug == null || slug.isBlank() ? SlugUtil.slugify(title) : slug;
         // slug 会拼进导出 zip 条目路径，必须拒绝 ..、分隔符等（与导入链路同规则）
         SlugUtil.validateSafeSlug(finalSlug);
+        validateMetaLengths(title, summary, tags);
         if (docMapper.selectByTopicAndSlug(user.userId(), topicId, finalSlug) != null) {
             throw BizException.conflict("该目录下已存在 slug 为 " + finalSlug + " 的文档");
         }
         Doc doc = buildDoc(user.userId(), topicId, finalSlug, title, summary, tags, contentMd, sourceFilename, 1, 100);
-        docMapper.insert(doc);
+        try {
+            docMapper.insert(doc);
+        } catch (DuplicateKeyException e) {
+            // 并发建同 slug 文档：唯一键兜底转 409，而不是 500
+            throw BizException.conflict("该目录下已存在 slug 为 " + finalSlug + " 的文档");
+        }
         writeVersion(doc, 1, null);
         catalogService.incrDocCount(topicId, 1);
         return doc;
@@ -202,6 +235,9 @@ public class DocService {
         if (contentMd == null || contentMd.isBlank()) {
             throw BizException.badRequest("正文不能为空");
         }
+        validateMetaLengths(title != null ? title : doc.getTitle(),
+                summary != null ? summary : doc.getSummary(),
+                tags != null ? tags : splitTags(doc.getTags()));
         String newHash = SlugUtil.sha1Hex(contentMd);
         boolean contentChanged = !newHash.equals(doc.getContentHash());
 
@@ -213,7 +249,10 @@ public class DocService {
                 contentMd, sourceFilename != null ? sourceFilename : doc.getSourceFilename(),
                 newVersion, doc.getSortOrder());
         updated.setId(doc.getId());
-        docMapper.update(updated);
+        // 乐观锁：WHERE current_version = 读到的版本，0 行说明并发修改过 → 409 而非静默覆盖/版本唯一键 500
+        if (docMapper.updateGuarded(updated, doc.getCurrentVersion()) == 0) {
+            throw BizException.conflict("文档已被其他操作修改，请刷新后重试");
+        }
 
         UpdateResult result = new UpdateResult();
         result.doc = updated;
@@ -245,13 +284,93 @@ public class DocService {
     @Transactional
     public void delete(CurrentUser user, Long id) {
         Doc doc = requireById(id, user);
+        // 清理磁盘侧产物前先收集引用：正文 + 见解快照里的 /uploads/ 路径
+        Set<String> uploadRefs = new LinkedHashSet<>();
+        collectUploadRefs(doc.getContentMd(), uploadRefs);
+        for (Object o : annotationAccess.listForDoc(id)) {
+            if (o instanceof AnnotationDto dto && dto.getBlockSnippet() != null) {
+                collectUploadRefs(dto.getBlockSnippet(), uploadRefs);
+            }
+        }
+        List<CatalogNode> chain = catalogService.pathFromRoot(doc.getTopicId());
+        List<String> slugPath = chain.stream().map(CatalogNode::getSlug).toList();
+        Long ownerId = doc.getOwnerId();
+        String docSlug = doc.getSlug();
+        long docId = id;
+
         annotationAccess.deleteByDoc(id);
         versionMapper.deleteByDoc(id);
         docMapper.deleteById(id);
         catalogService.incrDocCount(doc.getTopicId(), -1);
+
+        // 事务提交后清磁盘：原文备份 + 不再被任何其他文档/见解引用的图片
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    cleanupDisk(docId, ownerId, slugPath, docSlug, uploadRefs);
+                }
+            });
+        } else {
+            cleanupDisk(docId, ownerId, slugPath, docSlug, uploadRefs);
+        }
+    }
+
+    private void collectUploadRefs(String text, Set<String> out) {
+        if (text == null) {
+            return;
+        }
+        Matcher m = IMAGE_REF.matcher(text);
+        while (m.find()) {
+            out.add(m.group().substring("/uploads/".length()));
+        }
+    }
+
+    /** 尽力而为的磁盘清理：原文备份 + 无引用图片；单文件失败只记日志，不影响删除结果 */
+    private void cleanupDisk(long docId, Long ownerId, List<String> slugPath, String docSlug, Set<String> uploadRefs) {
+        var log = org.slf4j.LoggerFactory.getLogger(DocService.class);
+        try {
+            var owner = userMapper.selectById(ownerId);
+            if (owner != null) {
+                Path stored = Paths.get(docStorage.pathFor(owner.getUsername(), slugPath, docSlug));
+                Files.deleteIfExists(stored);
+            }
+        } catch (Exception e) {
+            log.warn("删除原文备份失败（忽略）：{}", e.getMessage());
+        }
+        Path uploadRoot = Paths.get(props.getUploadDir()).toAbsolutePath().normalize();
+        for (String rel : uploadRefs) {
+            try {
+                // 哈希去重：同一图片可能被其他文档/见解引用，删前确认全站无引用（排除本文档）
+                if (docMapper.countOtherRefs(docId, "%" + rel + "%") > 0
+                        || annotationMapper.countOtherRefs(docId, "%" + rel + "%") > 0) {
+                    continue;
+                }
+                Path img = uploadRoot.resolve(rel).normalize();
+                if (img.startsWith(uploadRoot)) {
+                    Files.deleteIfExists(img);
+                }
+            } catch (Exception e) {
+                log.warn("清理图片失败（忽略）：{} -> {}", rel, e.getMessage());
+            }
+        }
     }
 
     // ---------- 内部 ----------
+
+    /** 元数据字段长度守门：库列 title VARCHAR(200)/summary VARCHAR(500)/tags VARCHAR(300)，超长应 400 而非 500 */
+    private void validateMetaLengths(String title, String summary, List<String> tags) {
+        if (title != null && title.length() > 200) {
+            throw BizException.badRequest("标题最长 200 字");
+        }
+        if (summary != null && summary.length() > 500) {
+            throw BizException.badRequest("摘要最长 500 字");
+        }
+        String joined = joinTags(tags);
+        if (joined != null && joined.length() > 300) {
+            throw BizException.badRequest("标签总长最长 300 字");
+        }
+    }
 
     private Doc buildDoc(Long ownerId, Long topicId, String slug, String title, String summary, List<String> tags,
                          String contentMd, String sourceFilename, int version, Integer sortOrder) {

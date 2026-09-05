@@ -1,6 +1,7 @@
 package com.learnnotes.doc.controller;
 
 import com.learnnotes.auth.CurrentUser;
+import com.learnnotes.common.BizException;
 import com.learnnotes.common.R;
 import com.learnnotes.doc.dto.DocDetailDto;
 import com.learnnotes.doc.dto.DocPageDto;
@@ -110,7 +111,17 @@ public class DocController {
     }
 
     private static Long asLong(Object o) {
-        return o instanceof Number n ? n.longValue() : o == null ? null : Long.valueOf(o.toString());
+        if (o instanceof Number n) {
+            return n.longValue();
+        }
+        if (o == null) {
+            return null;
+        }
+        try {
+            return Long.valueOf(o.toString().trim());
+        } catch (NumberFormatException e) {
+            throw BizException.badRequest("数字字段格式错误：" + o);
+        }
     }
 
     @SuppressWarnings("unchecked")

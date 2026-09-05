@@ -51,6 +51,17 @@
         SELECT COUNT(*) FROM doc_annotation WHERE doc_id = #{docId}
     </select>
 
+    <select id="countByDocIds" resultType="int">
+        SELECT COUNT(*) FROM doc_annotation WHERE doc_id IN
+        <foreach collection="docIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </select>
+
+    <!-- 清孤儿图片：其他见解的 block_snippet 是否还引用该 /uploads/ 路径 -->
+    <select id="countOtherRefs" resultType="int">
+        SELECT COUNT(*) FROM doc_annotation
+        WHERE doc_id != #{excludeDocId} AND block_snippet LIKE #{pattern}
+    </select>
+
     <delete id="deleteAll">
         DELETE FROM doc_annotation
     </delete>

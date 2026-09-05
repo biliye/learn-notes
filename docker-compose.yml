@@ -24,7 +24,9 @@ services:
     networks:
       - ln-net
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-p${MYSQL_ROOT_PASSWORD}"]
+      # 不带密码：mysqladmin ping 只要 server 有响应（含 access denied）即退出 0，
+      # 避免 root 密码出现在 docker inspect / ps 命令行里
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1"]
       interval: 5s
       timeout: 3s
       retries: 20

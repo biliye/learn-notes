@@ -70,7 +70,8 @@ public class AuthService {
                     state.failCount = 0;
                     throw BizException.locked("连续登录失败 " + MAX_FAIL + " 次，账号已锁定 10 分钟");
                 }
-                throw BizException.unauthorized("用户名或密码错误，还可尝试 " + (MAX_FAIL - state.failCount) + " 次");
+                // 统一话术，不提示剩余次数（避免向枚举者泄露账号存在性）
+                throw BizException.unauthorized("用户名或密码错误");
             }
             state.failCount = 0;
             state.lockUntil = 0;
@@ -122,6 +123,31 @@ public class AuthService {
         if (user == null) {
             throw BizException.unauthorized("用户不存在");
         }
+        return userInfo(user);
+    }
+
+    /**
+     * 修改密码：校验旧密码，新密码 ≥ 8 位。
+     * 注意：已签发的 JWT 在剩余有效期内仍然可用（无吊销机制），改密后建议前端清 token 重新登录。
+     */
+    public Map<String, Object> changePassword(String username, String oldPassword, String newPassword) {
+        if (oldPassword == null || oldPassword.isBlank() || newPassword == null || newPassword.isBlank()) {
+            throw BizException.badRequest("旧密码与新密码不能为空");
+        }
+        if (newPassword.length() < 8) {
+            throw BizException.badRequest("新密码至少 8 位");
+        }
+        if (newPassword.length() > 128) {
+            throw BizException.badRequest("新密码最长 128 位");
+        }
+        SysUser user = userMapper.findByUsername(username);
+        if (user == null) {
+            throw BizException.unauthorized("用户不存在");
+        }
+        if (!encoder.matches(oldPassword, user.getPasswordHash())) {
+            throw BizException.badRequest("旧密码错误");
+        }
+        userMapper.updatePasswordHash(user.getId(), encoder.encode(newPassword));
         return userInfo(user);
     }
 

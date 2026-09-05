@@ -1,9 +1,9 @@
 # ---------- 构建阶段 ----------
 FROM node:20-alpine AS build
 WORKDIR /app
-COPY package.json ./
-# npm ci 需要 lockfile；没有则退化为 npm install
-RUN npm install --no-audit --no-fund
+# lockfile 必须进构建：npm ci 锁定依赖版本，防 install 时 transitive dependency 漂移/投毒
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
 COPY . .
 RUN npm run build
 

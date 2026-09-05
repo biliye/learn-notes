@@ -12,6 +12,12 @@
         FROM sys_user WHERE username = #{username} LIMIT 1
     </select>
 
+    <select id="selectById" resultType="com.learnnotes.auth.SysUser">
+        SELECT
+        <include refid="cols"/>
+        FROM sys_user WHERE id = #{id} LIMIT 1
+    </select>
+
     <select id="findFirstAdmin" resultType="com.learnnotes.auth.SysUser">
         SELECT
         <include refid="cols"/>
@@ -39,4 +45,8 @@
         INSERT INTO sys_user (username, password_hash, nickname, role)
         VALUES (#{username}, #{passwordHash}, #{nickname}, #{role})
     </insert>
+
+    <update id="updatePasswordHash">
+        UPDATE sys_user SET password_hash = #{passwordHash}, updated_at = NOW() WHERE id = #{id}
+    </update>
 </mapper>

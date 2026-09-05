@@ -7,7 +7,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.MemoryCacheImageInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -17,6 +19,7 @@ import java.security.MessageDigest;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.HexFormat;
+import java.util.Iterator;
 import java.util.Locale;
 import java.util.Set;
 
@@ -31,6 +34,8 @@ public class ImageStorageService {
 
     private static final Set<String> ALLOWED_EXT = Set.of("png", "jpg", "jpeg", "gif", "webp");
     private static final DateTimeFormatter YM = DateTimeFormatter.ofPattern("yyyy/MM");
+    /** 像素总量上限（40MP ≈ ARGB 160MB），防"小文件大尺寸"解码炸弹 OOM */
+    private static final long MAX_PIXELS = 40_000_000L;
 
     private final AppProperties props;
 
@@ -70,16 +75,10 @@ public class ImageStorageService {
         }
         verifyMagicNumber(bytes, ext);
 
-        // 读宽高：读不出说明不是有效图片
-        BufferedImage image;
-        try {
-            image = ImageIO.read(new ByteArrayInputStream(bytes));
-        } catch (IOException e) {
-            image = null;
-        }
-        if (image == null) {
-            throw BizException.badRequest("不是有效的图片文件");
-        }
+        // 只读图片头部拿宽高，不整图解码：超大尺寸直接拒绝，防解码炸弹
+        int[] dims = readImageDimensions(bytes);
+        int width = dims[0];
+        int height = dims[1];
 
         String hash = sha256(bytes).substring(0, 16);
         String monthDir = LocalDate.now().format(YM);
@@ -92,15 +91,41 @@ public class ImageStorageService {
                 Files.createDirectories(target.getParent());
                 Files.write(target, bytes);
             } catch (IOException e) {
-                throw new BizException(500, 500, "图片落盘失败：" + e.getMessage());
+                throw new BizException(500, 500, "图片落盘失败");
             }
         }
         return new UploadResult(
                 "/uploads/" + monthDir + "/" + filename,
-                image.getWidth(),
-                image.getHeight(),
+                width,
+                height,
                 bytes.length,
                 dedup);
+    }
+
+    /** 用 ImageReader 只读头部宽高（不解码像素），无效图片或超过 MAX_PIXELS 即拒绝 */
+    private int[] readImageDimensions(byte[] bytes) {
+        // 必须先包成 ImageInputStream 再喂给 getImageReaders：
+        // 裸 InputStream 走 Object 重载在本 JDK 上拿不到任何 reader（ImageIO.read 反而可以）
+        try (ImageInputStream in = new MemoryCacheImageInputStream(new ByteArrayInputStream(bytes))) {
+            Iterator<ImageReader> readers = ImageIO.getImageReaders(in);
+            if (!readers.hasNext()) {
+                throw BizException.badRequest("不是有效的图片文件");
+            }
+            ImageReader reader = readers.next();
+            reader.setInput(in);
+            int w = reader.getWidth(0);
+            int h = reader.getHeight(0);
+            reader.dispose();
+            if (w <= 0 || h <= 0) {
+                throw BizException.badRequest("不是有效的图片文件");
+            }
+            if ((long) w * h > MAX_PIXELS) {
+                throw BizException.badRequest("图片尺寸过大（" + w + "x" + h + "）");
+            }
+            return new int[]{w, h};
+        } catch (IOException e) {
+            throw BizException.badRequest("不是有效的图片文件");
+        }
     }
 
     private String extOf(String name) {

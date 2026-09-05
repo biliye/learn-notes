@@ -57,8 +57,6 @@ public class AnnotationService implements AnnotationAccess {
         if (anns.isEmpty()) {
             return ReanchorCount.zero();
         }
-        Map<String, Integer> blockIndexByAnchor = newBlocks.stream()
-                .collect(Collectors.toMap(Block::getAnchor, Block::getIndex));
         ReanchorCount count = ReanchorCount.zero();
         for (DocAnnotation ann : anns) {
             ReanchorService.AnchorMatch match = ReanchorService.findMatch(
@@ -133,15 +131,21 @@ public class AnnotationService implements AnnotationAccess {
         return AnnotationDto.from(mapper.selectById(id));
     }
 
-    /** STALE → ACTIVE，同时刷新 block_snippet（R22） */
+    /**
+     * STALE → ACTIVE，同时刷新 block_snippet（R22）。
+     * anchorHash 是 8 位裸 hash（不是 b{index}-{hash} 格式），直接按 hash 在当前块列表中匹配；
+     * 目标块已不存在时拒绝确认（保持 STALE，用户可手动重挂），绝不盲转 ACTIVE。
+     */
     @Transactional
     public AnnotationDto confirm(CurrentUser user, Long id) {
         DocAnnotation ann = requireAnn(id);
         requireDoc(ann.getDocId(), user);
-        Block block = findBlockByAnchor(ann.getDocId(), ann.getAnchorHash());
-        mapper.updateAnchor(id, ann.getAnchorHash(), ann.getAnchorIndex(),
-                DocAnnotation.STATUS_ACTIVE,
-                block != null ? snippetOf(block) : ann.getBlockSnippet());
+        Block block = findBlockByHash(ann.getDocId(), ann.getAnchorHash());
+        if (block == null) {
+            throw BizException.conflict("锚点块已不在当前正文中，无法确认；请改用手动重挂指定新位置");
+        }
+        mapper.updateAnchor(id, ann.getAnchorHash(), block.getIndex(),
+                DocAnnotation.STATUS_ACTIVE, snippetOf(block));
         return AnnotationDto.from(mapper.selectById(id));
     }
 
@@ -176,6 +180,14 @@ public class AnnotationService implements AnnotationAccess {
     private Block findBlockByAnchor(Long docId, String anchor) {
         String hash = AnchorUtil.parseHash(anchor);
         if (hash == null) {
+            return null;
+        }
+        return findBlockByHash(docId, hash);
+    }
+
+    /** 按 8 位裸 hash 在文档当前块列表中找块；调用方均已先 requireDoc 校验归属 */
+    private Block findBlockByHash(Long docId, String hash) {
+        if (hash == null || hash.isBlank()) {
             return null;
         }
         // 调用方均已先 requireDoc(docId, user) 校验归属，这里只读正文解析块列表

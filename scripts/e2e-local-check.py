@@ -4,6 +4,7 @@
 用 Python requests 避免 Windows curl 的 GBK 文件名/中文编码问题。
 """
 import json
+import os
 import sys
 import time
 import urllib.request
@@ -51,10 +52,12 @@ def run(name, fn):
 
 def login():
     global TOKEN
-    code, resp = call("POST", "/api/auth/login", {"username": "admin", "password": "[REDACTED]"})
-    if code == 401:
-        # 可能是测试库残留密码不同，试初始环境变量密码
-        code, resp = call("POST", "/api/auth/login", {"username": "admin", "password": "[REDACTED]"})
+    # 管理员凭据从环境变量读，不在脚本里猜测密码
+    user = os.environ.get("LN_ADMIN_USER", "admin")
+    pwd = os.environ.get("LN_ADMIN_PASSWORD", "")
+    if not pwd:
+        sys.exit("请先设置 LN_ADMIN_PASSWORD 环境变量")
+    code, resp = call("POST", "/api/auth/login", {"username": user, "password": pwd})
     d = json.loads(resp)["data"]
     TOKEN = d["token"]
     return check("登录成功", code == 200 and len(TOKEN) > 50)

@@ -95,6 +95,12 @@ public final class FrontMatterParser {
                 }
                 String key = line.substring(0, colon).trim();
                 String value = line.substring(colon + 1).trim();
+                // 上一个空值键已收集到列表项：在遇到新键时收口，否则块列表会被静默丢弃
+                if (pendingKey != null && !pendingList.isEmpty()) {
+                    map.put(pendingKey, pendingList);
+                    pendingList = new java.util.ArrayList<>();
+                }
+                pendingKey = null;
                 if (value.isEmpty()) {
                     // 可能后随列表
                     pendingKey = key;
@@ -102,7 +108,6 @@ public final class FrontMatterParser {
                     continue;
                 }
                 map.put(key, parseValue(value));
-                pendingKey = null;
             }
             if (pendingKey != null && !pendingList.isEmpty()) {
                 map.put(pendingKey, pendingList);
@@ -140,9 +145,37 @@ public final class FrontMatterParser {
 
         String stripScalar(String v) {
             if (v.length() >= 2 && ((v.startsWith("\"") && v.endsWith("\"")) || (v.startsWith("'") && v.endsWith("'")))) {
-                return v.substring(1, v.length() - 1);
+                return unescape(v.substring(1, v.length() - 1));
             }
             return v;
+        }
+
+        /** 与导出端 jsonQuote 的转义对称：\" \' \\ \n \t；未知转义原样保留 */
+        private static String unescape(String s) {
+            if (s.indexOf('\\') < 0) {
+                return s;
+            }
+            StringBuilder sb = new StringBuilder(s.length());
+            for (int i = 0; i < s.length(); i++) {
+                char c = s.charAt(i);
+                if (c == '\\' && i + 1 < s.length()) {
+                    char n = s.charAt(++i);
+                    switch (n) {
+                        case '"' -> sb.append('"');
+                        case '\'' -> sb.append('\'');
+                        case '\\' -> sb.append('\\');
+                        case 'n' -> sb.append('\n');
+                        case 't' -> sb.append('\t');
+                        default -> {
+                            sb.append('\\');
+                            sb.append(n);
+                        }
+                    }
+                } else {
+                    sb.append(c);
+                }
+            }
+            return sb.toString();
         }
     }
 }

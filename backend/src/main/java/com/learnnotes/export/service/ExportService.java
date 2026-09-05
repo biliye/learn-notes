@@ -87,10 +87,8 @@ public class ExportService {
             }
         }
 
-        int annotations = 0;
-        for (Doc doc : docs) {
-            annotations += annotationMapper.selectByDoc(doc.getId()).size();
-        }
+        int annotations = docs.isEmpty() ? 0 : annotationMapper.countByDocIds(
+                docs.stream().map(Doc::getId).toList());
 
         Map<String, Object> manifest = new LinkedHashMap<>();
         manifest.put("exportedAt", LocalDateTime.now().toString());
@@ -121,6 +119,9 @@ public class ExportService {
                     objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(manifest));
 
             // 文档 + 见解（路径 = 完整目录 slug 链 / 文档 slug）
+            // 管理员导出跨用户，目录链不含用户维度：两个用户可能出现同路径条目，
+            // 撞名时追加属主标记 -u<ownerId>，避免 duplicate entry 中断导出
+            Set<String> usedPaths = new HashSet<>();
             for (Doc doc : docs) {
                 List<CatalogNode> chain = pathFromRoot(doc.getTopicId());
                 if (chain.isEmpty()) {
@@ -128,6 +129,10 @@ public class ExportService {
                 }
                 String dirPath = chain.stream().map(CatalogNode::getSlug).collect(Collectors.joining("/"));
                 String docPath = dirPath + "/" + doc.getSlug();
+                if (!usedPaths.add(docPath)) {
+                    docPath = docPath + "-u" + doc.getOwnerId();
+                    usedPaths.add(docPath);
+                }
 
                 String md = mdWithFrontMatter(doc, chain);
                 writeEntry(zos, docPath + ".md", md);
@@ -182,6 +187,10 @@ public class ExportService {
                     continue;
                 }
                 fm.put(k, e.getValue());
+            }
+            // 正文 fm 里的 title 可能是导入时的旧值（UI 改标题不回写 fm）：导出以库里的 title 为准
+            if (doc.getTitle() != null && !doc.getTitle().isBlank()) {
+                fm.put("title", doc.getTitle());
             }
         } else {
             fm.put("title", doc.getTitle());

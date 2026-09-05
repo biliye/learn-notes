@@ -79,6 +79,32 @@
         WHERE id = #{id}
     </update>
 
+    <!-- 乐观锁版本：并发更新时后到者写 0 行，服务层转 409 而非静默覆盖或唯一键 500 -->
+    <update id="updateGuarded">
+        UPDATE doc
+        <set>
+            <if test="doc.topicId != null">topic_id = #{doc.topicId},</if>
+            <if test="doc.slug != null">slug = #{doc.slug},</if>
+            <if test="doc.title != null">title = #{doc.title},</if>
+            <if test="doc.summary != null">summary = #{doc.summary},</if>
+            <if test="doc.tags != null">tags = #{doc.tags},</if>
+            <if test="doc.sourceFilename != null">source_filename = #{doc.sourceFilename},</if>
+            <if test="doc.currentVersion != null">current_version = #{doc.currentVersion},</if>
+            <if test="doc.contentMd != null">content_md = #{doc.contentMd},</if>
+            <if test="doc.contentHash != null">content_hash = #{doc.contentHash},</if>
+            <if test="doc.blockCount != null">block_count = #{doc.blockCount},</if>
+            <if test="doc.wordCount != null">word_count = #{doc.wordCount},</if>
+            <if test="doc.sortOrder != null">sort_order = #{doc.sortOrder},</if>
+        </set>
+        WHERE id = #{doc.id} AND current_version = #{expectedVersion}
+    </update>
+
+    <!-- 清孤儿图片：除本文档外是否还有其他文档正文引用该 /uploads/ 路径 -->
+    <select id="countOtherRefs" resultType="int">
+        SELECT COUNT(*) FROM doc
+        WHERE id != #{excludeDocId} AND content_md LIKE #{pattern}
+    </select>
+
     <delete id="deleteById">
         DELETE FROM doc WHERE id = #{id}
     </delete>

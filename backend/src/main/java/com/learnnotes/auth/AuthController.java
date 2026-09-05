@@ -21,7 +21,9 @@ import java.util.Map;
 public class AuthController {
 
     private static final int LOGIN_PER_MINUTE = 10;
+    private static final int LOGIN_PER_USER_MINUTE = 20;
     private static final int REGISTER_PER_MINUTE = 5;
+    private static final int PASSWORD_PER_MINUTE = 3;
 
     private final AuthService authService;
     private final IpRateLimiter rateLimiter;
@@ -36,6 +38,11 @@ public class AuthController {
         String ip = clientIp(request);
         if (!rateLimiter.tryAcquire("login|" + ip, LOGIN_PER_MINUTE, 60_000L)) {
             throw BizException.locked("尝试过于频繁，请稍后再试");
+        }
+        // 按用户名限速：IP 池分布式爆破时拖慢对同一账号的尝试（阈值高于单人正常登录频率）
+        String username = body.get("username") == null ? "-" : body.get("username").toLowerCase(java.util.Locale.ROOT);
+        if (!rateLimiter.tryAcquire("login-user|" + username, LOGIN_PER_USER_MINUTE, 60_000L)) {
+            throw BizException.locked("该账号尝试过于频繁，请稍后再试");
         }
         return R.ok(authService.login(body.get("username"), body.get("password"), ip));
     }
@@ -53,6 +60,16 @@ public class AuthController {
     public R<Map<String, Object>> me(HttpServletRequest request) {
         String username = (String) request.getAttribute("username");
         return R.ok(authService.me(username));
+    }
+
+    /** 修改密码（需登录；改密不吊销已签发 token，前端改密成功后应清 token 重新登录） */
+    @PostMapping("/password")
+    public R<Map<String, Object>> changePassword(HttpServletRequest request, @RequestBody Map<String, String> body) {
+        if (!rateLimiter.tryAcquire("password|" + clientIp(request), PASSWORD_PER_MINUTE, 60_000L)) {
+            throw BizException.locked("操作过于频繁，请稍后再试");
+        }
+        String username = (String) request.getAttribute("username");
+        return R.ok(authService.changePassword(username, body.get("oldPassword"), body.get("newPassword")));
     }
 
     /** 优先取反代写入的 X-Real-IP / X-Forwarded-For 首段，否则回退 remoteAddr */

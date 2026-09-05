@@ -31,7 +31,7 @@ class AuthServiceLoginTest {
     void setUp() {
         SysUserMapper userMapper = mock(SysUserMapper.class);
         AppProperties props = new AppProperties();
-        props.getJwt().setSecret("test-secret-test-secret-test-secret!!");
+        props.getJwt().setSecret("ut-test-secret-9f83c1a7-entropy-ok-32");
         authService = new AuthService(userMapper, new JwtService(props), mock(CatalogService.class), props);
 
         SysUser user = new SysUser();
@@ -46,10 +46,10 @@ class AuthServiceLoginTest {
     @Test
     void wrongPasswordReportsRemainingAttempts() {
         BizException first = assertThrows(BizException.class, () -> authService.login("admin", "wrong", "127.0.0.1"));
-        assertEquals("用户名或密码错误，还可尝试 4 次", first.getMessage());
+        assertEquals("用户名或密码错误", first.getMessage());
 
         BizException second = assertThrows(BizException.class, () -> authService.login("admin", "wrong", "127.0.0.1"));
-        assertEquals("用户名或密码错误，还可尝试 3 次", second.getMessage());
+        assertEquals("用户名或密码错误", second.getMessage());
     }
 
     @Test
@@ -71,6 +71,6 @@ class AuthServiceLoginTest {
         assertNotNull(result.get("token"));
 
         BizException again = assertThrows(BizException.class, () -> authService.login("admin", "wrong", "127.0.0.1"));
-        assertEquals("用户名或密码错误，还可尝试 4 次", again.getMessage());
+        assertEquals("用户名或密码错误", again.getMessage());
     }
 }

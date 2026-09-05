@@ -33,6 +33,12 @@ public interface DocMapper {
 
     int update(Doc doc);
 
+    /** 乐观锁更新：WHERE current_version = expectedVersion，0 行表示并发修改冲突 */
+    int updateGuarded(@Param("doc") Doc doc, @Param("expectedVersion") int expectedVersion);
+
+    /** 除 excludeDocId 外还有多少文档正文引用了指定内容（清孤儿图片用） */
+    int countOtherRefs(@Param("excludeDocId") long excludeDocId, @Param("pattern") String pattern);
+
     int deleteById(@Param("id") Long id);
 
     int countByTopic(@Param("ownerId") Long ownerId, @Param("topicId") Long topicId);

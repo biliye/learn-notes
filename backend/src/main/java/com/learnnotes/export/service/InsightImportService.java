@@ -52,6 +52,12 @@ public class InsightImportService {
         Map<String, Object> result = new LinkedHashMap<>();
         int created = 0, skipped = 0, stale = 0, orphan = 0;
 
+        // 一次加载，循环内增量维护（原实现每条见解都全量查一遍，N+1）
+        List<DocAnnotation> existing = annotationMapper.selectByDoc(doc.getId());
+
+        if (insights == null) {
+            insights = List.of();
+        }
         for (Map<String, Object> insight : insights) {
             String anchor = (String) insight.get("anchor");
             String contentMd = (String) insight.get("contentMd");
@@ -59,12 +65,16 @@ public class InsightImportService {
                 continue;
             }
             int anchorIndex = anchorIndex(anchor, insight.get("anchorIndex"));
-            String hash = anchorHash(anchor);
+            String rawHash = anchorHash(anchor);
+            // anchor_hash 列是 CHAR(8)：畸形超长 hash 截断，空 hash 条目直接跳过
+            if (rawHash == null || rawHash.isBlank()) {
+                continue;
+            }
+            final String hash = rawHash.length() > 8 ? rawHash.substring(0, 8) : rawHash;
             Integer createdVersion = asInt(insight.get("docVersionAtCreate"), currentVersion);
             String snippet = (String) insight.get("blockSnippet");
 
             // 幂等：已存在完全相同的 (anchor, contentMd) 则跳过
-            List<DocAnnotation> existing = annotationMapper.selectByDoc(doc.getId());
             boolean dup = existing.stream().anyMatch(a ->
                     a.getAnchorHash().equals(hash) && a.getContentMd().equals(contentMd));
             if (dup) {
@@ -105,6 +115,7 @@ public class InsightImportService {
                 }
             }
             annotationMapper.insert(ann);
+            existing.add(ann);
         }
         result.put("created", created);
         result.put("skipped", skipped);

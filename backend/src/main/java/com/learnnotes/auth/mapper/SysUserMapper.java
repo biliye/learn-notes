@@ -13,6 +13,8 @@ public interface SysUserMapper {
 
     SysUser findByUsernameForUpdate(@Param("username") String username);
 
+    SysUser selectById(@Param("id") Long id);
+
     /** 首个 ADMIN（X-Api-Token 通道的归属账号，R16） */
     SysUser findFirstAdmin();
 
@@ -24,4 +26,6 @@ public interface SysUserMapper {
     int countAll();
 
     int insert(SysUser user);
+
+    int updatePasswordHash(@Param("id") long id, @Param("passwordHash") String passwordHash);
 }

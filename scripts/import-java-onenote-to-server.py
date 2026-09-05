@@ -8,9 +8,11 @@
 import glob, json, os, sys, urllib.request
 
 SEED_DIR = r"F:\deespeekharness\learn-notes\samples\java-onenote"
-BASE = "http://47.99.138.54:8088"
-USERNAME = "bailoayi"
-PASSWORD = "[REDACTED]"
+BASE = os.environ.get("LN_SITE_BASE", "http://47.99.138.54:8088")
+USERNAME = os.environ.get("LN_SITE_USERNAME", "")
+PASSWORD = os.environ.get("LN_SITE_PASSWORD", "")
+if not USERNAME or not PASSWORD:
+    sys.exit("请先设置 LN_SITE_USERNAME / LN_SITE_PASSWORD 环境变量")
 
 _OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 

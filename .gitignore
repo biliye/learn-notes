@@ -43,3 +43,4 @@ pnpm-debug.log*
 tmp_bili_extract/
 _bili_tmp_ai/
 _bilibili/
+.work/

@@ -93,20 +93,33 @@ public class SearchService {
     }
 
     private String wrapHit(String text, String q) {
-        if (text == null || q == null) {
+        if (text == null || q == null || q.isEmpty()) {
             return null;
         }
-        int idx = text.toLowerCase().indexOf(q.toLowerCase());
-        if (idx < 0) {
+        // toLowerCase 可能改变字符串长度（ﬁ→fi、İ 等），lowercase 上的 idx 不能直接映射回原文，
+        // 只用它定位大致位置，再用大小写不敏感匹配在原文中精确定位，避免 substring 越界
+        int approx = text.toLowerCase(java.util.Locale.ROOT).indexOf(q.toLowerCase(java.util.Locale.ROOT));
+        if (approx < 0) {
             return null;
         }
-        int start = Math.max(0, idx - SNIPPET_RADIUS);
-        int end = Math.min(text.length(), idx + q.length() + SNIPPET_RADIUS);
+        int from = Math.max(0, approx - 8);
+        int hit = -1;
+        for (int i = from; i + q.length() <= text.length(); i++) {
+            if (text.regionMatches(true, i, q, 0, q.length())) {
+                hit = i;
+                break;
+            }
+        }
+        if (hit < 0) {
+            return null;
+        }
+        int start = Math.max(0, hit - SNIPPET_RADIUS);
+        int end = Math.min(text.length(), hit + q.length() + SNIPPET_RADIUS);
         String pre = start > 0 ? "…" : "";
         String post = end < text.length() ? "…" : "";
-        return pre + text.substring(start, idx)
-                + "**" + text.substring(idx, idx + q.length()) + "**"
-                + text.substring(idx + q.length(), end) + post;
+        return pre + text.substring(start, hit)
+                + "**" + text.substring(hit, hit + q.length()) + "**"
+                + text.substring(hit + q.length(), end) + post;
     }
 }
 

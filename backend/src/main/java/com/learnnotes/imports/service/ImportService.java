@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,15 +46,18 @@ public class ImportService {
     private final DocService docService;
     private final DocMapper docMapper;
     private final DocStorage docStorage;
+    private final TransactionTemplate transactionTemplate;
 
     public ImportService(CatalogNodeMapper catalogMapper,
                          DocService docService,
                          DocMapper docMapper,
-                         DocStorage docStorage) {
+                         DocStorage docStorage,
+                         TransactionTemplate transactionTemplate) {
         this.catalogMapper = catalogMapper;
         this.docService = docService;
         this.docMapper = docMapper;
         this.docStorage = docStorage;
+        this.transactionTemplate = transactionTemplate;
     }
 
     @Transactional
@@ -158,6 +162,8 @@ public class ImportService {
 
     /**
      * 多文件上传：逐个处理，单个失败不影响其他（R12）。
+     * 每个文件单独走事务模板（this 直调不走 @Transactional 代理），失败回滚该文件的全部落库，
+     * 不留半套自动目录链或 doc_count 漂移。
      */
     public List<ImportResult> importUpload(CurrentUser user, List<String> filenames, List<String> contents,
                                            String categoryHint, String topicHint) {
@@ -168,7 +174,8 @@ public class ImportService {
             ImportResult r = new ImportResult();
             r.setFilename(filename);
             try {
-                r = importDoc(user, filename, content, categoryHint, topicHint, ON_CONFLICT_NEW_VERSION);
+                r = transactionTemplate.execute(status ->
+                        importDoc(user, filename, content, categoryHint, topicHint, ON_CONFLICT_NEW_VERSION));
             } catch (Exception e) {
                 r.setError(e.getMessage());
             }
@@ -259,10 +266,18 @@ public class ImportService {
                     + " 篇文档，不能再往下建目录（请先在分类管理里把文档移出再细分）");
         }
         String slug = slugHint != null && !slugHint.isBlank() ? slugHint : SlugUtil.slugify(name, "node");
-        // slug 冲突时追加 -2（与手动创建一致）
-        if (catalogMapper.selectByParentAndSlug(ownerId, parentId, slug) != null) {
-            slug = slug + "-" + (catalogMapper.countByParent(ownerId, parentId) + 1);
+        // 与文档 slug 同规则：拒 ../、分隔符、盘符；超长截到 80（catalog_node.slug VARCHAR(80)）
+        SlugUtil.validateSafeSlug(slug);
+        if (slug.length() > 80) {
+            slug = slug.substring(0, 80);
         }
+        // slug 冲突时追加 -N，并复查到不冲突为止
+        String candidate = slug;
+        int suffix = catalogMapper.countByParent(ownerId, parentId) + 1;
+        while (catalogMapper.selectByParentAndSlug(ownerId, parentId, candidate) != null) {
+            candidate = slug + "-" + suffix++;
+        }
+        slug = candidate;
         CatalogNode node = new CatalogNode();
         node.setOwnerId(ownerId);
         node.setParentId(parentId);

@@ -85,8 +85,12 @@ function backToList() {
 
 function highlightSnippet(snippet) {
   if (!snippet) return ''
+  // snippet 是正文/标题原文，必须先整体 HTML 转义再打 mark 标记，防止正文里的 HTML 被当标签执行
+  const escaped = snippet
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;')
   // **词** → <mark>词</mark>
-  return snippet.replace(/\*\*(.+?)\*\*/g, '<mark>$1</mark>')
+  return escaped.replace(/\*\*(.+?)\*\*/g, '<mark>$1</mark>')
 }
 </script>
 
