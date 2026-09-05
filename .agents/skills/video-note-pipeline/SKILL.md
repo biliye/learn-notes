@@ -45,18 +45,23 @@ $bili = "C:\Users\123\.zcode\skills\bili-note"   # 或解析出来的目录
 py "$bili\scripts\check_environment.py"
 ```
 
-读输出选路：
+读输出选路（视频按优先级，字幕优先于转写）：
 
-- 公开字幕/图文 OK → 走字幕正文路线。
-- 只有 `ai-zh` 空 url 且 Chrome+web-access 可用 → 网页 AI 字幕路线（本机可启用：`powershell -File C:\Users\123\.cache\web-access\start.ps1` 起独立 Chrome 并在其中登录 B 站一次，详见 `references/web-access.md` 或 `C:\Users\123\.cache\web-access\README.md`）。
-- 都没有 → 音频 ASR 兜底：`Audio ASR fallback` 里若有 `FunASR Server ...: OK`，用 `--asr-backend funasr-server`；否则按 bili-note 建议用共享 Qwen3-ASR。
-- `visual_dependency` 高/中风险时见第 3 步视觉提示，不要硬写。
+1. **Chrome + web-access 网页 AI 字幕（首选）**：只要 `browser_ai_subtitles` 可用（或 `powershell -File C:\Users\123\.cache\web-access\start.ps1` 能启用），就优先走"已登录播放器抓 `ai-zh` 字幕"——不用等整段音频转写、不依赖本地 ASR 模型、词也基本可用。步骤：`start.ps1` 起独立 Chrome 并在其中登录 B 站一次 → `curl http://127.0.0.1:3456/new?url=<视频>` 开视频页 → `/eval` 里 `fetch('/x/web-interface/nav',{credentials:'include'})` 确认 `data.isLogin` 为 true → `fetch_browser_ai_subtitles.py --target <id> --out <work>`。详见 `C:\Users\123\.cache\web-access\README.md` 与 `references/web-access.md`。
+2. **公开字幕/图文 OK** → 走字幕/正文路线（能拿到公开普通字幕时最省，可择优与网页 AI 字幕对比）。
+3. 都不可用 → 音频 ASR 兜底：`Audio ASR fallback` 里若有 `FunASR Server ...: OK`，用 `--asr-backend funasr-server`；否则按 bili-note 建议用共享 Qwen3-ASR。
+4. `visual_dependency` 高/中风险时见第 3 步视觉提示，不要硬写。
+
+> 结论 + 用户设定：视频字幕**以 Chrome + web-access 抓到的网页 AI 字幕为首选**（只要桥可用）；本地/公开字幕与音频 ASR 都降级为备选。理由：避免长音频转写等待与本地模型依赖，AI 字幕与关键帧视觉理解相互印证即可得到较可靠结论。
 
 ### 2. 提取与转写
 
-**视频**：先尝试 `run_bili_note.py` 一键（能拿到公开字幕/图文时最省事）；字幕缺失就走分步：
+**视频**：先尝试 `run_bili_note.py` 一键（能拿到公开字幕/图文时最省事）；公开字幕缺失时，**优先走 Chrome+web-access 抓网页 AI 字幕**（见第 1 步与下方命令），确定拿不到再走音频 ASR 兜底：
 
 ```powershell
+# 首选：网页 AI 字幕（需先按第 1 步启动桥并打开视频页、确认 isLogin）
+py "$bili\scripts\fetch_browser_ai_subtitles.py" --target "<CDP_TARGET_ID>" --out "<work>"
+# 兜底：网页 AI 字幕也拿不到时才音频转写
 py "$bili\scripts\extract_bilibili.py" "<url>" --out "<work>" --parts key `
   --download-audio --transcribe --asr-backend funasr-server --asr-language zh
 ```
@@ -81,6 +86,17 @@ py "$bili\scripts\archive_bili_materials.py" --extract-dir "<work>" --archive-di
 产物 A（本地材料包内完整笔记）：按 bili-note 的预算与评分流程写，落 `<arch>\<标识>_学习笔记.md`，并用 `score_bili_note.py` 验收（字数在区间内、证据引用尽量全覆盖）。
 
 产物 B（站点规范版）：见第 4 步。
+
+### 3b. 概念拆解型笔记：优先「文字 + 图片」（用户设定 2026-09-05）
+
+当素材是**概念拆解 / 名词祛魅 / 体系讲解**类（标题或内容多处出现 Skill/MCP/RAG/Agent/Function Calling、架构图、演进关系、对比、谱系轴等），本地版与站点版都应采用**文字 + 图片**：把关系、流程、对比、谱系画成图示嵌入文档，而不是只堆文字。判断要点：出现"多个概念 + 它们之间关系/分层/演进/对比"。
+
+制作步骤（复用本机 Pillow + 微软雅黑，不装其它依赖；模板见仓库 `…/BV1ojfDBSEPv_拆穿SkillMCPRAGAgent底层逻辑/diagrams/gen_diagrams.py`）：
+
+1. **设计 2–5 张图**：架构全景、"概念怎么一步步堆出来"的演进、"从刚到柔/稳定到变化"的谱系、易混概念（谁和谁对话）对比。别贪多，每张只讲一个关系。
+2. **生成 PNG**：`py …/gen_diagrams.py` 风格，`ImageFont.truetype(r"C:\Windows\Fonts\msyh.ttc" / "msyhbd.ttc", size)`。注意——字体**没有 `↔` 字形（会渲染成方框），用 ASCII `<->` / `->`**；多行盒子**标题放盒顶、子项列下方**，别用 `box()` 居中标题再叠加子项；画布高度留够，避免最后一行被裁切；**生成后逐张读图校验**（无重叠、无方框、无裁切、箭头指向正确）。
+3. **上传拿站内路径**：登录 `POST /api/auth/login` 拿 Bearer token → `POST /api/uploads/image`（multipart `file`，仅 png/jpg/jpeg/gif/webp、≤5MB、真实魔数），回执 `data.url` 形如 `/uploads/yyyy/MM/<sha256>.png`（哈希去重，同图复用）。模板见 `…/diagrams/upload_images.py`。
+4. **站点版嵌图**：`![说明](/uploads/yyyy/MM/xxx.png)`，**图片单独成段**（前后空行），每张图后跟一小段解释文字（40–300 字）；嵌图只用站内 `/uploads/…` 或 https 外链（站点规范禁本地相对路径、Mermaid 不渲染）。同分类下另有一篇纯文字笔记的话，结尾用一句"配合我的文字笔记一起读"互相串起来。
 
 ### 4. 转成站点规范版并本地入库
 
@@ -128,3 +144,5 @@ py "<skill>\scripts\submit_doc.py" --file "<repo>\samples\bilibili\<文件名>.m
 - ASR 转写 JSON 若只有整段 `text` 没有 `body`/`segments`，归档脚本会回退用 txt 分行统计并生成 `P01@L行号-行号` 证据块（技能已兼容，勿手工改回）。
 - 归档产出的 `subtitle_evidence_blocks` 为 0 或 `visual_dependency.risk=high` 且原因含 `no_subtitle_text` → 十有八九是第 2 步漏了 run_summary/转写没被归档识别，回到第 2 步补，别直接开写。
 - 站点分类是"大类两级可配深度"：新大类会自动放宽层级、可后续在「分类管理」改名；小方向下直接放文档，别在同一目录又建子目录又放文档。
+- 字幕首选 Chrome+web-access（用户 2026-09-05 明确）：公开字幕常只给 `ai-zh` 空 url，音频 ASR 又要等长音频转写；只要本机 web-access 桥可用（`start.ps1`，独立 profile 不碰日常浏览器），就先用已登录播放器抓 `ai-zh`。**登录是前提**——`/eval` 里 `fetch('/x/web-interface/nav',{credentials:'include'})` 必须 `isLogin:true`；要提醒用户在打开的 Chrome 窗口里登录 B 站一次（登录态会留在该 profile）。
+- AI 字幕把技术词听错是常事（如 `小L→小饶/小儿`、`LangChain→lunch`、`JSON→JASON`、`Clawdbot→cloud bot`、`Function Calling→防神calling`）。写笔记时结合关键帧/画面与实际产品名**按语境校正**，并在"来源与局限"里列校正清单。
