@@ -31,12 +31,17 @@ description: 端到端流水线：把 B站（bilibili）视频/图文/opus 做�
 
 ### 0. 收集需求
 
-先弄清四件事，缺的当场问：
+先弄清五件事，缺的当场问。其中第 1 件是**必问项**，不要擅自替用户定：
 
-1. 链接类型：`/video/BV...`、`/opus/...`、`/dynamic/...` 还是纯 opus id。
-2. 要不要评论区（默认不要，评论只保留纠错/补充/实践类内容）。
-3. 站点归类：大类 → 小方向 想叫什么；不给就按内容合理新建（中文大类给 ASCII `category_slug`），新分类会自动创建。
-4. 是否只要提炼笔记 vs 也要完整归档原文（默认都做：归档进本地材料包，站点只放笔记）。
+1. **内容路线（必问，三选一）**——用户想把视频内容提取成笔记提交网站时，先用 AskUserQuestion 问清走哪条：
+   - **仅 AI 字幕**：最快。适合纯口播、访谈、观点类视频。
+   - **字幕 + 关键帧截图**：字幕之外再抽帧看图。适合画面承载关键信息的视频（PPT 讲解、板书、代码演示、界面操作），可纠正 AI 字幕的专有名词错误。
+   - **以作者提供的笔记为主总结**：作者给了 notion / 博客 / 公众号 / GitHub 仓库 / PPT 等配套材料时，以它们为主要事实来源，AI 字幕只用来印证与补口播细节。材料质量通常高于字幕（术语零错、结构完整）。
+   用户说不清时按场景推荐：有配套笔记 → 第三条；概念讲解且画面重要 → 第二条；否则第一条。
+2. 链接类型：`/video/BV...`、`/opus/...`、`/dynamic/...` 还是纯 opus id。
+3. 要不要评论区（默认不要，评论只保留纠错/补充/实践类内容）。
+4. 站点归类：大类 → 小方向 想叫什么；不给就按内容合理新建（中文大类给 ASCII `category_slug`），新分类会自动创建。
+5. 是否只要提炼笔记 vs 也要完整归档原文（默认都做：归档进本地材料包，站点只放笔记）。
 
 ### 1. 环境检查与选路
 
@@ -45,12 +50,14 @@ $bili = "C:\Users\123\.zcode\skills\bili-note"   # 或解析出来的目录
 py "$bili\scripts\check_environment.py"
 ```
 
-读输出选路（视频按优先级，字幕优先于转写）：
+读输出选路（视频按优先级，字幕优先于转写；**第 0 步定的内容路线覆盖此优先级**）：
 
+0. **路线三（作者笔记为主）**：作者材料是主要事实来源，字幕只是印证。抓取方法见第 2 步"作者配套材料抓取"。
 1. **Chrome + web-access 网页 AI 字幕（首选）**：只要 `browser_ai_subtitles` 可用（或 `powershell -File C:\Users\123\.cache\web-access\start.ps1` 能启用），就优先走"已登录播放器抓 `ai-zh` 字幕"——不用等整段音频转写、不依赖本地 ASR 模型、词也基本可用。步骤：`start.ps1` 起独立 Chrome 并在其中登录 B 站一次 → `curl http://127.0.0.1:3456/new?url=<视频>` 开视频页 → `/eval` 里 `fetch('/x/web-interface/nav',{credentials:'include'})` 确认 `data.isLogin` 为 true → `fetch_browser_ai_subtitles.py --target <id> --out <work>`。详见 `C:\Users\123\.cache\web-access\README.md` 与 `references/web-access.md`。
 2. **公开字幕/图文 OK** → 走字幕/正文路线（能拿到公开普通字幕时最省，可择优与网页 AI 字幕对比）。
 3. 都不可用 → 音频 ASR 兜底：`Audio ASR fallback` 里若有 `FunASR Server ...: OK`，用 `--asr-backend funasr-server`；否则按 bili-note 建议用共享 Qwen3-ASR。
-4. `visual_dependency` 高/中风险时见第 3 步视觉提示，不要硬写。
+4. **路线二（字幕+截图）**：在字幕到手后追加关键帧采集，方法见第 2 步"关键帧截图采集"。
+5. `visual_dependency` 高/中风险时见第 3 步视觉提示，不要硬写。
 
 > 结论 + 用户设定：视频字幕**以 Chrome + web-access 抓到的网页 AI 字幕为首选**（只要桥可用）；本地/公开字幕与音频 ASR 都降级为备选。理由：避免长音频转写等待与本地模型依赖，AI 字幕与关键帧视觉理解相互印证即可得到较可靠结论。
 
@@ -72,6 +79,15 @@ py "$bili\scripts\extract_bilibili.py" "<url>" --out "<work>" --parts key `
 
 **图文/opus**：`run_bili_note.py` 或 `extract_bilibili_opus.py` 直接抓正文/图片/代码块即可，通常无需 ASR。
 
+**作者配套材料抓取（路线三）**：拿到材料后先归档进本地材料包，作为笔记的主要事实来源。
+
+- **Notion / 博客等 JS 渲染页面**：公开 API 直接抓是空壳，走桥控 Chrome——`curl http://127.0.0.1:3456/new?url=<页面>` → sleep 等渲染 → `/eval` 分块 `document.body.innerText.slice(pos,pos+9000)` 拼接存档（注意：桥的 `/eval` body 是裸 JS 字符串不是 JSON；不支持 async promise，滚动触发懒加载要拆成多次同步 eval + Python 侧 sleep）。
+- **GitHub 仓库**：`git clone --depth 1 <url>`；多分支仓库再 `git fetch --depth 1 origin <分支>` + `git worktree add <dir> FETCH_HEAD` 检出到独立目录。代码按主题读关键文件，README/文稿直接入库。
+- **PPT（.pptx）**：用 zipfile 解包 `ppt/slides/slideN.xml`，正则提取 `<a:t>` 文本按页拼接存档（无需 python-pptx）。
+- 笔记中要注明材料来源与版本（分支/commit/抓取日期），事实以作者材料为准，字幕错听不必校正清单里重复列举。
+
+**关键帧截图采集（路线二）**：字幕到手后补画面证据——playurl 接口下载 DASH 视频（登录态清晰度更高，未登录最多 480p）→ `ffmpeg -i video.m4s -vf "fps=1/30" frames/f%04d.jpg` 按间隔抽帧 → 挑代表帧用多模态读图，把结论并入笔记"画面证据"小节，并在"来源与局限"里写明抽帧参数与覆盖率。抽出后逐张读图校验，模糊/重复帧剔除。
+
 **ASR-only 时归档前必须补 run_summary**：`archive_bili_materials.py` 只认 `run_summary.json` 里的 `transcripts`（带 `transcript_txt`/`transcript_json` 绝对路径、`page/cid/part/duration`），否则把转写当"无字幕"，预算全错。`extract_bilibili.py` 直跑不会生成它——没有就用一次 `run_bili_note.py` 或在提取目录里手写这份 JSON（结构见 bili-note 归档脚本 `transcript_manifest_from_run_summary`）。
 
 ### 3. 写学习笔记（两份产物）
@@ -91,7 +107,16 @@ py "$bili\scripts\archive_bili_materials.py" --extract-dir "<work>" --archive-di
 
 当素材是**概念拆解 / 名词祛魅 / 体系讲解**类（标题或内容多处出现 Skill/MCP/RAG/Agent/Function Calling、架构图、演进关系、对比、谱系轴等），本地版与站点版都应采用**文字 + 图片**：把关系、流程、对比、谱系画成图示嵌入文档，而不是只堆文字。判断要点：出现"多个概念 + 它们之间关系/分层/演进/对比"。
 
-制作步骤（复用本机 Pillow + 微软雅黑，不装其它依赖；模板见仓库 `…/BV1ojfDBSEPv_拆穿SkillMCPRAGAgent底层逻辑/diagrams/gen_diagrams.py`）：
+**图示工具选型（用户设定 2026-09-06）：流程 / 架构 / 时序 / 数据流 / 状态机类图，优先用 archify skill**（用户级已装，`node bin/archify.mjs doctor` 验证）。archify 出交互式 HTML + 可导出静态 PNG，图比手画盒子精致得多，且站点已有配套托管通道。Pillow 只留给简单"盒子+文字"图或 archify 不适合的场景。
+
+archify 路线（详细约定见记忆 `archify-diagrams-channel`，AGENT-DOC-SPEC §3.6）：
+
+1. 按 archify skill 正常流程做图（类型对号：架构→architecture、流程→workflow、调用链→sequence、状态→lifecycle），`deliver` 产出自包含 HTML，留档 `<repo>\.work\archify\`。
+2. **导 PNG**：浏览器打开 HTML，导出菜单选"PNG 无损图像"，**导出前切浅色主题**（与站点阅读一致）。自动化时注意：导出菜单是自绘控件，Playwright 指针点不动，用 dom_cua 节点路径点。
+3. **上传 PNG** 走下方 Pillow 路线第 3 步的上传流程拿 `/uploads/...` 路径；**交互版 HTML** 用 `MSYS_NO_PATHCONV=1 workbench upload <html> /opt/learn-notes/storage/diagrams/<name>.html --instance-id i-bp127ujwqkb795ri3p7r --output json -f` 传服务器（Git Bash 不加 MSYS_NO_PATHCONV 会改写路径导致失败），Nginx 已配 `/diagrams/` 托管（CSP sandbox）。
+4. **嵌图写法**：`![说明](/uploads/…)` 单独成段 → 图正下方**链接单独成段、整段只写这一个链接**（如 `[在新标签页打开交互版架构图 ↗](/diagrams/<name>.html)`，渲染层会自动居中）→ 之后跟解释文字。三段缺一不可。
+
+Pillow 路线（简单图；模板见仓库 `…/BV1ojfDBSEPv_拆穿SkillMCPRAGAgent底层逻辑/diagrams/gen_diagrams.py`）：
 
 1. **设计 2–5 张图**：架构全景、"概念怎么一步步堆出来"的演进、"从刚到柔/稳定到变化"的谱系、易混概念（谁和谁对话）对比。别贪多，每张只讲一个关系。
 2. **生成 PNG**：`py …/gen_diagrams.py` 风格，`ImageFont.truetype(r"C:\Windows\Fonts\msyh.ttc" / "msyhbd.ttc", size)`。注意——字体**没有 `↔` 字形（会渲染成方框），用 ASCII `<->` / `->`**；多行盒子**标题放盒顶、子项列下方**，别用 `box()` 居中标题再叠加子项；画布高度留够，避免最后一行被裁切；**生成后逐张读图校验**（无重叠、无方框、无裁切、箭头指向正确）。
@@ -146,3 +171,4 @@ py "<skill>\scripts\submit_doc.py" --file "<repo>\samples\bilibili\<文件名>.m
 - 站点分类是"大类两级可配深度"：新大类会自动放宽层级、可后续在「分类管理」改名；小方向下直接放文档，别在同一目录又建子目录又放文档。
 - 字幕首选 Chrome+web-access（用户 2026-09-05 明确）：公开字幕常只给 `ai-zh` 空 url，音频 ASR 又要等长音频转写；只要本机 web-access 桥可用（`start.ps1`，独立 profile 不碰日常浏览器），就先用已登录播放器抓 `ai-zh`。**登录是前提**——`/eval` 里 `fetch('/x/web-interface/nav',{credentials:'include'})` 必须 `isLogin:true`；要提醒用户在打开的 Chrome 窗口里登录 B 站一次（登录态会留在该 profile）。
 - AI 字幕把技术词听错是常事（如 `小L→小饶/小儿`、`LangChain→lunch`、`JSON→JASON`、`Clawdbot→cloud bot`、`Function Calling→防神calling`）。写笔记时结合关键帧/画面与实际产品名**按语境校正**，并在"来源与局限"里列校正清单。
+- 路线三实测（BV1dw526tEMA）：作者 notion 常有大量空占位小节——抓完先看 `innerText.length` 判断是否还有懒加载，占位小节没正文就别硬补；作者 PPT 里常有字幕没展开的成体系表格（概念表、痛点-解法映射），是做笔记对照表的金矿；仓库教学代码可修正字幕听错的事实性内容（模型名、阈值、参数），且能提炼出字幕没有的工程细节（正则风险清单、checkpoint 存档结构、字段级截断上限等）。
