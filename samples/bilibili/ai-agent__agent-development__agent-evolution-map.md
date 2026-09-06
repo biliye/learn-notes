@@ -36,7 +36,11 @@ UP 主在 notion 里给同步构建的项目 MokioClaw 下了明确定位：一�
 
 ## 课程结构与前置知识
 
-课程分为四部分：理论讲解（白板推导 ToolCall、ReAct、Context Engineering、Harness 等概念）、代码实现（用最小代码把概念落地）、同步项目（自底向上做一个自己的 Claude Code / OpenClaw 式产品）、学习资料推荐。前置知识包括 LangChain 基础概念、Python 基础和 UV 等现代工具链；完全零基础建议先看概念扫盲类视频再回来。
+课程分为四部分：理论讲解（白板推导 ToolCall、ReAct、Context Engineering、Harness 等概念）、代码实现（用最小代码把概念落地）、同步项目（自底向上做一个自己的 Claude Code / OpenClaw 式产品）、学习资料推荐。前置知识包括 LangChain 基础概念、Python 基础和 UV 等现代工具链；UP 主建议至少先看完概念扫盲类视频再回来。
+
+## 配套仓库与 PPT
+
+UP 把全部配套资源放在 GitHub 仓库 Wood-Q/MokioAgent，分两个分支看：theory 分支是理论教学代码，按"1. Toolcall、2. AgentLoop、3. MultiAgent"三个目录组织，每个概念一个可运行的最小脚本（默认模型 qwen3.6-flash，走 .env 配置 base_url 和 api_key），外加一份 108 页的《Agent指南》PPT——本系列笔记里多处对照表（LangGraph 概念表、痛点-解法映射、Harness 需求映射、Skill 三阶段）都出自这份 PPT；master 分支是 MokioClaw 项目本体，src/mokioclaw 下按 tools、graph、core、agents、cli、prompts 分层，还有 项目篇规划.md 视频文稿。学习路径建议：先读本系列笔记，再跑 theory 分支代码对照，最后读 master 源码看工程化落地。
 
 ## 系列阅读地图
 

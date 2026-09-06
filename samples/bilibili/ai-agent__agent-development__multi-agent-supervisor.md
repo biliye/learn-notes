@@ -13,7 +13,7 @@ spec_version: v2
 
 # Multi-Agent 分工协作：Supervisor 与专家团队
 
-> 整理自 B 站视频《【2026/Agent】一期讲透》第 9 分P（[原视频](https://www.bilibili.com/video/BV1dw526tEMA/)），层级概念补充自 UP 的 notion 笔记。前置：系列第四篇《Agent Loop 三范式》。
+> 整理自 B 站视频《【2026/Agent】一期讲透》第 9 分P（[原视频](https://www.bilibili.com/video/BV1dw526tEMA/)），层级概念补充自 UP 的 notion 笔记，代码细节来自仓库 theory 分支 `3. MultiAgent/` 目录。前置：系列第四篇《Agent Loop 三范式》。
 
 ## 痛点：全干工程师的大脑串线
 
@@ -46,6 +46,76 @@ def route_next(state) -> str:
     return {"file_agent": "file_agent",
             "code_agent": "code_agent"}.get(state["next_agent"], END)
 ```
+
+仓库 `01_two_experts.py` 里 supervisor 的 prompt 写法值得抄：它被明确告知"你不能直接整理文件，也不能直接写文件，只能调用这两个工具，必须先调 file 再调 code"——把路由约束写死在 prompt 里，比让它自由发挥稳定得多。file_agent 与 code_agent 的 prompt 则互相排斥：一个"不要写代码"，一个"不要移动文件"，职责边界清晰。
+
+Agent as Tool 的代码骨架分三段：先用 create_agent 建两个专家（注意 name 参数，方便日志追溯），再把"调用某个专家"包装成普通 @tool，最后 supervisor 把这两个 wrapper 当工具绑定。
+
+```python
+file_agent = create_agent(llm, tools=[list_files, move_file],
+                          system_prompt=FILE_AGENT_PROMPT, name="file_agent")
+code_agent = create_agent(llm, tools=[write_file],
+                          system_prompt=CODE_AGENT_PROMPT, name="code_agent")
+
+@tool
+def call_file_agent(instruction: str) -> str:
+    """Delegate a file-management task to file_agent."""
+    result = file_agent.invoke({"messages": [{"role": "user", "content": instruction}]})
+    return str(result["messages"][-1].content)   # 只把最终回答交回 supervisor
+
+@tool
+def call_code_agent(instruction: str) -> str:
+    """Delegate a code-generation task to code_agent."""
+    result = code_agent.invoke({"messages": [{"role": "user", "content": instruction}]})
+    return str(result["messages"][-1].content)
+
+supervisor = create_agent(llm, tools=[call_file_agent, call_code_agent],
+                          system_prompt=SUPERVISOR_PROMPT, name="supervisor")
+supervisor.invoke({"messages": [{"role": "user", "content": task}]})
+```
+
+几个值得品的设计：wrapper 的 docstring 就是 supervisor 眼里的工具描述，写"Delegate a file-management task"比"调用文件 agent"更能引导模型正确选工具；wrapper 只返回专家的最后一条消息，专家内部的 ReAct 轨迹被隔离在子 agent 里，不会污染 supervisor 的上下文——这正是物理隔离在代码上的落点；子 agent 是完整的 create_agent 实例，内部自己跑 ReAct 循环，即工具里嵌套了一个循环。
+
+### Node 式：supervisor 也是节点
+
+仓库 `02_conditional_edges.py` 把每个专家做成图节点，supervisor 输出一个词（file_agent、code_agent 或 finish）由条件边路由。它的 supervisor 节点有个很实用的健壮性设计——先按报告完成度算出建议答案，再让模型独立判断，输出不合规就兜底：
+
+```python
+def supervisor_node(state: MultiAgentState) -> MultiAgentState:
+    if not state["file_report"]:
+        next_agent = "file_agent"          # 按完成度先算建议答案
+    elif not state["code_report"]:
+        next_agent = "code_agent"
+    else:
+        next_agent = "finish"
+
+    decision = str(llm.invoke([
+        SystemMessage(content=SUPERVISOR_PROMPT),
+        HumanMessage(content=f"用户任务：{state['task']}\n\n"
+                             f"file_report：{state['file_report'] or '(empty)'}\n\n"
+                             f"code_report：{state['code_report'] or '(empty)'}\n\n"
+                             f"请判断下一个 agent。建议答案：{next_agent}"),
+    ]).content).strip()
+
+    if decision not in {"file_agent", "code_agent", "finish"}:
+        decision = next_agent              # 模型跑偏时兜底回建议答案
+    return {**state, "next_agent": decision}
+```
+
+专家节点把 state 里的任务重新包装成指令，交给内层 create_agent 执行，报告写回 state；路由直接拿 next_agent 字段当条件边的键：
+
+```python
+def file_agent_node(state: MultiAgentState) -> MultiAgentState:
+    result = file_agent.invoke({"messages": [{"role": "user", "content":
+        f"用户原始任务：{state['task']}\n\n"
+        "你是 file_agent，只处理其中和文件整理有关的部分。"}]})
+    return {**state, "file_report": last_message_text(result)}
+
+graph.add_conditional_edges("supervisor", lambda s: s["next_agent"],
+    {"file_agent": "file_agent", "code_agent": "code_agent", "finish": END})
+```
+
+对比两种实现的代码量与自由度：ToolCall 式把路由交给模型选工具，代码最短；Node 式把路由变成显式的 state 字段加条件边，可以插入建议答案兜底、报告先验判断这类确定性逻辑——这正是"需要深度定制时选 LangGraph"的具体含义。
 
 两种方式怎么选：要简洁优雅、快速搭出层级就选 Agent as Tool；要深度定制——比如在 state 里做上下文工程处理、精细控制每个字段——就用 LangGraph Node，它的 state 可编排性更强。
 

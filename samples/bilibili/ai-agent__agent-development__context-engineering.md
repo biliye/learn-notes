@@ -13,7 +13,7 @@ spec_version: v2
 
 # Context Engineering：管住有限的大脑
 
-> 整理自 B 站视频《【2026/Agent】一期讲透》第 10 分P（[原视频](https://www.bilibili.com/video/BV1dw526tEMA/)），四大思想的具体手段大量补充自 UP 的 notion 笔记。这是全系列的两个工程核心之一。
+> 整理自 B 站视频《【2026/Agent】一期讲透》第 10 分P（[原视频](https://www.bilibili.com/video/BV1dw526tEMA/)），四大思想的具体手段大量补充自 UP 的 notion 笔记，落地参数来自 MokioClaw 项目源码（Wood-Q/MokioAgent）。这是全系列的两个工程核心之一。
 
 ## 起源：一条引爆关注的推文
 
@@ -54,5 +54,13 @@ spec_version: v2
 报错与压缩阶段：报错的 stack trace 一上来几百上千行，原封不动塞进历史会瞬间撑爆窗口。工程做法是让模型把错误猜想单独记到 notepad 文件持久化，遇到同类报错再把摘要喂回来。执行几十轮上下文告急时，压缩机制登场：设置钩子，上下文用到一半就触发压缩函数——删掉陈旧日志、用小模型把整个上下文总结，压回十分之一，如此往复实现无限续航。
 
 切换与收尾阶段：写完代码突然让模型写文档，它可能还沉浸在代码角色里。工程做法是作用域切换：监测到进入 docs 目录就把 code 模块抽出来换上文档规则，并在看板上勾掉代码部分。完成阶段：不重开窗口就继续下一个任务，上个任务的几十万 token 垃圾会继续污染会话。工程做法是输出标准完工报告写入长期数据库，然后把 memory 彻底清空——不重启 Agent 就能干净地开下一个任务。
+
+PPT 里把痛点与解法整理成了一张对照表，复习按它背：遗忘漂移（任务拉长到第 10 轮忘了最初目标）→ Notepad/Todo 外部记忆、分层记忆与工程约束；窗口超载（垃圾信息越多推理越差）→ 压缩机制（Compaction）、动态选择工具；静态死板（几千字 System Prompt 把 role 和能力定死）→ 动态 Prompt 组装、路径作用域规则；输出歧义（随机生成导致格式混乱）→ 结构化输出（Schema）。
+
+### MokioClaw 里的真实实现
+
+这套思想在 MokioClaw 项目源码里已经落地，读代码能看到几个工程细节。分层记忆由运行时统一装配：RULES_LAYER 存固定规则（只能在 workspace 内工作、TODO.md 是计划状态、NOTEPAD.md 是持久笔记、HISTORY_SUMMARY.md 是压缩历史），工作记忆字段各有字符上限（如 research_notes 1600 字、notepad 1800 字、history_summary 2200 字），超限即截断，从源头防止单字段撑爆上下文。
+
+压缩机制的触发参数也可配：上下文 token 上限默认 400000，用环境变量 MOKIO_CONTEXT_TOKEN_LIMIT 调整，monitor 节点每轮估算 token，达到上限就走压缩。整个编排图是 planner → context_monitor →（条件路由）context_compressor 或 verifier 或 planner，verifier 完了还要回 monitor 复查——压缩不是一次性的，而是嵌在主循环里的常驻环节。入口图还配了 intent_router：普通聊天走 chat_responder 直接回答，正经任务才进 planner 重图，聊天上下文不污染任务图。
 
 一句话总结本篇核心：筛选出有效的 context 保留在上下文里，尽可能剔除无效的 context——这是一切 Agent 工程化的基础中的基础。而即使上下文管好了，系统仍可能被一条危险命令毁掉，最后一道防线见系列第七篇《Harness Engineering》。

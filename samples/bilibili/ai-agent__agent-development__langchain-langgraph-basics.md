@@ -39,9 +39,30 @@ LangChain 是做 LLM 应用的组件工具箱，帮你把模型、提示词、�
 
 其中 message 结构值得单独强调：LangChain 用统一的格式管理上下文，每条消息包含 role、content、metadata 三个字段。请求以 user 或 system 角色写入，模型返回以 assistant 角色追加，多轮对话就是在这条消息列表上不断追加，所有上下文管理都严格遵循这个格式。
 
+仓库 theory 分支的每个脚本都遵守同一套模型初始化约定，值得照抄到自己的项目里：
+
+```python
+def load_llm() -> ChatOpenAI:
+    load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+    return ChatOpenAI(
+        model=os.getenv("MODEL", "qwen3.6-flash"),
+        base_url=os.getenv("BASE_URL"),
+        api_key=os.getenv("API_KEY"),
+        temperature=0,
+    )
+
+# 调用时按 message 格式组织输入：
+response = llm.invoke([SystemMessage(content=SYSTEM_PROMPT),
+                       HumanMessage(content=user_prompt)])
+```
+
+四个要点：模型名、base_url、api_key 全部走 .env 环境变量，代码里不落任何密钥；`temperature=0` 让工具调用与路由判断尽量确定（Agent 场景要的是稳定不是创意）；load_llm 封装成一个函数，脚本间复用零成本；输入严格按 `[SystemMessage, HumanMessage, ...]` 的 message 列表组织，这就是"所有操作都是对输入输出文本做处理"在代码层的样子。
+
 ## LangGraph：专门做编排的框架
 
-create_agent 创建的 Agent 是单步执行的，要处理长任务、循环、多步骤执行，就需要 LangGraph 来编排。图由 node（节点）和 edge（边）组成：节点是一个"接收 state、返回 state"的函数，边定义节点之间的信息流向，需要条件判断时用 conditional edge（条件边）。
+create_agent 创建的 Agent 是单步执行的，要处理长任务、循环、多步骤执行，就需要 LangGraph 来编排。PPT 里对它的定位是：LangGraph 不是多一个模型，而是多了一套流程控制系统。图由 node（节点）和 edge（边）组成：节点是一个"接收 state、返回 state"的函数，边定义节点之间的信息流向，需要条件判断时用 conditional edge（条件边）。
+
+PPT 概念表给每个术语配了工位比喻，复习时很好背：State 是整个图共享的状态数据，节点都可读写——它是 Agent 的工作记忆和任务面板；Node 是图里的一个步骤，一个节点通常只干一件事，像流程图里的一个工位；Edge 决定下一步往哪走；Conditional Edge 是带条件的边，会根据当前结果决定下一跳，就是 if/else 版的流程图；Graph 把 Agent 从"想法"变成"可运行流程图"；Compile 在真正运行前把图做一次检查和封装，像把流程图装配成真正能跑的程序。
 
 核心概念是 state：整个图共享的数据类型，所有节点都可读写。模型节点把"接下来调哪个工具"写进 state，工具节点从 state 里读出来执行，再把结果写回去，state 就这样在图里流转，起到管理上下文的作用。后面 Reflection、Plan&Execute 的架构升级，本质都是往 state 里增加字段、往图里增加节点。
 

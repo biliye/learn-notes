@@ -13,7 +13,7 @@ spec_version: v2
 
 # ToolCall：从文本触及现实
 
-> 整理自 B 站视频《【2026/Agent】一期讲透》第 3、4 分P（[原视频](https://www.bilibili.com/video/BV1dw526tEMA/)）。前置：系列第二篇《LangChain 与 LangGraph 地基》。UP 主 notion 笔记对这一节的概括是：ToolCall 的本质就是字符串处理——对模型输出进行处理。
+> 整理自 B 站视频《【2026/Agent】一期讲透》第 3、4 分P（[原视频](https://www.bilibili.com/video/BV1dw526tEMA/)），代码细节补充自 UP 的 GitHub 仓库 Wood-Q/MokioAgent 的 theory 分支（`1. Toolcall/` 目录）。前置：系列第二篇《LangChain 与 LangGraph 地基》。UP 主 notion 笔记对这一节的概括是：ToolCall 的本质就是字符串处理——对模型输出进行处理。PPT 里的一句金句：Function Calling 的本质，就是模型输出结构化的"黑话"，由本地代码翻译并代为执行。
 
 ## 痛点：缸中之脑
 
@@ -27,6 +27,50 @@ spec_version: v2
 
 代码上分三步递进。第一步纯文本操作：给定模型输出 `get_weather:beijing` 这样的字符串，用 split 拆出工具名和参数，查找并调用函数，体会"解析、寻找工具、执行"的最小闭环。第二步自己制定协议：在 system prompt 里要求模型按 tag 格式输出，用正则提取后执行。
 
+仓库 `1. Toolcall/01_string_protocol.py` 的完整最小实现，核心只有十几行：
+
+```python
+def parse_model_output(text: str) -> tuple[str, dict[str, str]]:
+    tool_name, city = text.split(":", maxsplit=1)   # 按第一个冒号切分
+    return tool_name.strip(), {"city": city.strip()}
+
+model_output = "get_weather:Beijing"
+tool_name, tool_args = parse_model_output(model_output)
+
+if tool_name == "get_weather":
+    result = get_weather(**tool_args)   # 参数字典展开成关键字实参
+else:
+    result = f"未知工具：{tool_name}"
+```
+
+逐行看：`split(":", maxsplit=1)` 限定只切一次，防止参数值里也含冒号；返回 `(工具名, 参数字典)` 二元组，让解析与执行解耦；`**tool_args` 把字典展开成关键字实参，要求键名与函数形参完全一致——这就是最早的参数校验。这个版本没有模型参与，纯粹演示字符串进、函数调用出的骨架。
+
+`02_prompt_protocol_real_model.py` 接入真模型，在 system prompt 里写死输出协议：
+
+```text
+当用户询问天气时，不要直接回答。
+你必须严格输出下面的格式，不要输出额外内容：
+
+<Tool>get_weather</Tool>
+<Args>{"city":"Beijing"}</Args>
+
+如果用户不需要查询天气，就直接输出普通文本。
+```
+
+解析端用两个正则抠出 tag 内容，没命中就当作普通文本放行：
+
+```python
+def parse_tool_call(text: str) -> dict | None:
+    tool_match = re.search(r"<Tool>(.*?)</Tool>", text, re.DOTALL)
+    args_match = re.search(r"<Args>(.*?)</Args>", text, re.DOTALL)
+    if not tool_match:
+        return None                      # 无 tag => 普通对话，不是工具调用
+    args = json.loads(args_match.group(1)) if args_match else {}
+    return {"tool": tool_match.group(1).strip(), "args": args}
+```
+
+三个细节值得学：`re.DOTALL` 让点号能匹配换行，防止模型把 tag 写成多行；Args 缺失时降级成空参数字典而不是崩溃；协议同时定义了非工具输出分支（普通文本），说明一份完整协议必须覆盖所有情况。弱点也在这里——模型少写一个尖括号、Args 里多加一句解释，解析就挂，这正是下一节幻觉问题的来源。
+
 ## 幻觉问题与 OpenAI 的解法
 
 靠 prompt 约定格式有致命风险：模型有幻觉，万一多打一个引号、少写半个括号、换个格式，写死的解析代码就直接崩溃，对工程项目是灾难性后果。OpenAI 的解法是从底层下手：用海量"按 JSON 格式输出工具调用"的训练数据把模型训练成严谨的理科生。
@@ -35,24 +79,58 @@ spec_version: v2
 
 ## 现代做法：@tool 与 bind_tools
 
+`03_langchain_native_toolcall.py` 是现代做法，核心就三行链路：定义工具、绑定、调用后读 tool_calls。
+
 ```python
-from langchain.chat_models import init_chat_model
 from langchain_core.tools import tool
+from langchain_openai import ChatOpenAI
 
 @tool
 def get_weather(city: str) -> str:
-    """Get the weather for a city."""
-    return f"{city} 25 度"
+    """查询指定城市的天气。"""          # docstring 会自动变成工具描述喂给模型
+    return f"{city} 的天气是：晴天，25 度"
 
-llm = init_chat_model("deepseek-v4", ...)   # 任意 OpenAI 兼容模型
+llm = ChatOpenAI(model="qwen3.6-flash", ...)  # base_url/api_key 走 .env，任意 OpenAI 兼容模型
 llm_with_tools = llm.bind_tools([get_weather])
-resp = llm_with_tools.invoke(messages)
-print(resp.tool_calls)   # [{'name': 'get_weather', 'args': {'city': '北京'}, 'id': 'call_...'}]
+resp = llm_with_tools.invoke([SystemMessage(content=SYSTEM_PROMPT), HumanMessage(content="北京天气怎么样？")])
+print(resp.tool_calls)   # [{'name': 'get_weather', 'args': {'city': 'Beijing'}, 'id': 'call_xxx'}]
 ```
 
-用 @tool 装饰器把函数变成工具，函数的 docstring 注释会被自动解析成工具描述喂给模型——模型正是靠这段描述才知道何时该调它、参数有哪些。bind_tools 把工具绑定到模型上，模型回复的 message 里就带 tool_calls 属性，包含 name、args、id 三个字段。注册多个工具时模型会返回一个 tool_calls 数组，比如同时给它 get_weather 和 get_time，再问"北京天气和时间"，一次就能拿回两个调用。
+用 @tool 装饰器把函数变成工具，函数的 docstring 会被自动解析成工具描述喂给模型——模型正是靠这段描述才知道何时该调它、参数有哪些。bind_tools 把工具绑定到模型上，模型回复的 message 里就带 tool_calls 属性，包含 name、args、id 三个字段。注册多个工具时模型会返回一个 tool_calls 数组，比如同时给它 get_weather 和 get_time，再问"北京天气和时间"，一次就能拿回两个调用。
 
-看底层 API 的原始返回值，里面本来就有 function_call / tool_calls 字段——LangChain 只是把这些字段提取出来封装成了消息类。框架没有魔法，依然符合第一性原理：一切处理都是对模型输入输出文本的操作。
+`true_output.py` 绕开 LangChain 裸调 OpenAI SDK，看 API 的原始返回里到底有什么。工具定义部分就是一份 JSON Schema：
+
+```python
+response = client.chat.completions.create(
+    model="qwen3.6-flash",
+    messages=[{"role": "user", "content": "北京天气怎么样？"}],
+    tools=[{
+        "type": "function",
+        "function": {
+            "name": "get_weather",
+            "description": "查询指定城市的天气。",
+            "strict": True,                    # 严格模式：强制按 schema 生成
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "city": {"type": "string",
+                             "description": "城市英文名，例如 Beijing、Shanghai。"},
+                },
+                "required": ["city"],
+                "additionalProperties": False,  # 禁止 schema 之外的字段
+            },
+        },
+    }],
+    temperature=0,
+)
+
+message = response.choices[0].message
+for tool_call in message.tool_calls or []:
+    print(tool_call.id, tool_call.function.name)
+    print(json.loads(tool_call.function.arguments))   # arguments 是 JSON 字符串，需再解析一次
+```
+
+三个阅读要点：工具的 description 与参数的 description 都是喂给模型的提示词，写不清模型就会乱选参数；`strict: True` 与 `additionalProperties: False` 就是"训练层强制纯净 JSON"在 API 层的开关；`function.arguments` 拿到的是字符串不是字典，必须再 `json.loads` 一次。看完全流程再回看 LangChain 的 resp.tool_calls，就明白框架只是把这些原始字段提取封装成了消息类——框架没有魔法，依然符合第一性原理。
 
 ## 小结与串场
 

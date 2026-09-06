@@ -49,8 +49,18 @@ Harness Engineering 不是一个古老的学术名词，它更像是 Agent 工�
 
 完成交付：看着不错但你不知道代码有没有隐藏性能坑。harness 在交付前设强制 hook，触发 lint 和 CI 自动化检查，测试覆盖不达标直接打回重写。注意这些是外部代码做的严格逻辑审查，而不是把测试也交给 AI——AI 自己也有出错概率。
 
+PPT 里把"需求 → 传统工程解法 → Harness 实现"整理成一张映射表，比记名词更好背：安全可控 → 权限控制与拦截器 → Gate（审批与门禁）+ Enforce（机械约束）；高可靠 → 容错性与状态机持久化 → Persist（检查点与断点续跑）；环境隔离 → 沙箱化与容器隔离 → Isolate（沙箱与工作区）+ Subagents（子代理隔离）；可观测性 → Logs/Metrics/Traces → Observe（链路追踪与反馈闭环）。PPT 还给出两个具体数字：高危 Shell 审批由终端变红暂停、人类亲自敲回车放行；交付前强制触发 Linter 和 CI，测试覆盖率低于 80% 直接阻断交付打回重写。
+
+### MokioClaw 里的真实实现
+
+这些机制在 MokioClaw 源码里都有对应模块。审批模块定义了 inline、auto、deny 三种模式，并用一张正则风险清单分类命令：pip install、uv add、uv sync、npm/pnpm/yarn install、curl/wget、uvicorn、python -m http.server 等都会命中风险原因，交给审批流裁决——所谓"敏感工具分级"落到了具体正则上。
+
+检查点模块支持 light、strict、off 三种模式，默认 light。存档位置在 workspace 下的 .mokioclaw/checkpoints/，包含 checkpoint.json（当前状态）、events.jsonl（事件流，strict 模式才记）、state.json、RECOVERY.md（给人看的恢复说明，上限 6000 字）以及 git 快照目录。链路追踪模块每次运行落盘 summary.json 和 timeline.md，timeline 只保留头部 40 条、尾部 80 条事件——可观测不等于无脑全存，也要控制成本。
+
 ## Skill：把能力变成可复用资产
 
-UP 主 notion 笔记在这一节还补了一句：常见做法里包括 Skill——把能力变成可复用资产。工程化完善之后，最终一定是产品化，触及非技术人员。产品化的最后一公里——交互层，见系列第八篇《Claw 交互层与 MokioClaw 项目实战》。
+PPT 里 Skill 是紧跟 Harness 的独立一章，定义是：Skill = 面向 Agent 的可复用工作流包。它的目录结构很固定：SKILL.md 放元数据和指令，scripts/ 放可执行代码，references/ 放可参考文档，assets/ 放模板和其他资源。
 
-一句话总结本篇：Harness Engineering 没有发明新东西，本质是把过去开发中沉淀的各种工程手段套到 AI 身上，给它外部套上一个可靠的笼子。传统工程思想在任何开发过程中都不会过时。
+它的运行机制是三阶段生命周期，本质是渐进式加载：发现（Discard）阶段，代理启动时只加载每个技能的名称和描述，仅足以判断何时可能相关；激活阶段，当任务与技能描述匹配时，代理才把完整的 SKILL.md 指令读进上下文；执行阶段，按指令行动，按需执行捆绑代码或加载引用文件。这个"先只读目录、用到再展开"的设计就是 Select 思想的又一实例，把领域专业知识和可重复工作流打包成跨产品复用的资产，同时不占常驻上下文。
+
+一句话总结本篇：Harness Engineering 没有发明新东西，本质是把过去开发中沉淀的各种工程手段套到 AI 身上，给它外部套上一个可靠的笼子。传统工程思想在任何开发过程中都不会过时。产品化的最后一公里——交互层，见系列第八篇《Claw 交互层与 MokioClaw 项目实战》。
