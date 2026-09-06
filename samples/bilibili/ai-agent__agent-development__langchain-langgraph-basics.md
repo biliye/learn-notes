@@ -87,3 +87,9 @@ result = graph.invoke({"messages": [("user", task)]})
 ## 小结与串场
 
 用一句话分清两个框架：LangChain 是积木盒，提供模型、提示词、工具、消息这些标准件；LangGraph 是编排台，决定这些积木按什么流程、什么状态流转。接下来第一块真正的积木是 ToolCall——模型伸向现实世界的手，见系列第三篇。
+
+![LangChain 积木盒与 LangGraph 编排台](/uploads/2026/09/09ab1c1cc2e3b113.png)
+
+[在新标签页打开交互版架构图 ↗](/diagrams/langchain-langgraph-basics.html)
+
+一张图分清两个框架：左边的"积木盒"里，Prompt 与 Memory 喂给 Message 消息列表，Model 基于它输出文本并发出 tool_calls，Chain + Output Parser 把输出整理成结构化结果交给 Agent；右边的"编排台"里，Agent 的步骤注册为图节点，节点读写共享的 State，条件边决定下一跳，最后由 Graph compile → invoke 变成可运行流程。交互版可按"积木盒组件""编排台四步走""State 流转"三个视图聚焦对照。

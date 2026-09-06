@@ -64,3 +64,9 @@ PPT 里把痛点与解法整理成了一张对照表，复习按它背：遗忘�
 压缩机制的触发参数也可配：上下文 token 上限默认 400000，用环境变量 MOKIO_CONTEXT_TOKEN_LIMIT 调整，monitor 节点每轮估算 token，达到上限就走压缩。整个编排图是 planner → context_monitor →（条件路由）context_compressor 或 verifier 或 planner，verifier 完了还要回 monitor 复查——压缩不是一次性的，而是嵌在主循环里的常驻环节。入口图还配了 intent_router：普通聊天走 chat_responder 直接回答，正经任务才进 planner 重图，聊天上下文不污染任务图。
 
 一句话总结本篇核心：筛选出有效的 context 保留在上下文里，尽可能剔除无效的 context——这是一切 Agent 工程化的基础中的基础。而即使上下文管好了，系统仍可能被一条危险命令毁掉，最后一道防线见系列第七篇《Harness Engineering》。
+
+![Context Engineering 四大思想与上下文窗口](/uploads/2026/09/1d93fb2ea4f61b31.png)
+
+[在新标签页打开交互版架构图 ↗](/diagrams/context-engineering.html)
+
+四大思想围着有限的上下文窗口各司其职：Write 把关键内容即时外存成文件记忆与长期记忆，Select 在需要时才把最相关的拉回窗口，Compress 在超限时浓缩剪裁实现无限续航，Isolate 把任务拆给拥有独立窗口的子 Agent 与沙箱。交互版可按"写出与拉回""压缩续航""隔离聚焦"三个视图分别对照复习。

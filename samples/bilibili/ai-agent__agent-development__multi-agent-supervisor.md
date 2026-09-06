@@ -122,3 +122,9 @@ graph.add_conditional_edges("supervisor", lambda s: s["next_agent"],
 ## 小结与串场
 
 Multi-Agent 通过分工与隔离提升了单任务质量，但所有范式共享的软肋依然在：上下文窗口有限，性能随窗口增大而下降，模型会遗忘、会漂移。如何管住这块"有限的大脑"，是全系列最重要的工程课题——见系列第六篇《Context Engineering》。
+
+![Multi-Agent：Supervisor 路由与专家上下文隔离](/uploads/2026/09/da7d53e8076a64d0.png)
+
+[在新标签页打开交互版架构图 ↗](/diagrams/multi-agent-supervisor.html)
+
+架构一图流：Supervisor 直接面向用户、自己没有工具，只负责把任务经 call_file_agent / call_code_agent 派给两位专家；每个专家带着约千字专属 prompt 圈在独立的隔离区里，内部各自跑 ReAct 循环，结束后只把最终消息交回 Supervisor，专家内部轨迹互不污染。交互版支持按"派活与收结果""上下文隔离""专家各自的工具"三个视图聚焦。

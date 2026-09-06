@@ -30,6 +30,12 @@ spec_version: v2
 
 这条主线可以背成一句话：让模型触及现实（ToolCall）→ 学会做事（Agent Loop）→ 记得住事（Context Engineering）→ 驾驭得住（Harness Engineering）→ 卖得出去（Claw 交互层）。每引入一个新概念，都是为了解决上一层范式的致命短板，这也是全系列八篇笔记的排序依据。
 
+![Agent 五年演进主线：从缸中之脑到 MokioClaw](/uploads/2026/09/593f94e99bf8fc8f.png)
+
+[在新标签页打开交互版架构图 ↗](/diagrams/agent-evolution-map.html)
+
+把五年演进压成一张流程图：从"缸中之脑"出发，Function Calling 让模型触及现实，Agent Loop 让它从做一步到做一件事，Multi-Agent 补上分工协作，Context Engineering 让它记得住事，Harness Engineering 让系统驾驭得住，最终经 Claw 交互层收束成能交付的产品 MokioClaw。交互版支持缩放、明暗主题与章节聚焦，复习时可按"五年演进时间线""一句话主线"两个视图分别对照。
+
 ## MokioClaw 项目定位
 
 UP 主在 notion 里给同步构建的项目 MokioClaw 下了明确定位：一个终端优先、代码编辑优先，但可扩展到日常 CLI 任务和轻量生活服务的 Mini Claw。它的三层定位分别是：核心层负责代码编辑与 repo 操作；通用层负责文件处理、命令执行、报告生成；扩展层再接天气、飞书、日常 API、skills、MCP 与 HITL（human in the loop，人在回路审批）。这个三层结构就是全系列工程方法的最终落点，项目篇会逐层搭建。

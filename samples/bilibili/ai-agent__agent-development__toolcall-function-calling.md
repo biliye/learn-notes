@@ -135,3 +135,9 @@ for tool_call in message.tool_calls or []:
 ## 小结与串场
 
 ToolCall 打破了缸中之脑的禁锢，赋予模型触及现实的双手，但它一次只能完成一步动作：能搜索，却没法在搜索结果上继续整理，完成不了多步任务。让模型"从做一步到做一件事"，靠的是下一 Agent Loop 的循环，见系列第四篇。
+
+![ToolCall 完整调用链：模型只出文本，动作发生在本地代码](/uploads/2026/09/58bd0365a094f1c0.png)
+
+[在新标签页打开交互版架构图 ↗](/diagrams/toolcall-function-calling.html)
+
+把本篇全流程收进一张时序图：本地代码先用 bind_tools 把工具的 JSON Schema 注册给模型，用户问题进入 messages 列表；模型返回训练层强制生成的纯净 tool_calls（name、args、id），本地代码解析后翻译成真实的函数调用，动作发生在 HTTP 与工具函数里；结果作为 Observation 回填消息列表，模型再次判断——不再有 tool_calls 就输出最终回答。交互版可以逐条追踪关系链路，对照"准备 + 请求""结构化调用 + 执行""观察 + 回答"三个阶段看"模型只出文本、代码执行动作"的边界。

@@ -47,6 +47,12 @@ MokioClaw 的技术栈选型在仓库 README 里写得很明白：LLM 调用用 
 
 最终形态的架构图 README 里画得很清楚：外层 LangGraph 只剩 supervisor 与验收循环——用户任务先经 intent_router 分流（普通聊天走 chat_responder 直接回答），任务进 planner，supervisor 用 toolcall 方式交接 CallSearchAgentTool 与 CallCodeAgentTool 两个子 Agent，回来后过 context_monitor，超限就进 context_compressor，然后 verifier 验收，pass 走 final，fail 且次数未超上限就打回 planner。前几篇讲的 handoff、monitor、compressor、verifier 在这里全部串成了一张图。
 
+![MokioClaw 最终形态编排图](/uploads/2026/09/d31f8692f8fce9f0.png)
+
+[在新标签页打开交互版架构图 ↗](/diagrams/claw-mokioclaw-project.html)
+
+把上面那段文字画成图：用户任务先经 intent_router 分流，普通聊天走 chat_responder 直接回答，正经任务进 planner 出 to-do 计划；supervisor 用 toolcall 方式交接 search_agent 与 code_agent 两个子代理，回来后 context_monitor 每轮估算 token，超上限就进 compressor 压缩后回主循环，最后 verifier 验收交付。交互版支持按"任务主循环""上下文保障""验收打回"三个视图聚焦，并可逐条追踪关系链路。
+
 ![能力栈总结](/uploads/2026/09/881fb1e667bc318d.png)
 
 ## 总结与寄语
