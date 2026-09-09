@@ -96,4 +96,21 @@ function onNodeClick(data) {
     height: 36px;
   }
 }
+
+:deep(.el-tree) {
+  --el-tree-node-hover-bg-color: rgba(0, 122, 255, 0.08);
+  .el-tree-node__content { height: 34px; border-radius: 8px; }
+  .el-tree-node.is-current > .el-tree-node__content {
+    background: rgba(0, 122, 255, 0.11);
+    box-shadow: none;
+  }
+  .el-tree-node__expand-icon { color: var(--ak-muted); &:hover { color: var(--ak-gold); } }
+}
+.tree-node {
+  font-size: 13px;
+  .node-label { color: var(--ak-text-2); }
+  .is-current .node-label { color: var(--ak-gold); font-weight: 600; }
+  .auto-dot { width: 7px; height: 7px; clip-path: none; border-radius: 50%; background: var(--ak-amber); }
+  .node-count { color: var(--ak-faint); font-family: var(--ak-font-body); }
+}
 </style>

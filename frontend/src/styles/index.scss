@@ -1,43 +1,42 @@
 /* ============================================================
- * learn-notes · 明日方舟风主题（ARKNIGHTS THEME）
- * 深炭军事战术风：深灰蓝底 + 鎏金点缀 + 尖角刻线 + 等宽字标签
- * 设计基线见 design-system/learn-notes/MASTER.md
+ * learn-notes · Apple-inspired visual system
+ * 轻量、克制、清晰：大面积留白 + 柔和层次 + 系统蓝
  * ============================================================ */
 
 /* 显示字体（拉丁/数字）：Rajdhani 失败时回退系统字体，不影响布局 */
-@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap');
 
 /* ---------- 设计令牌 ---------- */
 :root {
-  /* 背景层级 */
-  --ak-bg-0: #14161d;        /* 最深层 */
-  --ak-bg-1: #1b1e27;        /* 页面底 */
-  --ak-bg-2: #22252f;        /* 面板 */
-  --ak-bg-3: #2a2e3a;        /* 悬浮 */
-  --ak-bg-4: #333847;        /* 激活 */
-  --ak-border: #333847;      /* 细边框 */
-  --ak-border-2: #464c5e;    /* 强调边框 */
+  /* 页面层级 */
+  --ak-bg-0: #ffffff;
+  --ak-bg-1: #f5f5f7;
+  --ak-bg-2: rgba(255, 255, 255, 0.86);
+  --ak-bg-3: #f0f0f3;
+  --ak-bg-4: #e8f2ff;
+  --ak-border: #e5e5ea;
+  --ak-border-2: #d1d1d6;
 
-  /* 鎏金主色 */
-  --ak-gold: #c9a86a;
-  --ak-gold-bright: #e0c283;
-  --ak-gold-dim: #a5854d;
-  --ak-gold-glow: rgba(201, 168, 106, 0.35);
+  /* Apple blue */
+  --ak-gold: #007aff;
+  --ak-gold-bright: #0a84ff;
+  --ak-gold-dim: #5ac8fa;
+  --ak-gold-glow: rgba(0, 122, 255, 0.16);
 
   /* 文字 */
-  --ak-text: #e9e4d6;
-  --ak-text-2: #b6b1a3;
-  --ak-muted: #83879a;
-  --ak-faint: #5b5f70;
+  --ak-text: #1d1d1f;
+  --ak-text-2: #515154;
+  --ak-muted: #86868b;
+  --ak-faint: #aeaeb2;
 
   /* 语义色 */
-  --ak-blue: #4a7296;
-  --ak-red: #a63a41;
-  --ak-green: #5e8a6d;
-  --ak-amber: #c98d3d;
+  --ak-blue: #007aff;
+  --ak-red: #ff3b30;
+  --ak-green: #34c759;
+  --ak-amber: #ff9500;
 
-  /* 显示字体（斜体战术感） */
-  --ak-font-display: 'Rajdhani', 'Fira Code', 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  --ak-font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI',
+    'PingFang SC', 'Microsoft YaHei', sans-serif;
   --ak-font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
     'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
 
@@ -46,20 +45,20 @@
   --doc-font-size: 16px;
   --doc-line-height: 1.8;
   --doc-text-color: var(--ak-text);
-  --doc-code-inline-bg: #2b2f3c;
-  --doc-code-inline-color: #e0c283;
+  --doc-code-inline-bg: #f0f0f3;
+  --doc-code-inline-color: #c41d7f;
   --doc-border-color: var(--ak-border);
 
   /* 代码块 */
-  --code-block-bg: #171922;
-  --code-block-text: #d8d8e0;
+  --code-block-bg: #1d1d1f;
+  --code-block-text: #f5f5f7;
   --code-block-font: 'Fira Code', 'JetBrains Mono', Consolas, 'Courier New', monospace;
-  --code-block-radius: 2px;
+  --code-block-radius: 12px;
   --code-lang-color: var(--ak-gold);
-  --code-copy-bg: rgba(201, 168, 106, 0.12);
+  --code-copy-bg: rgba(0, 122, 255, 0.12);
 
   /* 布局 */
-  --sidebar-width: 288px;
+  --sidebar-width: 260px;
   --sidebar-width-mobile: min(288px, 82vw);
   --topbar-height: 52px;
 
@@ -67,9 +66,8 @@
   --bp-mobile: 768px;
   --bp-narrow: 480px;
 
-  /* 圆角：几乎直角（Arknight 风格） */
-  --el-border-radius-base: 2px;
-  --el-border-radius-small: 2px;
+  --el-border-radius-base: 10px;
+  --el-border-radius-small: 8px;
 }
 
 /* ---------- 基础 ---------- */
@@ -94,14 +92,8 @@ html {
 body {
   font-family: var(--ak-font-body);
   color: var(--ak-text);
-  /* 战术网格底纹 + 右上冷光 */
   background-color: var(--ak-bg-1);
-  background-image:
-    linear-gradient(rgba(201, 168, 106, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(201, 168, 106, 0.035) 1px, transparent 1px),
-    radial-gradient(1100px 520px at 82% -12%, rgba(74, 114, 150, 0.10), transparent 62%);
-  background-size: 32px 32px, 32px 32px, auto;
-  background-attachment: fixed;
+  background-image: radial-gradient(900px 500px at 90% -10%, rgba(0, 122, 255, 0.07), transparent 65%);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -126,12 +118,12 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #333847;
+  background: #c7c7cc;
   border: 2px solid var(--ak-bg-1);
   border-radius: 6px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--ak-gold-dim);
+  background: #aeaeb2;
 }
 
 /* 尊重减少动态偏好 */
@@ -153,68 +145,60 @@ body {
 .ak-frame::after {
   content: '';
   position: absolute;
-  width: 10px;
-  height: 10px;
+  width: 0;
+  height: 0;
   pointer-events: none;
   z-index: 3;
 }
 .ak-frame::before {
-  top: -1px;
-  left: -1px;
-  border-top: 2px solid var(--ak-gold);
-  border-left: 2px solid var(--ak-gold);
+  display: none;
 }
 .ak-frame::after {
-  bottom: -1px;
-  right: -1px;
-  border-bottom: 2px solid var(--ak-gold);
-  border-right: 2px solid var(--ak-gold);
+  display: none;
 }
 
 /* 平行四边形按钮（Arknight 斜切） */
 .ak-btn-slant {
-  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+  clip-path: none;
+  border-radius: 10px;
 }
 
 /* 页面区块标题：金条 + 等宽字 */
 .ak-page-head {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin: 0 0 16px;
+  gap: 10px;
+  margin: 0 0 22px;
 }
 .ak-page-head::before {
-  content: '';
-  width: 4px;
-  height: 22px;
-  background: linear-gradient(180deg, var(--ak-gold-bright), var(--ak-gold-dim));
-  flex-shrink: 0;
+  display: none;
 }
 .ak-page-head h3 {
   margin: 0;
   font-family: var(--ak-font-display);
-  font-weight: 600;
-  font-size: 20px;
-  letter-spacing: 1px;
+  font-weight: 700;
+  font-size: 28px;
+  letter-spacing: -0.6px;
   color: var(--ak-text);
-  text-transform: uppercase;
+  text-transform: none;
 }
 .ak-page-head .ak-head-sub {
-  font-family: var(--code-block-font);
+  font-family: var(--ak-font-body);
   font-size: 12px;
   color: var(--ak-muted);
-  letter-spacing: 0.5px;
+  letter-spacing: 0;
 }
 
 /* ---------- Element Plus 深色变量覆盖（主色 → 鎏金） ---------- */
-html.dark {
-  --el-color-primary: #c9a86a;
-  --el-color-primary-light-3: #d9c697;
-  --el-color-primary-light-5: #e4d3a6;
-  --el-color-primary-light-7: #efe5c4;
-  --el-color-primary-light-8: #f4edd6;
-  --el-color-primary-light-9: #faf7ee;
-  --el-color-primary-dark-2: #a18655;
+/* Element Plus tokens */
+:root {
+  --el-color-primary: #007aff;
+  --el-color-primary-light-3: #5ac8fa;
+  --el-color-primary-light-5: #8ed8ff;
+  --el-color-primary-light-7: #c7ebff;
+  --el-color-primary-light-8: #e1f4ff;
+  --el-color-primary-light-9: #f0f9ff;
+  --el-color-primary-dark-2: #0066d6;
 
   --el-bg-color: var(--ak-bg-2);
   --el-bg-color-page: var(--ak-bg-1);
@@ -224,7 +208,7 @@ html.dark {
   --el-fill-color-lighter: var(--ak-bg-3);
   --el-fill-color-extra-light: var(--ak-bg-2);
   --el-fill-color-dark: var(--ak-bg-4);
-  --el-fill-color-darker: #3a3f4e;
+  --el-fill-color-darker: #d1d1d6;
 
   --el-text-color-primary: var(--ak-text);
   --el-text-color-regular: var(--ak-text-2);
@@ -236,11 +220,11 @@ html.dark {
   --el-border-color-light: var(--ak-border-2);
   --el-border-color-lighter: var(--ak-border);
   --el-border-color-extra-light: var(--ak-border);
-  --el-border-color-dark: #52586b;
+  --el-border-color-dark: #aeaeb2;
   --el-border-color-hover: var(--ak-gold-dim);
 
-  --el-mask-color: rgba(10, 12, 18, 0.75);
-  --el-mask-color-extra-light: rgba(10, 12, 18, 0.35);
+  --el-mask-color: rgba(0, 0, 0, 0.42);
+  --el-mask-color-extra-light: rgba(0, 0, 0, 0.16);
 
   --el-color-success: var(--ak-green);
   --el-color-warning: var(--ak-amber);
@@ -249,38 +233,38 @@ html.dark {
   --el-color-info: var(--ak-muted);
 
   --el-font-family: var(--ak-font-body);
-  --el-box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
-  --el-box-shadow-light: 0 3px 12px rgba(0, 0, 0, 0.35);
+  --el-box-shadow: 0 18px 50px rgba(0, 0, 0, 0.12);
+  --el-box-shadow-light: 0 8px 24px rgba(0, 0, 0, 0.08);
 }
 
 /* 输入框聚焦：鎏金 */
-html.dark .el-input__wrapper.is-focus,
-html.dark .el-textarea__inner:focus,
-html.dark .el-select__wrapper.is-focused {
-  box-shadow: 0 0 0 1px var(--ak-gold-dim) inset;
+.el-input__wrapper.is-focus,
+.el-textarea__inner:focus,
+.el-select__wrapper.is-focused {
+  box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.18) inset;
 }
 
 /* 下拉/弹层项悬浮 */
-html.dark .el-select-dropdown__item.is-hovering,
-html.dark .el-select-dropdown__item:hover {
+.el-select-dropdown__item.is-hovering,
+.el-select-dropdown__item:hover {
   background-color: var(--ak-bg-4);
 }
 
 /* 表格表头（弹层内表格） */
-html.dark .el-table th.el-table__cell {
+.el-table th.el-table__cell {
   background-color: var(--ak-bg-3);
   color: var(--ak-gold);
   font-weight: 600;
 }
 
 /* 对话框/抽屉标题 */
-html.dark .el-dialog,
-html.dark .el-drawer {
+.el-dialog,
+.el-drawer {
   border: 1px solid var(--ak-border-2);
   border-radius: 2px;
 }
-html.dark .el-dialog__title,
-html.dark .el-drawer__title {
+.el-dialog__title,
+.el-drawer__title {
   font-family: var(--ak-font-display);
   font-weight: 600;
   letter-spacing: 1px;
@@ -289,9 +273,35 @@ html.dark .el-drawer__title {
 }
 
 /* 面包屑分隔符 → 菱形箭头 */
-html.dark .el-breadcrumb__separator {
+.el-breadcrumb__separator {
   color: var(--ak-gold-dim);
 }
+
+/* Shared controls */
+.el-button {
+  border-radius: 10px;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.el-button--primary {
+  box-shadow: 0 5px 12px rgba(0, 122, 255, 0.14);
+}
+.el-input__wrapper,
+.el-select__wrapper,
+.el-textarea__inner {
+  border-radius: 10px;
+}
+.el-input__wrapper {
+  box-shadow: 0 0 0 1px rgba(60, 60, 67, 0.14) inset;
+}
+.el-dialog,
+.el-drawer {
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.16);
+}
+.el-dialog__header { padding: 22px 24px 16px; }
+.el-dialog__body { padding: 10px 24px 22px; }
+.el-dialog__footer { padding: 12px 24px 22px; }
 
 /* ---------- 正文排版（T13 块组件） ---------- */
 .prose {

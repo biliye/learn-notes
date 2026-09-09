@@ -14,6 +14,10 @@ const http = axios.create({
   timeout: 60000
 })
 
+// 会话失效只提示一次：退出登录瞬间往往有多个接口并发 401，逐个弹 toast 会连弹多条。
+// 登录/注册成功后复位，供下次会话失效时再次提示。
+let sessionExpiredToasted = false
+
 http.interceptors.request.use((config) => {
   const auth = useAuthStore()
   if (auth.token) {
@@ -31,6 +35,11 @@ http.interceptors.response.use(
     const body = response.data
     if (body && typeof body === 'object' && 'code' in body) {
       if (body.code === 0) {
+        // 登录 / 注册成功后，为下一次会话失效重新开启提示
+        const url = response.config?.url || ''
+        if (url.endsWith('/auth/login') || url.endsWith('/auth/register')) {
+          sessionExpiredToasted = false
+        }
         return body.data
       }
       ElMessage.error(body.msg || '请求失败')
@@ -49,7 +58,10 @@ http.interceptors.response.use(
       auth.logout()
       const current = router.currentRoute.value.fullPath
       if (router.currentRoute.value.name !== 'login') {
-        ElMessage.warning('登录已失效，请重新登录')
+        if (!sessionExpiredToasted) {
+          sessionExpiredToasted = true
+          ElMessage.warning('登录已失效，请重新登录')
+        }
         router.push({ name: 'login', query: { redirect: current } })
       }
     } else {

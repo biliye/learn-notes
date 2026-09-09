@@ -15,7 +15,7 @@
           <span class="login-diamond"></span>
         </div>
         <div class="login-title">learn-notes</div>
-        <div class="login-sub">个人学习笔记 · 战术档案系统</div>
+        <div class="login-sub">个人学习空间 · 简洁地记录与回顾</div>
         <div class="login-code">ACCESS // AUTH TERMINAL</div>
       </div>
 
@@ -55,7 +55,7 @@
       </el-form>
 
       <div class="panel-foot">
-        <span>LEARN-NOTES // ARCHIVE SYSTEM</span>
+        <span>LEARN-NOTES · PERSONAL SPACE</span>
         <span class="foot-ver">v0.1.0</span>
       </div>
     </div>
@@ -86,8 +86,18 @@ function switchMode(next) {
 }
 
 async function onSubmit() {
-  if (!username.value || !password.value) return
-  if (mode.value === 'register' && password.value.length < 6) return
+  if (!username.value.trim()) {
+    errorMsg.value = mode.value === 'register' ? '请输入用户名' : '请输入用户名 / 密码'
+    return
+  }
+  if (!password.value) {
+    errorMsg.value = '请输入密码'
+    return
+  }
+  if (mode.value === 'register' && password.value.length < 6) {
+    errorMsg.value = '密码至少 6 位'
+    return
+  }
   errorMsg.value = ''
   loading.value = true
   try {
@@ -307,5 +317,61 @@ async function onSubmit() {
     flex-wrap: wrap;
     gap: 4px;
   }
+}
+
+/* Calm, centered sign-in surface */
+.login-page {
+  background:
+    radial-gradient(620px 360px at 50% 18%, rgba(0, 122, 255, 0.12), transparent 70%),
+    var(--ak-bg-1);
+}
+.scan-line, .deco-left, .deco-diamonds { display: none; }
+.login-panel {
+  width: min(420px, calc(100vw - 32px));
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(60, 60, 67, 0.14);
+  border-radius: 22px;
+  padding: 42px 38px 24px;
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.10);
+  backdrop-filter: blur(22px);
+}
+.panel-top { margin-bottom: 30px; }
+.login-mark {
+  width: 54px;
+  height: 54px;
+  clip-path: none;
+  border-radius: 15px;
+  background: linear-gradient(145deg, #0a84ff, #007aff);
+  box-shadow: 0 10px 20px rgba(0, 122, 255, 0.22);
+  .login-diamond { width: 21px; height: 21px; clip-path: none; border: 2.5px solid #fff; border-radius: 6px; background: transparent; }
+}
+.login-title { font-family: var(--ak-font-display); font-size: 30px; letter-spacing: -0.8px; color: var(--ak-text); text-transform: none; }
+.login-sub { color: var(--ak-muted); }
+.login-code { display: none; }
+.login-form {
+  :deep(.el-form-item) { margin-bottom: 14px; }
+  :deep(.el-input__wrapper) {
+    min-height: 44px;
+    background: rgba(118, 118, 128, 0.08);
+    box-shadow: none;
+    border-radius: 11px;
+  }
+  :deep(.el-input__inner::placeholder) { font-family: var(--ak-font-body); font-size: 14px; letter-spacing: 0; }
+}
+.login-btn {
+  height: 44px;
+  border-radius: 11px;
+  background: var(--ak-gold);
+  font-family: var(--ak-font-body);
+  font-weight: 600;
+  letter-spacing: 0;
+  font-size: 15px;
+  box-shadow: 0 8px 16px rgba(0, 122, 255, 0.18);
+}
+.login-error { border-radius: 10px; background: rgba(255, 59, 48, 0.09); border-color: rgba(255, 59, 48, 0.22); color: #c62828; }
+.mode-switch { color: var(--ak-muted); }
+.panel-foot { border-top-color: var(--ak-border); font-family: var(--ak-font-body); letter-spacing: 0; color: var(--ak-faint); }
+@media (max-width: 768px) {
+  .login-panel { padding: 34px 22px 20px; }
 }
 </style>

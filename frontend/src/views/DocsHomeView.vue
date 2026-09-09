@@ -174,4 +174,36 @@ function highlightSnippet(snippet) {
     transform: translateY(-50%);
   }
 }
+
+/* Apple-like page rhythm */
+.docs-home {
+  max-width: 980px;
+  padding: 38px 28px 56px;
+}
+.page-head {
+  align-items: baseline;
+  .ak-head-sub { padding: 4px 9px; background: rgba(118, 118, 128, 0.10); border-radius: 6px; }
+}
+.search-item {
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(60, 60, 67, 0.12);
+  border-left: 1px solid rgba(60, 60, 67, 0.12);
+  border-radius: 14px;
+  padding: 17px 42px 17px 20px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.035);
+  &:hover {
+    background: #fff;
+    border-color: rgba(0, 122, 255, 0.30);
+    box-shadow: 0 8px 26px rgba(0, 122, 255, 0.08);
+  }
+  .search-breadcrumb { color: var(--ak-muted); }
+  .search-title { color: var(--ak-text); font-size: 16px; }
+  .search-snippet { color: var(--ak-text-2); }
+  .search-go { color: var(--ak-gold); }
+}
+@media (max-width: 768px) {
+  .docs-home { padding: 24px 16px 40px; }
+  .page-head { align-items: center; }
+}
 </style>

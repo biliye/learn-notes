@@ -315,4 +315,26 @@ function isProtected(row) {
     letter-spacing: 0.5px;
   }
 }
+
+.catalog-manage { max-width: 1120px; padding: 38px 28px 56px; }
+.depth-tip { color: var(--ak-muted); }
+.depth-tag { border-radius: 6px; color: var(--ak-gold); border-color: rgba(0, 122, 255, 0.22); background: rgba(0, 122, 255, 0.06); }
+.auto-tag { color: var(--ak-amber); }
+:deep(.el-table) {
+  border: 1px solid rgba(60, 60, 67, 0.12);
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.82);
+  --el-table-border-color: var(--ak-border);
+  --el-table-header-bg-color: rgba(118, 118, 128, 0.08);
+  --el-table-tr-bg-color: rgba(255, 255, 255, 0.66);
+  --el-table-row-hover-bg-color: rgba(0, 122, 255, 0.05);
+  --el-table-header-text-color: var(--ak-text-2);
+  --el-table-text-color: var(--ak-text-2);
+  --el-table-expanded-cell-bg-color: #fff;
+  th.el-table__cell { font-family: var(--ak-font-body); letter-spacing: 0; }
+}
+@media (max-width: 768px) {
+  .catalog-manage { padding: 24px 16px 40px; }
+}
 </style>

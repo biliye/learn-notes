@@ -164,4 +164,47 @@ defineExpose({ load })
     gap: 6px 10px;
   }
 }
+
+.doc-card {
+  background: rgba(255, 255, 255, 0.80);
+  border: 1px solid rgba(60, 60, 67, 0.12);
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.035);
+  &:hover {
+    background: #fff;
+    border-color: rgba(0, 122, 255, 0.28);
+    box-shadow: 0 8px 26px rgba(0, 122, 255, 0.08);
+    transform: translateY(-1px);
+  }
+  .doc-ribbon {
+    width: 3px;
+    background: var(--ak-gold);
+    border-radius: 0 3px 3px 0;
+  }
+  .doc-title { color: var(--ak-text); font-size: 17px; letter-spacing: -0.1px; }
+  .doc-summary { color: var(--ak-text-2); line-height: 1.55; }
+  .doc-meta {
+    gap: 9px;
+    .tag {
+      border-radius: 6px;
+      background: rgba(0, 122, 255, 0.08);
+      border-color: transparent;
+      color: var(--ak-gold);
+    }
+    .meta-ver { color: var(--ak-gold); font-family: var(--ak-font-body); }
+    .meta-item { color: var(--ak-muted); font-family: var(--ak-font-body); }
+  }
+}
+.pager {
+  :deep(.el-pager li),
+  :deep(button.btn-prev),
+  :deep(button.btn-next) {
+    background: #fff;
+    border: 1px solid var(--ak-border);
+    border-radius: 8px;
+  }
+  :deep(.el-pager li.is-active) { background: var(--ak-gold); color: #fff; border-color: var(--ak-gold); }
+}
 </style>

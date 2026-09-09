@@ -12,7 +12,7 @@
         </div>
         <div class="brand-text">
           <div class="brand-name">learn-notes</div>
-          <div class="brand-sub">TACTICAL ARCHIVE</div>
+          <div class="brand-sub">PERSONAL KNOWLEDGE</div>
         </div>
       </div>
       <div class="sidebar-nav">
@@ -48,7 +48,7 @@
             <el-icon :size="18"><Menu /></el-icon>
           </button>
           <span class="topbar-crumb" aria-hidden="true">//</span>
-          <span class="topbar-tag">资料检索</span>
+          <span class="topbar-tag">个人学习空间</span>
         </div>
         <el-input v-model="q" placeholder="搜索标题 / 正文…" clearable class="search-input"
                   @keyup.enter="doSearch" @clear="clearSearch">
@@ -128,13 +128,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import CatalogTree from '../components/CatalogTree.vue'
 import { useAuthStore } from '../stores/auth'
 import { useCatalogStore } from '../stores/catalog'
-import { search as apiSearch, downloadExportZip } from '../api/doc'
+import { downloadExportZip } from '../api/doc'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -156,7 +156,19 @@ watch(() => router.currentRoute.value.fullPath, () => {
 
 onMounted(() => {
   if (!catalog.loaded) catalog.load()
+  window.addEventListener('resize', closeDrawerOnDesktop)
 })
+
+onUnmounted(() => {
+  window.removeEventListener('resize', closeDrawerOnDesktop)
+})
+
+// 抽屉只在 ≤768px 生效：视口拉宽回桌面时若抽屉仍开着，残留的遮罩会挡住整个页面
+function closeDrawerOnDesktop() {
+  if (window.innerWidth > 768 && sidebarOpen.value) {
+    sidebarOpen.value = false
+  }
+}
 
 function go(path) {
   sidebarOpen.value = false
@@ -168,11 +180,12 @@ function onSelectTopic(node) {
   router.push({ path: '/docs', query: { topicId: node.id } })
 }
 
-async function doSearch() {
-  if (!q.value.trim()) return
-  await apiSearch(q.value.trim(), 20)
-  // 搜索结果走独立路由参数
-  router.push({ path: '/docs', query: { search: q.value.trim() } })
+// 顶栏搜索在任意路由都可用：直接带 query 跳文档库，DocsHome 会自己按 search 拉取
+// （不再先调一次 /search 预取——那一步若失败会让回车“没反应”，且与 DocsHome 重复请求）
+function doSearch() {
+  const term = q.value.trim()
+  if (!term) return
+  router.push({ path: '/docs', query: { search: term } })
 }
 
 function clearSearch() {
@@ -614,5 +627,157 @@ function onCommand(cmd) {
   .topbar-crumb {
     display: none;
   }
+}
+
+/* ---------- Apple-like refinement ---------- */
+.layout {
+  background: var(--ak-bg-1);
+}
+.sidebar {
+  width: var(--sidebar-width);
+  background: rgba(250, 250, 252, 0.92);
+  border-right: 1px solid rgba(60, 60, 67, 0.12);
+  backdrop-filter: blur(22px);
+  &::before { display: none; }
+}
+.brand-block {
+  padding: 24px 20px 22px;
+  gap: 11px;
+  .brand-mark {
+    width: 34px;
+    height: 34px;
+    clip-path: none;
+    border-radius: 10px;
+    background: linear-gradient(145deg, #0a84ff, #007aff);
+    box-shadow: 0 5px 12px rgba(0, 122, 255, 0.22);
+  }
+  .brand-diamond {
+    width: 15px;
+    height: 15px;
+    clip-path: none;
+    border: 2px solid #fff;
+    border-radius: 4px;
+    background: transparent;
+  }
+  .brand-name {
+    font-family: var(--ak-font-display);
+    font-size: 17px;
+    letter-spacing: -0.2px;
+    text-transform: none;
+    color: var(--ak-text);
+  }
+  .brand-sub {
+    margin-top: 3px;
+    font-family: var(--ak-font-body);
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    color: var(--ak-muted);
+    text-transform: none;
+  }
+}
+.sidebar-nav {
+  padding: 4px 12px 14px;
+  gap: 4px;
+  border-bottom-color: rgba(60, 60, 67, 0.10);
+  .nav-btn {
+    min-height: 38px;
+    padding: 8px 12px;
+    border-radius: 9px;
+    color: var(--ak-text-2);
+    font-size: 14px;
+    &:hover {
+      background: rgba(0, 122, 255, 0.08);
+      color: var(--ak-gold);
+    }
+    :deep(.el-icon) { font-size: 17px; }
+  }
+}
+.sidebar-label {
+  padding: 20px 20px 8px;
+  font-family: var(--ak-font-body);
+  color: var(--ak-muted);
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.sidebar-tree { padding: 0 12px 14px; }
+.sidebar-status {
+  padding: 14px 20px;
+  border-top-color: rgba(60, 60, 67, 0.10);
+  font-family: var(--ak-font-body);
+  .status-dot { box-shadow: 0 0 0 3px rgba(52, 199, 89, 0.14); }
+  .status-text { letter-spacing: 0; color: var(--ak-muted); }
+  .status-ver { color: var(--ak-faint); }
+}
+.topbar {
+  height: 64px;
+  padding: 0 26px;
+  background: rgba(255, 255, 255, 0.72);
+  border-bottom: 1px solid rgba(60, 60, 67, 0.10);
+  backdrop-filter: saturate(180%) blur(20px);
+  .topbar-left {
+    gap: 9px;
+    .topbar-crumb { display: none; }
+    .topbar-tag {
+      font-family: var(--ak-font-body);
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 0;
+      color: var(--ak-text);
+      text-transform: none;
+    }
+  }
+}
+.search-input {
+  width: 320px;
+  :deep(.el-input__wrapper) {
+    min-height: 36px;
+    padding: 1px 12px;
+    background: rgba(118, 118, 128, 0.10);
+    box-shadow: none;
+    border-radius: 10px;
+  }
+  :deep(.el-input__inner) { font-size: 13px; }
+}
+.topbar-right { gap: 12px; }
+.quick-start-btn,
+.export-btn {
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: var(--ak-text-2);
+  border-radius: 9px;
+  &:hover { background: rgba(118, 118, 128, 0.10); color: var(--ak-text); }
+}
+.export-btn {
+  color: var(--ak-gold);
+  background: rgba(0, 122, 255, 0.09);
+  &:hover { background: rgba(0, 122, 255, 0.14); color: var(--ak-gold); }
+}
+.user-chip {
+  gap: 7px;
+  color: var(--ak-text-2);
+  .user-avatar {
+    width: 30px;
+    height: 30px;
+    clip-path: none;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #64d2ff, #007aff);
+    color: #fff;
+    font-family: var(--ak-font-body);
+    font-size: 13px;
+  }
+}
+.content { background: transparent; }
+.backdrop { background: rgba(0, 0, 0, 0.26); backdrop-filter: blur(4px); }
+
+@media (max-width: 768px) {
+  .topbar { padding: 0 12px; }
+  .search-input { width: auto; }
+}
+
+/* 双保险：桌面宽度下即使抽屉状态异常残留，遮罩也一律不显示、不挡点击 */
+@media (min-width: 769px) {
+  .backdrop { display: none; }
 }
 </style>
