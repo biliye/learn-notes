@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 极简固定窗口 IP 限流（内存版）：登录/注册等开放接口防刷。
+ * 极简固定窗口 IP 限流（内存版）：登录等开放接口防刷。
  * 单实例足够；多实例部署需换 Redis 等集中存储。
  */
 @Component

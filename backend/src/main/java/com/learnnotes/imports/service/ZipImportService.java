@@ -56,7 +56,7 @@ public class ZipImportService {
         this.imageStorage = imageStorage;
     }
 
-    public ZipImportResult importZip(MultipartFile zipFile) {
+    public ZipImportResult importZip(long ownerId, MultipartFile zipFile) {
         if (zipFile == null || zipFile.isEmpty()) {
             throw BizException.badRequest("zip 文件不能为空");
         }
@@ -138,16 +138,16 @@ public class ZipImportService {
         result.setSlug(blankToNull(slug));
         result.setSummary(blankToNull(summary));
         result.setTags(tags);
-        result.setContentMd(rewriteImages(parsed.getBody(), mdDir, images, result, warnings));
+        result.setContentMd(rewriteImages(ownerId, parsed.getBody(), mdDir, images, result, warnings));
         result.setWarnings(warnings);
         return result;
     }
 
     /**
-     * 重写正文里的相对路径图片引用为 /uploads/...；返回新正文。
+     * 重写正文里的相对路径图片引用为 /uploads/u{ownerId}/...；返回新正文。
      * 外链（http/https）、data:、#锚点、已是 /uploads/... 的引用原样保留。
      */
-    private String rewriteImages(String body, String mdDir, Map<String, byte[]> images,
+    private String rewriteImages(long ownerId, String body, String mdDir, Map<String, byte[]> images,
                                  ZipImportResult result, List<String> warnings) {
         List<ImgRef> refs = new ArrayList<>();
         Matcher m = IMG_REF.matcher(body);
@@ -162,7 +162,7 @@ public class ZipImportService {
         for (ImgRef ref : refs) {
             sb.append(body, cursor, ref.start());
             cursor = ref.end();
-            String rewritten = resolveImageRef(ref.target(), mdDir, images, referenced, warnings);
+            String rewritten = resolveImageRef(ownerId, ref.target(), mdDir, images, referenced, warnings);
             if (rewritten == null) {
                 missing++;
                 sb.append(body, ref.start(), ref.end()); // 未找到：保留原引用
@@ -187,7 +187,7 @@ public class ZipImportService {
     }
 
     /** 解析单条图片引用：返回重写后的目标；无需处理的外链原样返回 target；未找到返回 null */
-    private String resolveImageRef(String target, String mdDir, Map<String, byte[]> images,
+    private String resolveImageRef(long ownerId, String target, String mdDir, Map<String, byte[]> images,
                                    Set<String> referenced, List<String> warnings) {
         if (target.startsWith("http://") || target.startsWith("https://")
                 || target.startsWith("data:") || target.startsWith("#")
@@ -206,7 +206,7 @@ public class ZipImportService {
         referenced.add(resolved);
         String ext = extOf(resolved);
         try {
-            UploadResult ur = imageStorage.saveBytes(bytes, "img." + ext);
+            UploadResult ur = imageStorage.saveBytes(ownerId, bytes, "img." + ext);
             return ur.getUrl();
         } catch (BizException e) {
             warnings.add("图片「" + resolved + "」上传失败：" + e.getMessage());

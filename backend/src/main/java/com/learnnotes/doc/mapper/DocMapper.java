@@ -39,6 +39,9 @@ public interface DocMapper {
     /** 除 excludeDocId 外还有多少文档正文引用了指定内容（清孤儿图片用） */
     int countOtherRefs(@Param("excludeDocId") long excludeDocId, @Param("pattern") String pattern);
 
+    /** 除该用户外还有多少别人的文档引用了指定内容（删账号清理老图片用） */
+    int countRefsExcludingOwner(@Param("ownerId") long ownerId, @Param("pattern") String pattern);
+
     int deleteById(@Param("id") Long id);
 
     int countByTopic(@Param("ownerId") Long ownerId, @Param("topicId") Long topicId);

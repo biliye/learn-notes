@@ -28,4 +28,7 @@ public interface SysUserMapper {
     int insert(SysUser user);
 
     int updatePasswordHash(@Param("id") long id, @Param("passwordHash") String passwordHash);
+
+    /** 删除账号（仅管理员对普通用户账号；调用方负责先清掉该用户的文档与分类，见 AdminService.deleteUser） */
+    int deleteById(@Param("id") long id);
 }

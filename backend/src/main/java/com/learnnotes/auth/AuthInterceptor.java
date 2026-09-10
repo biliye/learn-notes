@@ -17,7 +17,7 @@ import java.util.Set;
 
 /**
  * 鉴权拦截器（D7）：拦 /api/**。
- * - 白名单：POST /api/auth/login、POST /api/auth/register、GET /api/health
+ * - 白名单：POST /api/auth/login、GET /api/health（无注册接口，账号由管理员创建）
  * - 其余要求 Authorization: Bearer &lt;jwt&gt;（解析出 userId/username/role 写入 request）
  * - /api/import/** 与 /api/export/all 额外接受 X-Api-Token（常量时间比较，供 agent 脚本免登录调用，R16）；
  *   该通道归到首个 ADMIN 账号名下（V3 起 agent 导入的数据属管理员）
@@ -83,7 +83,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     }
 
     private boolean isWhitelisted(String method, String uri) {
-        if ("POST".equals(method) && ("/api/auth/login".equals(uri) || "/api/auth/register".equals(uri))) {
+        if ("POST".equals(method) && "/api/auth/login".equals(uri)) {
             return true;
         }
         if ("GET".equals(method) && "/api/health".equals(uri)) {

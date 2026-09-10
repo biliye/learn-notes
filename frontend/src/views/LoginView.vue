@@ -20,18 +20,13 @@
       </div>
 
       <el-form class="login-form" @submit.prevent="onSubmit">
-        <el-form-item v-if="mode === 'register'">
-          <el-input v-model="nickname" placeholder="昵称（可选，默认同用户名）" size="large">
-            <template #prefix><el-icon><Postcard /></el-icon></template>
-          </el-input>
-        </el-form-item>
         <el-form-item>
           <el-input v-model="username" placeholder="用户名 / USERNAME" size="large" autofocus @input="errorMsg = ''">
             <template #prefix><el-icon><User /></el-icon></template>
           </el-input>
         </el-form-item>
         <el-form-item>
-          <el-input v-model="password" type="password" :placeholder="mode === 'register' ? '密码（至少 6 位）' : '密码 / PASSWORD'" size="large"
+          <el-input v-model="password" type="password" placeholder="密码 / PASSWORD" size="large"
                     show-password @keyup.enter="onSubmit" @input="errorMsg = ''">
             <template #prefix><el-icon><Lock /></el-icon></template>
           </el-input>
@@ -41,17 +36,8 @@
           <span>{{ errorMsg }}</span>
         </div>
         <el-button type="primary" size="large" class="login-btn ak-btn-slant" :loading="loading"
-                   @click="onSubmit">{{ mode === 'register' ? '注 册' : '登 录' }}</el-button>
-        <div class="mode-switch">
-          <template v-if="mode === 'login'">
-            还没有账号？
-            <el-link type="primary" :underline="false" class="switch-link" @click="switchMode('register')">立即注册</el-link>
-          </template>
-          <template v-else>
-            已有账号？
-            <el-link type="primary" :underline="false" class="switch-link" @click="switchMode('login')">直接登录</el-link>
-          </template>
-        </div>
+                   @click="onSubmit">登 录</el-button>
+        <div class="mode-switch">账号由管理员开通，如需开号请联系站主</div>
       </el-form>
 
       <div class="panel-foot">
@@ -71,41 +57,24 @@ const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 
-const mode = ref('login')
 const username = ref('')
 const password = ref('')
-const nickname = ref('')
 const loading = ref(false)
 const errorMsg = ref('')
 
-function switchMode(next) {
-  mode.value = next
-  nickname.value = ''
-  password.value = ''
-  errorMsg.value = ''
-}
-
 async function onSubmit() {
   if (!username.value.trim()) {
-    errorMsg.value = mode.value === 'register' ? '请输入用户名' : '请输入用户名 / 密码'
+    errorMsg.value = '请输入用户名'
     return
   }
   if (!password.value) {
     errorMsg.value = '请输入密码'
     return
   }
-  if (mode.value === 'register' && password.value.length < 6) {
-    errorMsg.value = '密码至少 6 位'
-    return
-  }
   errorMsg.value = ''
   loading.value = true
   try {
-    if (mode.value === 'register') {
-      await auth.register(username.value, password.value, nickname.value)
-    } else {
-      await auth.login(username.value, password.value)
-    }
+    await auth.login(username.value, password.value)
     const redirect = route.query.redirect || '/docs'
     router.push(redirect)
   } catch (e) {
@@ -285,9 +254,6 @@ async function onSubmit() {
   text-align: center;
   font-size: 12px;
   color: var(--ak-muted);
-  .switch-link {
-    font-size: 12px;
-  }
 }
 .panel-foot {
   display: flex;

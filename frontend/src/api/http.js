@@ -15,7 +15,7 @@ const http = axios.create({
 })
 
 // 会话失效只提示一次：退出登录瞬间往往有多个接口并发 401，逐个弹 toast 会连弹多条。
-// 登录/注册成功后复位，供下次会话失效时再次提示。
+// 登录成功后复位，供下次会话失效时再次提示。
 let sessionExpiredToasted = false
 
 http.interceptors.request.use((config) => {
@@ -35,9 +35,9 @@ http.interceptors.response.use(
     const body = response.data
     if (body && typeof body === 'object' && 'code' in body) {
       if (body.code === 0) {
-        // 登录 / 注册成功后，为下一次会话失效重新开启提示
+        // 登录成功后，为下一次会话失效重新开启提示
         const url = response.config?.url || ''
-        if (url.endsWith('/auth/login') || url.endsWith('/auth/register')) {
+        if (url.endsWith('/auth/login')) {
           sessionExpiredToasted = false
         }
         return body.data

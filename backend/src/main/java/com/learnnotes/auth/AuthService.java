@@ -3,7 +3,7 @@ package com.learnnotes.auth;
 import com.learnnotes.auth.mapper.SysUserMapper;
 import com.learnnotes.catalog.service.CatalogService;
 import com.learnnotes.common.BizException;
-import com.learnnotes.config.AppProperties;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,10 +14,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 /**
- * 登录/注册服务：BCrypt 校验 + JWT 签发 + 登录失败锁定（连续 5 次锁 10 分钟，P1，内存计数）。
+ * 登录/建号服务：BCrypt 校验 + JWT 签发 + 登录失败锁定（连续 5 次锁 10 分钟，P1，内存计数）。
  * 安全：锁定按「用户名+IP」记，攻击者无法仅凭用户名把站主锁在门外；不存在的用户名不记状态（防内存涨爆）；
  * 状态表带过期清扫。
- * 注册：V3 起开放，创建 USER 角色账号并建默认 INBOX 分类树。
+ * 建号：自助注册已关闭，账号只能由管理员经 {@code POST /api/admin/users} 创建，建号时同步建默认 INBOX 分类树。
  */
 @Service
 public class AuthService {
@@ -31,18 +31,16 @@ public class AuthService {
     private final SysUserMapper userMapper;
     private final JwtService jwtService;
     private final CatalogService catalogService;
-    private final AppProperties props;
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
     /** 「用户名|IP」→ {failCount, lockUntil} */
     private final Map<String, LoginState> loginStates = new ConcurrentHashMap<>();
 
     public AuthService(SysUserMapper userMapper, JwtService jwtService,
-                       CatalogService catalogService, AppProperties props) {
+                       CatalogService catalogService) {
         this.userMapper = userMapper;
         this.jwtService = jwtService;
         this.catalogService = catalogService;
-        this.props = props;
     }
 
     public Map<String, Object> login(String username, String password, String ip) {
@@ -91,31 +89,49 @@ public class AuthService {
         });
     }
 
+    /**
+     * 管理员建号（唯一建号入口，自助注册已关闭）。
+     * 密码下限 8 位与 {@link #changePassword} 一致；role 缺省 USER，可为 ADMIN（留一个备用管理员）。
+     */
     @Transactional
-    public Map<String, Object> register(String username, String password, String nickname) {
-        if (!props.getRegister().isEnabled()) {
-            throw BizException.forbidden("当前未开放注册");
-        }
+    public Map<String, Object> createUser(String username, String password, String nickname, String role) {
         if (username == null || !USERNAME.matcher(username).matches()) {
             throw BizException.badRequest("用户名需为 3~32 位字母/数字/下划线/连字符");
         }
-        if (password == null || password.length() < 6) {
-            throw BizException.badRequest("密码至少 6 位");
+        if (password == null || password.length() < 8) {
+            throw BizException.badRequest("密码至少 8 位");
+        }
+        if (password.length() > 128) {
+            throw BizException.badRequest("密码最长 128 位");
         }
         if (nickname != null && nickname.trim().length() > 32) {
             throw BizException.badRequest("昵称最长 32 字");
         }
+        String normalizedRole = (role == null || role.isBlank())
+                ? SysUser.ROLE_USER : role.trim().toUpperCase(Locale.ROOT);
+        if (!SysUser.ROLE_USER.equals(normalizedRole) && !SysUser.ROLE_ADMIN.equals(normalizedRole)) {
+            throw BizException.badRequest("角色只能是 USER 或 ADMIN");
+        }
         if (userMapper.findByUsername(username) != null) {
-            throw BizException.conflict("用户名已被注册");
+            throw BizException.conflict("用户名已存在");
         }
         SysUser user = new SysUser();
         user.setUsername(username);
         user.setPasswordHash(encoder.encode(password));
         user.setNickname(nickname == null || nickname.isBlank() ? username : nickname.trim());
-        user.setRole(SysUser.ROLE_USER);
-        userMapper.insert(user);
+        user.setRole(normalizedRole);
+        try {
+            userMapper.insert(user);
+        } catch (DuplicateKeyException e) {
+            // 并发同名：唯一索引兜底（uk_user_username），别把 500 抛给管理员
+            throw BizException.conflict("用户名已存在");
+        }
         catalogService.ensureDefaults(user.getId());
-        return userInfo(user);
+        return Map.of(
+                "userId", user.getId(),
+                "username", user.getUsername(),
+                "nickname", user.getNickname(),
+                "role", user.getRole());
     }
 
     public Map<String, Object> me(String username) {
@@ -134,12 +150,7 @@ public class AuthService {
         if (oldPassword == null || oldPassword.isBlank() || newPassword == null || newPassword.isBlank()) {
             throw BizException.badRequest("旧密码与新密码不能为空");
         }
-        if (newPassword.length() < 8) {
-            throw BizException.badRequest("新密码至少 8 位");
-        }
-        if (newPassword.length() > 128) {
-            throw BizException.badRequest("新密码最长 128 位");
-        }
+        validateNewPassword(newPassword);
         SysUser user = userMapper.findByUsername(username);
         if (user == null) {
             throw BizException.unauthorized("用户不存在");
@@ -149,6 +160,32 @@ public class AuthService {
         }
         userMapper.updatePasswordHash(user.getId(), encoder.encode(newPassword));
         return userInfo(user);
+    }
+
+    /**
+     * 管理员重置他人口令：不需要旧密码（账号锁死/忘记密码时的兜底）。
+     * 只改口令，**不吊销该账号已签发的 JWT**——对方手上的旧 token 在剩余有效期内仍可用，
+     * 要立刻踢下线目前只能靠停用/删除账号（无吊销机制，见 changePassword 注释）。
+     */
+    public Map<String, Object> resetPassword(SysUser target, String newPassword) {
+        validateNewPassword(newPassword);
+        userMapper.updatePasswordHash(target.getId(), encoder.encode(newPassword));
+        return Map.of(
+                "userId", target.getId(),
+                "username", target.getUsername(),
+                "nickname", target.getNickname() == null ? target.getUsername() : target.getNickname());
+    }
+
+    private void validateNewPassword(String newPassword) {
+        if (newPassword == null || newPassword.isBlank()) {
+            throw BizException.badRequest("新密码不能为空");
+        }
+        if (newPassword.length() < 8) {
+            throw BizException.badRequest("新密码至少 8 位");
+        }
+        if (newPassword.length() > 128) {
+            throw BizException.badRequest("新密码最长 128 位");
+        }
     }
 
     private Map<String, Object> userInfo(SysUser user) {

@@ -12,7 +12,7 @@
 
 | 层 | 内容 | 位置 | 进 git | 职责 |
 |---|---|---|---|---|
-| **L1 人可读导出** | `<大类>/<小方向>/<slug>.md` + `<slug>.insights.json` | 本机 `<仓库>/notes-export/` | ✅ **进 git** | **主恢复路径**。最坏情况（云端与备份盘全丢）只要 git 在就能重建全部文字与见解 |
+| **L1 人可读导出** | `<大类>/<小方向>/<slug>.md` + `<slug>.insights.json` + `uploads/` 图片副本 | 本机 `<仓库>/notes-export/` | ✅ **进 git** | **主恢复路径**。最坏情况（云端与备份盘全丢）只要 git 在就能重建全部文字、见解与图片 |
 | **L2 二进制备份** | `mysqldump` 归档 + `storage/` 打包（含图片） | 服务器 `backup/` → 本机 `F:\deespeekharness\learn-notes-backup\` | ❌ | **快速恢复路径**。一条命令还原到出事前状态，含版本历史 |
 | **L3 导入原文落盘** | 导入时写下的原始 md（含 front-matter） | 服务器 `storage/docs/` | ❌ | 导入侧兜底，防"入库成功但内容被后续误改" |
 
@@ -20,6 +20,7 @@
 - 见解**只存在数据库**里，纯 md 备份必然丢见解 → L1 必须有 `.insights.json` 旁挂文件。
 - 见解**绝不能内嵌进 md 正文**（`<!-- -->` 会被解析成一个 HTML 块，打乱锚点）。只能旁挂。
 - **`notes-export/` 必须进 git**，绝不能加进 `.gitignore`；`learn-notes-backup/`（dump/图片）必须留在仓库外。
+- 图片路径两代并存（V5 起新图在 `/uploads/u{用户id}/…`，老图仍在 `/uploads/YYYY/MM/…`）：导出包按正文实际引用收集图片，恢复时原样 `cp` 回 `storage/uploads`，两代路径都能还原。跑过老图迁移后，应重新导出+同步一次，让 `notes-export/` 与线上正文保持一致。
 
 ---
 

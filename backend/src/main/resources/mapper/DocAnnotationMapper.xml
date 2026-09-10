@@ -56,10 +56,21 @@
         <foreach collection="docIds" item="id" open="(" separator="," close=")">#{id}</foreach>
     </select>
 
-    <!-- 清孤儿图片：其他见解的 block_snippet 是否还引用该 /uploads/ 路径 -->
+    <!-- 清孤儿图片：其他见解是否还引用该 /uploads/ 路径。
+         必须同时看 block_snippet（被引块快照）与 content_md（见解正文）——
+         见解正文里也允许放图，只看 block_snippet 会漏判、把人家的图当孤儿删掉。 -->
     <select id="countOtherRefs" resultType="int">
         SELECT COUNT(*) FROM doc_annotation
-        WHERE doc_id != #{excludeDocId} AND block_snippet LIKE #{pattern}
+        WHERE doc_id != #{excludeDocId}
+          AND (block_snippet LIKE #{pattern} OR content_md LIKE #{pattern})
+    </select>
+
+    <!-- 删账号用：除该用户的文档外，是否还有别人的见解引用该路径 -->
+    <select id="countRefsExcludingOwner" resultType="int">
+        SELECT COUNT(*) FROM doc_annotation a
+        JOIN doc d ON d.id = a.doc_id
+        WHERE d.owner_id != #{ownerId}
+          AND (a.block_snippet LIKE #{pattern} OR a.content_md LIKE #{pattern})
     </select>
 
     <delete id="deleteAll">

@@ -1,8 +1,10 @@
 package com.learnnotes.uploads.controller;
 
+import com.learnnotes.auth.CurrentUser;
 import com.learnnotes.common.R;
 import com.learnnotes.uploads.UploadResult;
 import com.learnnotes.uploads.service.ImageStorageService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -10,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- * 图片上传接口（§5.6、D11）。
+ * 图片上传接口（§5.6、D11）。图片落到当前登录用户自己的目录（uploads/u{userId}/…）。
  */
 @RestController
 @RequestMapping("/api/uploads")
@@ -23,7 +25,8 @@ public class UploadController {
     }
 
     @PostMapping("/image")
-    public R<UploadResult> uploadImage(@RequestParam("file") MultipartFile file) {
-        return R.ok(storageService.save(file));
+    public R<UploadResult> uploadImage(HttpServletRequest request, @RequestParam("file") MultipartFile file) {
+        CurrentUser user = CurrentUser.from(request);
+        return R.ok(storageService.save(user.userId(), file));
     }
 }

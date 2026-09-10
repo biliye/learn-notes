@@ -33,6 +33,9 @@ class ZipImportServiceTest {
 
     private ZipImportService service;
 
+    /** 草稿导入的图片归属于当前登录用户 */
+    private static final long OWNER = 5L;
+
     @BeforeEach
     void setUp() {
         AppProperties props = new AppProperties();
@@ -86,14 +89,14 @@ class ZipImportServiceTest {
         zip.put("docs/note.md", utf8(md));
         zip.put("docs/images/demo.png", pngBytes());
 
-        ZipImportResult r = service.importZip(zipOf(zip));
+        ZipImportResult r = service.importZip(OWNER, zipOf(zip));
 
         assertEquals("方法与函数式接口", r.getTitle());
         assertEquals("java-method-functional", r.getSlug());
         assertEquals(2, r.getTags().size());
         // front-matter 已剥离、图片引用已重写
         assertFalse(r.getContentMd().contains("category:"));
-        assertTrue(r.getContentMd().contains("![示意图](/uploads/"));
+        assertTrue(r.getContentMd().contains("![示意图](/uploads/u5/"), r.getContentMd());
         assertFalse(r.getContentMd().contains("images/demo.png"));
         assertEquals(1, r.getImportedImages());
         // 图片真实落盘在 uploads 目录
@@ -111,7 +114,7 @@ class ZipImportServiceTest {
         Map<String, byte[]> zip = new LinkedHashMap<>();
         zip.put("note.md", utf8(md));
 
-        ZipImportResult r = service.importZip(zipOf(zip));
+        ZipImportResult r = service.importZip(OWNER, zipOf(zip));
 
         assertTrue(r.getContentMd().contains("![不存在](missing.png)"));
         assertEquals(0, r.getImportedImages());
@@ -126,7 +129,7 @@ class ZipImportServiceTest {
         zip.put("note.md", utf8(md));
         zip.put("extra.png", pngBytes());
 
-        ZipImportResult r = service.importZip(zipOf(zip));
+        ZipImportResult r = service.importZip(OWNER, zipOf(zip));
 
         assertEquals(1, r.getSkippedImages());
         assertTrue(r.getWarnings().stream().anyMatch(w -> w.contains("未被正文引用")));
@@ -137,7 +140,7 @@ class ZipImportServiceTest {
     void noMdRejected() throws Exception {
         Map<String, byte[]> zip = new LinkedHashMap<>();
         zip.put("images/a.png", pngBytes());
-        BizException e = assertThrows(BizException.class, () -> service.importZip(zipOf(zip)));
+        BizException e = assertThrows(BizException.class, () -> service.importZip(OWNER, zipOf(zip)));
         assertEquals(400, e.getHttpStatus());
         assertTrue(e.getMessage().contains("没有找到"));
     }
@@ -150,7 +153,7 @@ class ZipImportServiceTest {
         zip.put("a.md", utf8("# A 文档"));
         zip.put("images/x.png", pngBytes());
 
-        ZipImportResult r = service.importZip(zipOf(zip));
+        ZipImportResult r = service.importZip(OWNER, zipOf(zip));
 
         assertEquals("A 文档", r.getTitle());
         assertTrue(r.getWarnings().stream().anyMatch(w -> w.contains("仅导入第一个")));
@@ -163,7 +166,7 @@ class ZipImportServiceTest {
         Map<String, byte[]> zip = new LinkedHashMap<>();
         zip.put("note.md", utf8(md));
 
-        ZipImportResult r = service.importZip(zipOf(zip));
+        ZipImportResult r = service.importZip(OWNER, zipOf(zip));
 
         assertTrue(r.getContentMd().contains("![越界](../secret.png)"));
         assertTrue(r.getWarnings().stream().anyMatch(w -> w.contains("越出压缩包根目录")));
@@ -177,7 +180,7 @@ class ZipImportServiceTest {
         zip.put("docs/note.md", utf8(md));
         zip.put("logo.png", pngBytes());
 
-        ZipImportResult r = service.importZip(zipOf(zip));
+        ZipImportResult r = service.importZip(OWNER, zipOf(zip));
 
         assertTrue(r.getContentMd().contains("![logo](/uploads/"));
         assertFalse(r.getContentMd().contains("../logo.png"));
@@ -191,7 +194,7 @@ class ZipImportServiceTest {
         zip.put("../../evil.png", pngBytes());
         zip.put("note.md", utf8("# 正常"));
 
-        ZipImportResult r = service.importZip(zipOf(zip));
+        ZipImportResult r = service.importZip(OWNER, zipOf(zip));
 
         assertEquals(0, r.getSkippedImages());
         assertTrue(r.getWarnings().stream().anyMatch(w -> w.contains("跳过非法路径条目")));
@@ -204,7 +207,7 @@ class ZipImportServiceTest {
         Map<String, byte[]> zip = new LinkedHashMap<>();
         zip.put("note.md", utf8(md));
 
-        ZipImportResult r = service.importZip(zipOf(zip));
+        ZipImportResult r = service.importZip(OWNER, zipOf(zip));
 
         assertEquals("标题取自一级标题", r.getTitle());
     }

@@ -32,7 +32,7 @@ class AuthServiceLoginTest {
         SysUserMapper userMapper = mock(SysUserMapper.class);
         AppProperties props = new AppProperties();
         props.getJwt().setSecret("ut-test-secret-9f83c1a7-entropy-ok-32");
-        authService = new AuthService(userMapper, new JwtService(props), mock(CatalogService.class), props);
+        authService = new AuthService(userMapper, new JwtService(props), mock(CatalogService.class));
 
         SysUser user = new SysUser();
         user.setId(1L);

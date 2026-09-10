@@ -44,7 +44,7 @@ Vue3 SPA (Nginx)  ──/api──►  Spring Boot 3 (JWT 拦截器)  ──MyBa
 4. 统一响应体 `{code,msg,data}` 与 HTTP 状态码语义（规格 §5）
 5. 表结构与 Flyway 版本号（只能追加 `V3__`、`V4__`，不可改已发布的 `V1`/`V2`）
 6. 导出 zip 的目录结构与 `<slug>.insights.json` 字段（规格 §5.7）—— 这是恢复路径的输入格式，改了等于让历史备份不可用
-7. 图片 URL 形态 `/uploads/YYYY/MM/<hash>.<ext>`（规格 D11）—— 已写进历史文档正文，改了会让老文档裂图
+7. 图片 URL 形态 `/uploads/**`（规格 D11）—— **只增不改**：V5（2026-09-10，经用户确认修订）新增 `/uploads/u{ownerId}/YYYY/MM/<hash>.<ext>` 用户段，老形态 `/uploads/YYYY/MM/<hash>.<ext>` 必须继续可访问（老文件保留、Nginx alias 覆盖任意子路径）。任何删除或改写老路径的方案都会让历史文档裂图，须先迁移再评审
 
 **TDD Route**：
 

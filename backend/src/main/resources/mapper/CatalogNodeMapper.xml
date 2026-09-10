@@ -82,6 +82,10 @@
         DELETE FROM catalog_node WHERE id = #{id}
     </delete>
 
+    <delete id="deleteByOwner">
+        DELETE FROM catalog_node WHERE owner_id = #{ownerId}
+    </delete>
+
     <update id="incrDocCount">
         UPDATE catalog_node SET doc_count = GREATEST(0, doc_count + #{delta}) WHERE id = #{id}
     </update>

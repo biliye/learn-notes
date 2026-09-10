@@ -20,12 +20,14 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.HexFormat;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
 /**
  * 图片哈希落盘（D11、R30）：
- * - 存 ${app.uploadDir}/YYYY/MM/&lt;sha256前16位&gt;.&lt;ext&gt;，同内容重复上传直接复用（幂等去重）
+ * - 存 ${app.uploadDir}/u&lt;ownerId&gt;/YYYY/MM/&lt;sha256前16位&gt;.&lt;ext&gt;，同一用户内同内容重复上传直接复用（幂等去重）
+ * - 归属隔离：每个用户一个目录，跨用户各存一份（放弃跨用户去重，换取"删一个人不影响别人"）
  * - 安全硬要求：扩展名白名单 + magic number 校验 + 服务端按哈希重命名 + 大小上限 + ImageIO 可读
  * - 静态访问由 Nginx 直接托管（T16），后端不提供图片读取接口
  */
@@ -43,7 +45,12 @@ public class ImageStorageService {
         this.props = props;
     }
 
-    public UploadResult save(MultipartFile file) {
+    /** 用户图片子目录名（老图片没有这一段，见 ImageMigrationService 的迁移） */
+    public static String ownerSegment(long ownerId) {
+        return "u" + ownerId;
+    }
+
+    public UploadResult save(long ownerId, MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw BizException.badRequest("file 不能为空");
         }
@@ -54,13 +61,13 @@ public class ImageStorageService {
             throw BizException.badRequest("读取上传文件失败");
         }
         String originalName = file.getOriginalFilename() == null ? "" : file.getOriginalFilename();
-        return saveBytes(bytes, originalName);
+        return saveBytes(ownerId, bytes, originalName);
     }
 
     /**
      * 以字节数组保存（zip 导入解包出的图片也走这里，D11 规则完全一致）。
      */
-    public UploadResult saveBytes(byte[] bytes, String originalName) {
+    public UploadResult saveBytes(long ownerId, byte[] bytes, String originalName) {
         if (bytes == null || bytes.length == 0) {
             throw BizException.badRequest("图片内容为空");
         }
@@ -81,9 +88,9 @@ public class ImageStorageService {
         int height = dims[1];
 
         String hash = sha256(bytes).substring(0, 16);
-        String monthDir = LocalDate.now().format(YM);
+        String relDir = ownerSegment(ownerId) + "/" + LocalDate.now().format(YM);
         String filename = hash + "." + ext;
-        Path target = Paths.get(props.getUploadDir()).resolve(monthDir).resolve(filename);
+        Path target = Paths.get(props.getUploadDir()).resolve(relDir).resolve(filename);
 
         boolean dedup = Files.exists(target);
         if (!dedup) {
@@ -95,11 +102,53 @@ public class ImageStorageService {
             }
         }
         return new UploadResult(
-                "/uploads/" + monthDir + "/" + filename,
+                "/uploads/" + relDir + "/" + filename,
                 width,
                 height,
                 bytes.length,
                 dedup);
+    }
+
+    /** 上传根目录（绝对、已 normalize），清理与迁移共用 */
+    public Path uploadRoot() {
+        return Paths.get(props.getUploadDir()).toAbsolutePath().normalize();
+    }
+
+    /** 某用户的图片目录；ownerId 是 long，不存在拼接注入面 */
+    public Path ownerDir(long ownerId) {
+        return uploadRoot().resolve(ownerSegment(ownerId));
+    }
+
+    /**
+     * 删除某用户自己的图片目录，返回删掉的文件数。
+     * 目录按 ownerId 独占，删它不会碰到任何其他用户的图片（这正是分目录的目的）。
+     */
+    public int purgeUser(long ownerId) {
+        Path dir = ownerDir(ownerId);
+        if (!Files.isDirectory(dir)) {
+            return 0;
+        }
+        var log = org.slf4j.LoggerFactory.getLogger(ImageStorageService.class);
+        List<Path> entries;
+        try (java.util.stream.Stream<Path> walk = Files.walk(dir)) {
+            // 先深后浅，文件删完目录才能删掉
+            entries = walk.sorted(java.util.Comparator.reverseOrder()).toList();
+        } catch (IOException e) {
+            log.warn("遍历用户图片目录失败（忽略）：{} -> {}", dir, e.getMessage());
+            return 0;
+        }
+        int deletedFiles = 0;
+        for (Path p : entries) {
+            try {
+                boolean file = Files.isRegularFile(p);
+                if (Files.deleteIfExists(p) && file) {
+                    deletedFiles++;
+                }
+            } catch (IOException e) {
+                log.warn("删除用户图片失败（忽略）：{} -> {}", p, e.getMessage());
+            }
+        }
+        return deletedFiles;
     }
 
     /** 用 ImageReader 只读头部宽高（不解码像素），无效图片或超过 MAX_PIXELS 即拒绝 */

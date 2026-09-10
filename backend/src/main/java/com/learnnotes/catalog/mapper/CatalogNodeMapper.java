@@ -30,5 +30,8 @@ public interface CatalogNodeMapper {
 
     int deleteById(@Param("id") Long id);
 
+    /** 删除该用户的整棵分类树（删号级联用；节点间无外键，整目录删安全） */
+    int deleteByOwner(@Param("ownerId") long ownerId);
+
     int incrDocCount(@Param("id") Long id, @Param("delta") int delta);
 }

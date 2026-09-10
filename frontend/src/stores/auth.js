@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { login as apiLogin, register as apiRegister, me } from '../api/auth'
+import { login as apiLogin, me } from '../api/auth'
 import { useCatalogStore } from './catalog'
 
 const TOKEN_KEY = 'ln_token'
@@ -30,11 +30,6 @@ export const useAuthStore = defineStore('auth', {
     },
     async login(username, password) {
       const data = await apiLogin(username, password)
-      this.applyUser(data)
-      return data
-    },
-    async register(username, password, nickname) {
-      const data = await apiRegister(username, password, nickname)
       this.applyUser(data)
       return data
     },

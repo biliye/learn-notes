@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -79,6 +80,70 @@ public class AnnotationService implements AnnotationAccess {
             }
         }
         return count;
+    }
+
+    @Override
+    public int shiftAnchorsForRewrittenBlocks(Long docId, List<Block> oldBlocks, List<Block> newBlocks,
+                                              Set<Integer> rewrittenIndexes) {
+        if (rewrittenIndexes == null || rewrittenIndexes.isEmpty()
+                || oldBlocks == null || newBlocks == null || oldBlocks.size() != newBlocks.size()) {
+            return 0;
+        }
+        int shifted = 0;
+        for (DocAnnotation ann : mapper.selectByDoc(docId)) {
+            int index = ann.getAnchorIndex() == null ? -1 : ann.getAnchorIndex();
+            if (index < 0 || index >= newBlocks.size() || !rewrittenIndexes.contains(index)) {
+                continue;
+            }
+            // 只有"见解原本就锚在这个块上"（存的是改写前的 hash）才前移；已经 STALE/ORPHAN 的不碰
+            String oldHash8 = AnchorUtil.parseHash(oldBlocks.get(index).getAnchor());
+            if (!oldHash8.equals(ann.getAnchorHash())) {
+                continue;
+            }
+            String newHash8 = AnchorUtil.parseHash(newBlocks.get(index).getAnchor());
+            mapper.updateAnchor(ann.getId(), newHash8, index,
+                    DocAnnotation.STATUS_ACTIVE, snippetOf(newBlocks.get(index)));
+            shifted++;
+        }
+        return shifted;
+    }
+
+    @Override
+    public int rewriteUploadPaths(Long docId, Map<String, String> pathMapping) {
+        if (pathMapping == null || pathMapping.isEmpty()) {
+            return 0;
+        }
+        int rewritten = 0;
+        for (DocAnnotation ann : mapper.selectByDoc(docId)) {
+            String snippet = replaceUploadPaths(ann.getBlockSnippet(), pathMapping);
+            String content = replaceUploadPaths(ann.getContentMd(), pathMapping);
+            if (java.util.Objects.equals(snippet, ann.getBlockSnippet())
+                    && java.util.Objects.equals(content, ann.getContentMd())) {
+                continue;
+            }
+            if (!java.util.Objects.equals(snippet, ann.getBlockSnippet())) {
+                mapper.updateAnchor(ann.getId(), ann.getAnchorHash(), ann.getAnchorIndex(),
+                        ann.getStatus(), snippet);
+            }
+            if (!java.util.Objects.equals(content, ann.getContentMd())) {
+                mapper.updateContent(ann.getId(), content);
+            }
+            rewritten++;
+        }
+        return rewritten;
+    }
+
+    /** 把文本里的 /uploads/<老相对路径> 换成 /uploads/<新相对路径>；只做精确整段匹配，避免误伤 */
+    private static String replaceUploadPaths(String text, Map<String, String> pathMapping) {
+        if (text == null || text.isEmpty()) {
+            return text;
+        }
+        String out = text;
+        for (Map.Entry<String, String> e : pathMapping.entrySet()) {
+            // 目标路径可能包含老路径作为子串（老 a/b.png → 新 u5/a/b.png），必须替换"完整引用"
+            out = out.replace("/uploads/" + e.getKey(), "/uploads/" + e.getValue());
+        }
+        return out;
     }
 
     // ---------- 业务接口 ----------

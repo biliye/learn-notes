@@ -49,4 +49,8 @@
     <update id="updatePasswordHash">
         UPDATE sys_user SET password_hash = #{passwordHash}, updated_at = NOW() WHERE id = #{id}
     </update>
+
+    <delete id="deleteById">
+        DELETE FROM sys_user WHERE id = #{id}
+    </delete>
 </mapper>

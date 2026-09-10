@@ -105,6 +105,12 @@
         WHERE id != #{excludeDocId} AND content_md LIKE #{pattern}
     </select>
 
+    <!-- 删账号用：除该用户外，是否还有别人的文档正文引用该路径（老图无归属，删前必须问这一句） -->
+    <select id="countRefsExcludingOwner" resultType="int">
+        SELECT COUNT(*) FROM doc
+        WHERE owner_id != #{ownerId} AND content_md LIKE #{pattern}
+    </select>
+
     <delete id="deleteById">
         DELETE FROM doc WHERE id = #{id}
     </delete>

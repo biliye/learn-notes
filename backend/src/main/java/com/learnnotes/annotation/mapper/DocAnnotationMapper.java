@@ -33,8 +33,11 @@ public interface DocAnnotationMapper {
 
     int countByDocIds(@Param("docIds") List<Long> docIds);
 
-    /** 除 excludeDocId 外还有多少见解快照引用了指定内容（清孤儿图片用） */
+    /** 除 excludeDocId 外还有多少见解（快照或正文）引用了指定内容（清孤儿图片用） */
     int countOtherRefs(@Param("excludeDocId") long excludeDocId, @Param("pattern") String pattern);
+
+    /** 除该用户的文档外还有多少别人的见解引用了指定内容（删账号清理老图片用） */
+    int countRefsExcludingOwner(@Param("ownerId") long ownerId, @Param("pattern") String pattern);
 
     int deleteAll();
 }

@@ -372,7 +372,7 @@ public class CatalogService {
         return SLUG_INBOX.equals(node.getSlug()) || SLUG_UNCATEGORIZED.equals(node.getSlug());
     }
 
-    /** 新用户注册 / 管理员初始化时创建默认 INBOX 兜底树（幂等）。 */
+    /** 管理员建号 / 初始化管理员时创建默认 INBOX 兜底树（幂等）。 */
     @Transactional
     public void ensureDefaults(Long userId) {
         if (findInbox(userId) != null) {

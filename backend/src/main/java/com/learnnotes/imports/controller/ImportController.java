@@ -88,7 +88,7 @@ public class ImportController {
      * 由前端填入新建文档编辑器，用户核对后走 POST /api/docs 手动保存。
      */
     @PostMapping("/zip")
-    public R<ZipImportResult> importZip(@RequestParam("file") MultipartFile file) {
-        return R.ok(zipImportService.importZip(file));
+    public R<ZipImportResult> importZip(HttpServletRequest request, @RequestParam("file") MultipartFile file) {
+        return R.ok(zipImportService.importZip(CurrentUser.from(request).userId(), file));
     }
 }

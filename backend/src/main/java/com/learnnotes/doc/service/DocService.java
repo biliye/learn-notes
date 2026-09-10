@@ -52,9 +52,6 @@ public class DocService {
     /** 英文单词/数字串 */
     private static final Pattern WORD = Pattern.compile("[A-Za-z0-9_]+");
 
-    /** 正文里站内图片引用（与 ExportService 同款） */
-    private static final Pattern IMAGE_REF = Pattern.compile("/uploads/[0-9a-zA-Z/._-]+");
-
     private final DocMapper docMapper;
     private final DocVersionMapper versionMapper;
     private final CatalogService catalogService;
@@ -63,6 +60,7 @@ public class DocService {
     private final AppProperties props;
     private final com.learnnotes.auth.mapper.SysUserMapper userMapper;
     private final com.learnnotes.annotation.mapper.DocAnnotationMapper annotationMapper;
+    private final com.learnnotes.uploads.service.UploadCleanupService uploadCleanup;
 
     public DocService(DocMapper docMapper,
                       DocVersionMapper versionMapper,
@@ -71,7 +69,8 @@ public class DocService {
                       DocStorage docStorage,
                       AppProperties props,
                       com.learnnotes.auth.mapper.SysUserMapper userMapper,
-                      com.learnnotes.annotation.mapper.DocAnnotationMapper annotationMapper) {
+                      com.learnnotes.annotation.mapper.DocAnnotationMapper annotationMapper,
+                      com.learnnotes.uploads.service.UploadCleanupService uploadCleanup) {
         this.docMapper = docMapper;
         this.versionMapper = versionMapper;
         this.catalogService = catalogService;
@@ -80,6 +79,7 @@ public class DocService {
         this.props = props;
         this.userMapper = userMapper;
         this.annotationMapper = annotationMapper;
+        this.uploadCleanup = uploadCleanup;
     }
 
     // ---------- 读 ----------
@@ -269,6 +269,40 @@ public class DocService {
         return result;
     }
 
+    /**
+     * 图片路径迁移专用：原地改写正文（不校验归属，调用方是系统迁移任务）。
+     * 走与 {@link #update} 同一条流水线：重算 content_hash → 乐观锁落库 → 写新版本（旧正文留在历史里）→ D6 重挂锚点。
+     * 幂等：正文哈希没变（重跑）直接返回当前版本，不刷版本号。
+     *
+     * @return 落库后的版本号
+     */
+    @Transactional
+    public int rewriteContent(long docId, String newContentMd, String changeNote) {
+        Doc doc = docMapper.selectById(docId);
+        if (doc == null) {
+            throw BizException.notFound("文档不存在");
+        }
+        if (newContentMd == null || newContentMd.isBlank()) {
+            throw BizException.badRequest("正文不能为空");
+        }
+        String newHash = SlugUtil.sha1Hex(newContentMd);
+        if (newHash.equals(doc.getContentHash())) {
+            return doc.getCurrentVersion();
+        }
+        int newVersion = doc.getCurrentVersion() + 1;
+        Doc updated = buildDoc(doc.getOwnerId(), doc.getTopicId(), doc.getSlug(), doc.getTitle(), doc.getSummary(),
+                splitTags(doc.getTags()), newContentMd, doc.getSourceFilename(), newVersion, doc.getSortOrder());
+        updated.setId(doc.getId());
+        if (docMapper.updateGuarded(updated, doc.getCurrentVersion()) == 0) {
+            throw BizException.conflict("文档已被其他操作修改，请刷新后重试");
+        }
+        writeVersion(updated, newVersion, changeNote);
+        List<Block> oldBlocks = MarkdownBlockParser.parse(doc.getContentMd()).getBlocks();
+        List<Block> newBlocks = MarkdownBlockParser.parse(newContentMd).getBlocks();
+        annotationAccess.reanchor(docId, oldBlocks, newBlocks);
+        return newVersion;
+    }
+
     @Transactional
     public void move(CurrentUser user, Long id, Long topicId) {
         Doc doc = requireById(id, user);
@@ -284,12 +318,14 @@ public class DocService {
     @Transactional
     public void delete(CurrentUser user, Long id) {
         Doc doc = requireById(id, user);
-        // 清理磁盘侧产物前先收集引用：正文 + 见解快照里的 /uploads/ 路径
+        // 清理磁盘侧产物前先收集引用：正文 + 见解快照 + 见解正文里的 /uploads/ 路径
+        // （见解正文也必须算进去，否则别人见解里引用的图会被当孤儿删掉）
         Set<String> uploadRefs = new LinkedHashSet<>();
         collectUploadRefs(doc.getContentMd(), uploadRefs);
         for (Object o : annotationAccess.listForDoc(id)) {
-            if (o instanceof AnnotationDto dto && dto.getBlockSnippet() != null) {
+            if (o instanceof AnnotationDto dto) {
                 collectUploadRefs(dto.getBlockSnippet(), uploadRefs);
+                collectUploadRefs(dto.getContentMd(), uploadRefs);
             }
         }
         List<CatalogNode> chain = catalogService.pathFromRoot(doc.getTopicId());
@@ -317,13 +353,7 @@ public class DocService {
     }
 
     private void collectUploadRefs(String text, Set<String> out) {
-        if (text == null) {
-            return;
-        }
-        Matcher m = IMAGE_REF.matcher(text);
-        while (m.find()) {
-            out.add(m.group().substring("/uploads/".length()));
-        }
+        out.addAll(uploadCleanup.collectRefs(text));
     }
 
     /** 尽力而为的磁盘清理：原文备份 + 无引用图片；单文件失败只记日志，不影响删除结果 */
@@ -338,22 +368,8 @@ public class DocService {
         } catch (Exception e) {
             log.warn("删除原文备份失败（忽略）：{}", e.getMessage());
         }
-        Path uploadRoot = Paths.get(props.getUploadDir()).toAbsolutePath().normalize();
-        for (String rel : uploadRefs) {
-            try {
-                // 哈希去重：同一图片可能被其他文档/见解引用，删前确认全站无引用（排除本文档）
-                if (docMapper.countOtherRefs(docId, "%" + rel + "%") > 0
-                        || annotationMapper.countOtherRefs(docId, "%" + rel + "%") > 0) {
-                    continue;
-                }
-                Path img = uploadRoot.resolve(rel).normalize();
-                if (img.startsWith(uploadRoot)) {
-                    Files.deleteIfExists(img);
-                }
-            } catch (Exception e) {
-                log.warn("清理图片失败（忽略）：{} -> {}", rel, e.getMessage());
-            }
-        }
+        // 图片清理交给 UploadCleanupService：它按"全站再无引用才删"的规则处理两代路径
+        uploadCleanup.deleteUnreferenced(docId, uploadRefs);
     }
 
     // ---------- 内部 ----------

@@ -14,7 +14,8 @@ import java.util.Map;
 
 /**
  * 认证接口（§5.1）。无 logout 接口（前端清 token 即可，YAGNI）。
- * 登录/注册按 IP 限流（nginx 已透传 X-Real-IP / X-Forwarded-For）。
+ * 登录按 IP 与用户名双维度限流（nginx 已透传 X-Real-IP / X-Forwarded-For）。
+ * 无注册接口：账号由管理员在 /api/admin/users 创建。
  */
 @RestController
 @RequestMapping("/api/auth")
@@ -22,7 +23,6 @@ public class AuthController {
 
     private static final int LOGIN_PER_MINUTE = 10;
     private static final int LOGIN_PER_USER_MINUTE = 20;
-    private static final int REGISTER_PER_MINUTE = 5;
     private static final int PASSWORD_PER_MINUTE = 3;
 
     private final AuthService authService;
@@ -45,15 +45,6 @@ public class AuthController {
             throw BizException.locked("该账号尝试过于频繁，请稍后再试");
         }
         return R.ok(authService.login(body.get("username"), body.get("password"), ip));
-    }
-
-    /** 注册（V3 起开放，APP_REGISTER_ENABLED 可关） */
-    @PostMapping("/register")
-    public R<Map<String, Object>> register(HttpServletRequest request, @RequestBody Map<String, String> body) {
-        if (!rateLimiter.tryAcquire("register|" + clientIp(request), REGISTER_PER_MINUTE, 60_000L)) {
-            throw BizException.locked("尝试过于频繁，请稍后再试");
-        }
-        return R.ok(authService.register(body.get("username"), body.get("password"), body.get("nickname")));
     }
 
     @GetMapping("/me")
