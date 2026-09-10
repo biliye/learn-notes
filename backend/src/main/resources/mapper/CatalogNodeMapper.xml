@@ -59,13 +59,17 @@
     <update id="update">
         UPDATE catalog_node
         <set>
+            <!-- parentId 用于 move()：此前缺失该分支导致移动目录静默失效（详见 .work/agent-learning-catalog-plan.md 第七节） -->
             <if test="name != null">name = #{name},</if>
             <if test="slug != null">slug = #{slug},</if>
+            <if test="parentId != null">parent_id = #{parentId},</if>
             <if test="nodeLevel != null">node_level = #{nodeLevel},</if>
             <if test="remark != null">remark = #{remark},</if>
             <if test="icon != null">icon = #{icon},</if>
             <if test="sortOrder != null">sort_order = #{sortOrder},</if>
             <if test="maxLevel != null">max_level = #{maxLevel},</if>
+            <!-- 哨兵：<set> 全为空时会生成非法 SQL（UPDATE t SET WHERE id=?），兜一个自赋值保证子句非空 -->
+            id = #{id},
         </set>
         WHERE id = #{id}
     </update>
