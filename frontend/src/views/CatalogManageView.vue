@@ -9,20 +9,22 @@
       </el-button>
     </div>
     <el-table :data="catalog.tree" row-key="id" :tree-props="{ children: 'children' }" default-expand-all>
-      <el-table-column prop="name" label="名称" min-width="180">
+      <el-table-column prop="name" label="名称" :min-width="isMobile ? 116 : 180">
         <template #default="{ row }">
           <span v-if="row.autoCreated" class="auto-tag" title="导入时自动创建，待整理">●</span>
           {{ row.name }}
           <span v-if="row.parentId === 0 || !row.parentId" class="depth-tag" :title="'该大类下可建目录层级：' + (row.maxLevel || 2) + ' 级'">
             L{{ row.maxLevel || 2 }}
           </span>
+          <!-- 小屏省掉"文档数"列，计数并入名称格，避免操作列被挤出屏幕 -->
+          <span v-if="isMobile" class="doc-count-inline">{{ row.docCount }} 篇</span>
         </template>
       </el-table-column>
       <el-table-column v-if="!isMobile" prop="slug" label="slug" min-width="140" />
       <el-table-column v-if="!isMobile" prop="remark" label="注释" min-width="160" show-overflow-tooltip />
       <el-table-column v-if="!isMobile" prop="sortOrder" label="排序" width="70" />
-      <el-table-column prop="docCount" label="文档数" width="80" />
-      <el-table-column label="操作" width="330" :fixed="isMobile ? false : 'right'">
+      <el-table-column v-if="!isMobile" prop="docCount" label="文档数" width="80" />
+      <el-table-column label="操作" :width="isMobile ? 160 : 330" :fixed="isMobile ? false : 'right'">
         <template #default="{ row }">
           <el-button v-if="viewable(row)" link size="small" type="primary" @click="$router.push({ path: '/docs', query: { topicId: row.id } })">查看</el-button>
           <el-button v-if="canAddDir(row)" link size="small" @click="openCreate(row)">＋ 子目录</el-button>
@@ -336,5 +338,24 @@ function isProtected(row) {
 }
 @media (max-width: 768px) {
   .catalog-manage { padding: 24px 16px 40px; }
+  .doc-count-inline {
+    display: inline-block;
+    margin-left: 6px;
+    font-family: var(--ak-font-body);
+    font-size: 11px;
+    color: var(--ak-faint);
+  }
+  /* 操作列变窄后按钮按单位换行，不再被挤出屏幕；间距收紧以免行高过高 */
+  :deep(.el-table .cell) {
+    white-space: normal;
+    word-break: normal;
+  }
+  :deep(.el-table .cell .el-button) {
+    padding: 0 3px;
+    font-size: 12px;
+  }
+  :deep(.el-table .cell .el-button + .el-button) {
+    margin-left: 2px;
+  }
 }
 </style>

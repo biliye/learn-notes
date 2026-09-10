@@ -83,7 +83,7 @@
     </div>
 
     <!-- 快速开始：项目用法 + Agent 笔记写作指南下载 -->
-    <el-dialog v-model="quickStartOpen" title="快速开始" width="680px"
+    <el-dialog v-model="quickStartOpen" title="快速开始" width="min(680px, 92vw)"
                class="quick-start-dialog" :append-to-body="true">
       <div class="qs-intro">
         这是你的个人学习笔记网站：内容按 <b>大类 →（多级目录）→ 文档</b> 归置——
@@ -774,6 +774,18 @@ function onCommand(cmd) {
 @media (max-width: 768px) {
   .topbar { padding: 0 12px; }
   .search-input { width: auto; }
+}
+
+/* 平板宽度（769–900px）：侧栏 + 顶栏按桌面尺寸会挤爆——
+   顶栏右侧整体顶出视口、左侧副标题被压成一条。
+   这里收回装饰性文字并缩窄侧栏，给搜索框留出空间。
+   注意：必须放在上面的 Apple 风格块之后才能覆盖它。 */
+@media (min-width: 769px) and (max-width: 900px) {
+  .sidebar { width: 220px; }
+  .brand-block .brand-sub { display: none; }
+  .topbar { padding: 0 16px; gap: 10px; }
+  .topbar-tag { display: none; }
+  .search-input { width: 180px; }
 }
 
 /* 双保险：桌面宽度下即使抽屉状态异常残留，遮罩也一律不显示、不挡点击 */

@@ -24,14 +24,17 @@
     </div>
 
     <el-table :data="items" v-loading="loading" class="admin-table" :empty-text="'没有文档'">
-      <el-table-column label="标题" min-width="220">
+      <el-table-column label="标题" :min-width="isMobile ? 100 : 220">
         <template #default="{ row }">
           <el-link type="primary" :underline="false" class="doc-title" @click="openDoc(row.id)">
             {{ row.title }}
           </el-link>
+          <div v-if="isMobile && row.categoryName" class="crumb crumb-inline">
+            {{ row.categoryName }}<i class="sep">/</i>{{ row.topicName }}
+          </div>
         </template>
       </el-table-column>
-      <el-table-column label="归属用户" width="140">
+      <el-table-column label="归属用户" :min-width="isMobile ? 84 : 140">
         <template #default="{ row }">
           <div class="owner-cell">
             <span class="owner-name">{{ row.ownerNickname || row.ownerUsername }}</span>
@@ -39,17 +42,17 @@
           </div>
         </template>
       </el-table-column>
-      <el-table-column label="分类" min-width="180">
+      <el-table-column v-if="!isMobile" label="分类" min-width="180">
         <template #default="{ row }">
           <span class="crumb">
             <template v-if="row.categoryName">{{ row.categoryName }}<i class="sep">/</i></template>{{ row.topicName }}
           </span>
         </template>
       </el-table-column>
-      <el-table-column label="字数" width="80" align="right">
+      <el-table-column v-if="!isMobile" label="字数" width="80" align="right">
         <template #default="{ row }">{{ row.wordCount }}</template>
       </el-table-column>
-      <el-table-column label="更新时间" width="160">
+      <el-table-column label="更新时间" :min-width="isMobile ? 100 : 160">
         <template #default="{ row }">{{ formatTime(row.updatedAt) }}</template>
       </el-table-column>
     </el-table>
@@ -65,8 +68,10 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { listAllDocs, listUsers } from '../api/admin'
+import { useIsMobile } from '../composables/useIsMobile'
 
 const router = useRouter()
+const isMobile = useIsMobile()
 
 const keyword = ref('')
 const items = ref([])
@@ -215,6 +220,16 @@ onMounted(() => {
   }
   :deep(.page-head) {
     flex-wrap: wrap;
+  }
+  /* 小屏折叠"分类/字数"列后，分类并入标题格；单元格按单位换行不越界 */
+  .crumb-inline {
+    margin-top: 2px;
+    font-size: 11px;
+  }
+  :deep(.el-table .cell) {
+    white-space: normal;
+    word-break: normal;
+    padding: 0 8px;
   }
 }
 </style>

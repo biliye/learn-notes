@@ -167,8 +167,16 @@ body {
 .ak-page-head {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
   margin: 0 0 22px;
+  /* 小屏空间不够时整体换行；标题与标签保持自然宽度，
+     否则会被 flex 压成"一字一行"的竖排窄条 */
+  > h3,
+  > .ak-head-sub,
+  > .depth-tip {
+    flex-shrink: 0;
+  }
 }
 .ak-page-head::before {
   display: none;
