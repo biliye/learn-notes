@@ -30,10 +30,15 @@ fail() {
 }
 
 # 1) mysqldump（经容器执行，--single-transaction 不锁业务写）
+# 凭据走 MYSQL_PWD 环境变量而不是 -p 参数：命令行参数会出现在 ps/docker inspect 里
 echo "[$(date '+%F %T')] 备份数据库..."
-docker exec ln-mysql mysqldump --single-transaction --default-character-set=utf8mb4 \
+docker exec -e MYSQL_PWD="${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD 未设置（见 .env）}" \
+  ln-mysql mysqldump -u root --single-transaction --default-character-set=utf8mb4 \
   "${MYSQL_DATABASE:-learn_notes}" | gzip > "$DB_DIR/learn_notes-$TS.sql.gz" \
   || fail "mysqldump 失败"
+# 空归档（连接失败时 gzip 仍会产出一个小文件）不算备份成功
+[ "$(stat -c %s "$DB_DIR/learn_notes-$TS.sql.gz")" -gt 1024 ] \
+  || fail "dump 归档过小，疑似备份失败：$DB_DIR/learn_notes-$TS.sql.gz"
 
 # 2) storage 归档（导入原文 + 上传图片）
 echo "[$(date '+%F %T')] 备份 storage..."
